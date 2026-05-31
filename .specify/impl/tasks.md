@@ -21,14 +21,14 @@
 
 Project initialization for BackGen CLI tool.
 
-- [ ] T001 Initialize BackGen CLI project with package.json in package.json
-- [ ] T002 Create TypeScript configuration with strict mode in tsconfig.json
-- [ ] T003 Configure ESLint for TypeScript in eslint.config.js
-- [ ] T004 Configure Vitest for testing in vitest.config.ts
-- [ ] T005 Create project directory structure per plan in src/
-- [ ] T006 Install dependencies: commander, inquirer, handlebars, chalk, ora in package.json
-- [ ] T007 Install dev dependencies: typescript, vitest, @types/node in package.json
-- [ ] T008 Create CLI entry point with shebang in src/index.ts
+- [x] T001 Initialize BackGen CLI project with package.json in package.json
+- [x] T002 Create TypeScript configuration with strict mode in tsconfig.json
+- [x] T003 Configure ESLint for TypeScript in .eslintrc.json
+- [x] T004 Configure Vitest for testing in vitest.config.ts
+- [x] T005 Create project directory structure per plan in src/
+- [x] T006 Install dependencies: commander, inquirer, handlebars, chalk, ora in package.json
+- [x] T007 Install dev dependencies: typescript, vitest, @types/node in package.json
+- [x] T008 Create CLI entry point with shebang in src/index.ts
 
 ---
 
