@@ -1,9 +1,12 @@
 import * as fs from "fs/promises";
 import * as path from "path";
+import { fileURLToPath } from "url";
 import { TemplateEngine } from "./template-engine.js";
 import { registerRoute } from "./route-registrar.js";
 import type { FeatureDefinition } from "./feature-registry.js";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const TEMPLATES_DIR = path.resolve(__dirname, "../../templates/express");
 
 export async function installFeature(

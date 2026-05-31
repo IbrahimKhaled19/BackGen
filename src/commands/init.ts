@@ -3,6 +3,7 @@ import chalk from "chalk";
 import ora from "ora";
 import * as fs from "fs/promises";
 import * as path from "path";
+import { fileURLToPath } from "url";
 import { TemplateEngine } from "../core/template-engine.js";
 import {
   createCheckpoint,
@@ -12,6 +13,9 @@ import {
   getNextPendingStep,
   validateCheckpoint,
 } from "../core/checkpoint.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export interface InitOptions {
   resume?: boolean;

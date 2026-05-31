@@ -3,12 +3,15 @@ import chalk from "chalk";
 import ora from "ora";
 import * as fs from "fs/promises";
 import * as path from "path";
+import { fileURLToPath } from "url";
 import { TemplateEngine } from "../core/template-engine.js";
 import { createPlaceholders } from "../core/placeholders.js";
 import { createFieldDefinitions } from "../core/field-mapper.js";
 import { addModelToSchema } from "../core/prisma-updater.js";
 import { registerRoute } from "../core/route-registrar.js";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const TEMPLATES_DIR = path.resolve(__dirname, "../../templates/express");
 
 const RESOURCE_TEMPLATES = [

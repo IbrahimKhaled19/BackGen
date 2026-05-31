@@ -1,15 +1,39 @@
+import inquirer from "inquirer";
 import chalk from "chalk";
 import ora from "ora";
 import { getFeature, listAvailableFeatures } from "../core/feature-registry.js";
 import { installFeature, isFeatureInstalled } from "../core/feature-installer.js";
 
-export async function addCommand(featureName: string): Promise<void> {
-  console.log(chalk.blue.bold(`\n🔧 BackGen - Add Feature: ${featureName}\n`));
+export async function addCommand(featureName: string | undefined): Promise<void> {
+  console.log(chalk.blue.bold("\n🔧 BackGen - Add Feature\n"));
 
   const projectDir = process.cwd();
 
+  // If no feature specified, show interactive selector
+  if (!featureName) {
+    const features = listAvailableFeatures();
+
+    if (features.length === 0) {
+      console.error(chalk.red("No features available."));
+      process.exit(1);
+    }
+
+    const answer = await inquirer.prompt([
+      {
+        type: "list",
+        name: "feature",
+        message: "Select a feature to add:",
+        choices: features.map((f) => ({
+          name: `${f.name} - ${f.description}`,
+          value: f.name,
+        })),
+      },
+    ]);
+    featureName = answer.feature;
+  }
+
   // Check if feature exists
-  const feature = getFeature(featureName);
+  const feature = getFeature(featureName!);
   if (!feature) {
     console.error(chalk.red(`Error: Unknown feature "${featureName}".`));
     console.log("\nAvailable features:");
@@ -27,7 +51,7 @@ export async function addCommand(featureName: string): Promise<void> {
   }
 
   // Check if already installed
-  if (await isFeatureInstalled(projectDir, featureName)) {
+  if (await isFeatureInstalled(projectDir, featureName!)) {
     console.error(chalk.red(`Error: Feature "${featureName}" is already installed.`));
     process.exit(1);
   }

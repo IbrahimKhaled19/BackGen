@@ -36,9 +36,9 @@ program
   });
 
 program
-  .command("add <feature>")
+  .command("add [feature]")
   .description("Add a feature to existing project")
-  .action(async (feature: string) => {
+  .action(async (feature: string | undefined) => {
     const { addCommand } = await import("./commands/add.js");
     await addCommand(feature);
   });
