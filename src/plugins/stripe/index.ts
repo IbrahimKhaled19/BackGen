@@ -1,5 +1,10 @@
 import * as path from "path";
+import { fileURLToPath } from "url";
 import type { BackGenPlugin, InstallContext } from "../../core/plugin.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const TEMPLATE_DIR = path.join(__dirname, "templates");
 
 export const stripePlugin: BackGenPlugin = {
   name: "stripe",
@@ -30,14 +35,13 @@ export const stripePlugin: BackGenPlugin = {
 
     for (const tpl of this.templates) {
       const outputName = tpl.replace(".hbs", "");
-      await ctx.engine.renderToFile(
-        `plugins/stripe/templates/${tpl}`,
+      await ctx.engine.renderAbsolute(
+        path.join(TEMPLATE_DIR, tpl),
         { projectName: ctx.projectName },
         path.join(moduleDir, outputName)
       );
     }
 
-    // Register routes in app.ts
     await ctx.mutate([
       {
         file: "src/app.ts",

@@ -32,6 +32,19 @@ export class TemplateEngine {
     await fs.writeFile(outputPath, content, "utf-8");
   }
 
+  async renderAbsolute(
+    absoluteTemplatePath: string,
+    context: TemplateContext,
+    outputPath: string
+  ): Promise<void> {
+    const templateContent = await fs.readFile(absoluteTemplatePath, "utf-8");
+    const template = Handlebars.compile(templateContent);
+    const content = template(context);
+    const dir = path.dirname(outputPath);
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(outputPath, content, "utf-8");
+  }
+
   async listTemplates(): Promise<string[]> {
     const files = await glob("**/*.hbs", { cwd: this.templatesDir });
     return files;

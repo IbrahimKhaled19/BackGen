@@ -1,5 +1,10 @@
 import * as path from "path";
+import { fileURLToPath } from "url";
 import type { BackGenPlugin, InstallContext } from "../../core/plugin.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const TEMPLATE_DIR = path.join(__dirname, "templates");
 
 export const clerkPlugin: BackGenPlugin = {
   name: "clerk",
@@ -31,14 +36,13 @@ export const clerkPlugin: BackGenPlugin = {
 
     for (const tpl of this.templates) {
       const outputName = tpl.replace(".hbs", "");
-      await ctx.engine.renderToFile(
-        `plugins/clerk/templates/${tpl}`,
+      await ctx.engine.renderAbsolute(
+        path.join(TEMPLATE_DIR, tpl),
         { projectName: ctx.projectName },
         path.join(moduleDir, outputName)
       );
     }
 
-    // Replace JWT auth middleware with Clerk middleware in app.ts
     await ctx.mutate([
       {
         file: "src/app.ts",
