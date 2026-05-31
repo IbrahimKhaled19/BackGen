@@ -1,0 +1,117 @@
+import { Router } from "express";
+import multer from "multer";
+import { S3Controller } from "./s3.controller.js";
+import { authMiddleware } from "../../middleware/auth.js";
+import { asyncHandler } from "../../utils/async-handler.js";
+
+const router = Router();
+const controller = new S3Controller();
+const upload = multer({ storage: multer.memoryStorage() });
+
+/**
+ * @swagger
+ * /api/storage/upload:
+ *   post:
+ *     summary: Upload a file to S3
+ *     tags: [Storage]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       201:
+ *         description: File uploaded
+ */
+router.post(
+  "/upload",
+  authMiddleware,
+  upload.single("file"),
+  asyncHandler(controller.upload.bind(controller))
+);
+
+/**
+ * @swagger
+ * /api/storage/upload-url:
+ *   post:
+ *     summary: Get a presigned URL for direct upload
+ *     tags: [Storage]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               key:
+ *                 type: string
+ *               contentType:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Presigned URL
+ */
+router.post(
+  "/upload-url",
+  authMiddleware,
+  asyncHandler(controller.getUploadUrl.bind(controller))
+);
+
+/**
+ * @swagger
+ * /api/storage/{key}:
+ *   get:
+ *     summary: Get a presigned download URL
+ *     tags: [Storage]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: key
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Presigned download URL
+ */
+router.get(
+  "/:key",
+  authMiddleware,
+  asyncHandler(controller.getPresignedUrl.bind(controller))
+);
+
+/**
+ * @swagger
+ * /api/storage/{key}:
+ *   delete:
+ *     summary: Delete a file from S3
+ *     tags: [Storage]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: key
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: File deleted
+ */
+router.delete(
+  "/:key",
+  authMiddleware,
+  asyncHandler(controller.delete.bind(controller))
+);
+
+export default router;

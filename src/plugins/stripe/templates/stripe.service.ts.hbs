@@ -1,0 +1,73 @@
+import Stripe from "stripe";
+import { env } from "../../config/env.js";
+import { ApiError } from "../../utils/api-error.js";
+import type { CreateCheckoutInput, CreateCustomerInput } from "./stripe.types.js";
+
+const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
+  apiVersion: "2024-12-18.acacia",
+});
+
+export class StripeService {
+  async createCheckout(input: CreateCheckoutInput): Promise<{ id: string; url: string }> {
+    const session = await stripe.checkout.sessions.create({
+      mode: input.mode,
+      payment_method_types: ["card"],
+      line_items: [{ price: input.priceId, quantity: 1 }],
+      success_url: input.successUrl,
+      cancel_url: input.cancelUrl,
+      customer: input.customerId,
+    });
+
+    if (!session.url) {
+      throw ApiError.internal("Failed to create checkout session");
+    }
+
+    return { id: session.id, url: session.url };
+  }
+
+  async createCustomer(input: CreateCustomerInput): Promise<{ id: string }> {
+    const customer = await stripe.customers.create({
+      email: input.email,
+      name: input.name,
+      metadata: input.metadata,
+    });
+
+    return { id: customer.id };
+  }
+
+  async getCustomer(customerId: string): Promise<Stripe.Customer> {
+    const customer = await stripe.customers.retrieve(customerId);
+    if (customer.deleted) {
+      throw ApiError.notFound("Customer has been deleted");
+    }
+    return customer as Stripe.Customer;
+  }
+
+  async constructWebhookEvent(
+    body: Buffer,
+    signature: string
+  ): Promise<Stripe.Event> {
+    return stripe.webhooks.constructEvent(
+      body,
+      signature,
+      env.STRIPE_WEBHOOK_SECRET
+    );
+  }
+
+  async handleWebhook(event: Stripe.Event): Promise<void> {
+    switch (event.type) {
+      case "checkout.session.completed":
+        // Handle successful checkout
+        break;
+      case "invoice.payment_succeeded":
+        // Handle successful payment
+        break;
+      case "invoice.payment_failed":
+        // Handle failed payment
+        break;
+      default:
+        // Unhandled event type
+        break;
+    }
+  }
+}

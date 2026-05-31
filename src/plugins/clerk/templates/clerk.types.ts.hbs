@@ -1,0 +1,15 @@
+export interface ClerkUser {
+  id: string;
+  emailAddresses: Array<{ emailAddress: string }>;
+  firstName: string | null;
+  lastName: string | null;
+  imageUrl: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface ClerkWebhookEvent {
+  type: string;
+  data: ClerkUser;
+  object: "event";
+}

@@ -1,0 +1,79 @@
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { env } from "../../config/env.js";
+import { ApiError } from "../../utils/api-error.js";
+import type { UploadFileInput, UploadedFile, PresignedUrl } from "./s3.types.js";
+
+const s3Client = new S3Client({
+  region: env.AWS_REGION,
+  credentials: {
+    accessKeyId: env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+  },
+});
+
+const BUCKET = env.AWS_S3_BUCKET;
+
+export class S3Service {
+  async upload(input: UploadFileInput): Promise<UploadedFile> {
+    const command = new PutObjectCommand({
+      Bucket: BUCKET,
+      Key: input.key,
+      Body: input.body,
+      ContentType: input.contentType,
+      Metadata: input.metadata,
+    });
+
+    await s3Client.send(command);
+
+    const url = `https://${BUCKET}.s3.${env.AWS_REGION}.amazonaws.com/${input.key}`;
+
+    return {
+      key: input.key,
+      url,
+      size: input.body.length,
+      contentType: input.contentType,
+    };
+  }
+
+  async getPresignedUrl(key: string, expiresIn = 3600): Promise<PresignedUrl> {
+    const command = new GetObjectCommand({
+      Bucket: BUCKET,
+      Key: key,
+    });
+
+    const url = await getSignedUrl(s3Client, command, { expiresIn });
+
+    return { url, key, expiresIn };
+  }
+
+  async delete(key: string): Promise<void> {
+    const command = new DeleteObjectCommand({
+      Bucket: BUCKET,
+      Key: key,
+    });
+
+    await s3Client.send(command);
+  }
+
+  async getUploadPresignedUrl(
+    key: string,
+    contentType: string,
+    expiresIn = 3600
+  ): Promise<PresignedUrl> {
+    const command = new PutObjectCommand({
+      Bucket: BUCKET,
+      Key: key,
+      ContentType: contentType,
+    });
+
+    const url = await getSignedUrl(s3Client, command, { expiresIn });
+
+    return { url, key, expiresIn };
+  }
+}

@@ -1,0 +1,116 @@
+import { Router } from "express";
+import { StripeController } from "./stripe.controller.js";
+import { authMiddleware } from "../../middleware/auth.js";
+import { validate } from "../../middleware/validate.js";
+import { createCheckoutSchema, createCustomerSchema } from "./stripe.validation.js";
+import { asyncHandler } from "../../utils/async-handler.js";
+
+const router = Router();
+const controller = new StripeController();
+
+/**
+ * @swagger
+ * /api/payments/checkout:
+ *   post:
+ *     summary: Create a Stripe checkout session
+ *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               priceId:
+ *                 type: string
+ *               successUrl:
+ *                 type: string
+ *               cancelUrl:
+ *                 type: string
+ *               mode:
+ *                 type: string
+ *                 enum: [payment, subscription]
+ *     responses:
+ *       201:
+ *         description: Checkout session created
+ */
+router.post(
+  "/checkout",
+  authMiddleware,
+  validate(createCheckoutSchema),
+  asyncHandler(controller.createCheckout.bind(controller))
+);
+
+/**
+ * @swagger
+ * /api/payments/customers:
+ *   post:
+ *     summary: Create a Stripe customer
+ *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Customer created
+ */
+router.post(
+  "/customers",
+  authMiddleware,
+  validate(createCustomerSchema),
+  asyncHandler(controller.createCustomer.bind(controller))
+);
+
+/**
+ * @swagger
+ * /api/payments/customers/{customerId}:
+ *   get:
+ *     summary: Get Stripe customer
+ *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: customerId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Customer details
+ */
+router.get(
+  "/customers/:customerId",
+  authMiddleware,
+  asyncHandler(controller.getCustomer.bind(controller))
+);
+
+/**
+ * @swagger
+ * /api/payments/webhook:
+ *   post:
+ *     summary: Stripe webhook endpoint
+ *     tags: [Payments]
+ *     responses:
+ *       200:
+ *         description: Webhook received
+ */
+router.post(
+  "/webhook",
+  express.raw({ type: "application/json" }),
+  asyncHandler(controller.webhook.bind(controller))
+);
+
+export default router;

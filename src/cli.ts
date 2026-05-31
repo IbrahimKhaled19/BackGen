@@ -36,11 +36,27 @@ program
   });
 
 program
-  .command("add [feature]")
-  .description("Add a feature to existing project")
-  .action(async (feature: string | undefined) => {
+  .command("add [plugin]")
+  .description("Add a plugin to existing project")
+  .action(async (plugin: string | undefined) => {
     const { addCommand } = await import("./commands/add.js");
-    await addCommand(feature);
+    await addCommand(plugin);
+  });
+
+program
+  .command("remove <plugin>")
+  .description("Remove a plugin from project")
+  .action(async (plugin: string) => {
+    const { removeCommand } = await import("./commands/remove.js");
+    await removeCommand(plugin);
+  });
+
+program
+  .command("sync")
+  .description("Sync project with manifest (.backgenrc.json)")
+  .action(async () => {
+    const { syncCommand } = await import("./commands/sync.js");
+    await syncCommand();
   });
 
 program

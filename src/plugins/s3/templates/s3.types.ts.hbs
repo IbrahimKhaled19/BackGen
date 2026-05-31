@@ -1,0 +1,19 @@
+export interface UploadFileInput {
+  key: string;
+  body: Buffer;
+  contentType: string;
+  metadata?: Record<string, string>;
+}
+
+export interface UploadedFile {
+  key: string;
+  url: string;
+  size: number;
+  contentType: string;
+}
+
+export interface PresignedUrl {
+  url: string;
+  key: string;
+  expiresIn: number;
+}

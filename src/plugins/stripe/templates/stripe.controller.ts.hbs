@@ -1,0 +1,32 @@
+import { Request, Response } from "express";
+import { StripeService } from "./stripe.service.js";
+import { successResponse, createdResponse } from "../../utils/response.js";
+
+const stripeService = new StripeService();
+
+export class StripeController {
+  async createCheckout(req: Request, res: Response): Promise<void> {
+    const session = await stripeService.createCheckout(req.body);
+    createdResponse(res, session);
+  }
+
+  async createCustomer(req: Request, res: Response): Promise<void> {
+    const customer = await stripeService.createCustomer(req.body);
+    createdResponse(res, customer);
+  }
+
+  async getCustomer(req: Request, res: Response): Promise<void> {
+    const customer = await stripeService.getCustomer(req.params.customerId);
+    successResponse(res, customer);
+  }
+
+  async webhook(req: Request, res: Response): Promise<void> {
+    const signature = req.headers["stripe-signature"] as string;
+    const event = await stripeService.constructWebhookEvent(
+      req.body,
+      signature
+    );
+    await stripeService.handleWebhook(event);
+    res.json({ received: true });
+  }
+}

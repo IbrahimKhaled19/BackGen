@@ -1,0 +1,28 @@
+export interface CreateCheckoutInput {
+  priceId: string;
+  customerId?: string;
+  successUrl: string;
+  cancelUrl: string;
+  mode: "payment" | "subscription";
+}
+
+export interface CheckoutSession {
+  id: string;
+  url: string;
+  customerId: string;
+  status: string;
+}
+
+export interface CreateCustomerInput {
+  email: string;
+  name?: string;
+  metadata?: Record<string, string>;
+}
+
+export interface StripeWebhookEvent {
+  id: string;
+  type: string;
+  data: {
+    object: Record<string, unknown>;
+  };
+}

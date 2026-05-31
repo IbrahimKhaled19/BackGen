@@ -1,0 +1,49 @@
+import { Router } from "express";
+import { ClerkService } from "./clerk.service.js";
+import { clerkAuthMiddleware } from "./clerk.middleware.js";
+import { successResponse } from "../../utils/response.js";
+import { asyncHandler } from "../../utils/async-handler.js";
+
+const router = Router();
+const clerkService = new ClerkService();
+
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: Get current user from Clerk
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current user details
+ */
+router.get(
+  "/me",
+  clerkAuthMiddleware,
+  asyncHandler(async (req, res) => {
+    const user = await clerkService.getUser(req.userId!);
+    successResponse(res, user);
+  })
+);
+
+/**
+ * @swagger
+ * /api/auth/webhook:
+ *   post:
+ *     summary: Clerk webhook endpoint
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Webhook received
+ */
+router.post(
+  "/webhook",
+  asyncHandler(async (req, res) => {
+    await clerkService.handleWebhook(req.body);
+    res.json({ received: true });
+  })
+);
+
+export default router;

@@ -1,0 +1,40 @@
+import { Request, Response } from "express";
+import { S3Service } from "./s3.service.js";
+import { successResponse, createdResponse, messageResponse } from "../../utils/response.js";
+
+const s3Service = new S3Service();
+
+export class S3Controller {
+  async upload(req: Request, res: Response): Promise<void> {
+    if (!req.file) {
+      res.status(400).json({ status: 400, message: "No file provided" });
+      return;
+    }
+
+    const result = await s3Service.upload({
+      key: `${Date.now()}-${req.file.originalname}`,
+      body: req.file.buffer,
+      contentType: req.file.mimetype,
+    });
+
+    createdResponse(res, result);
+  }
+
+  async getPresignedUrl(req: Request, res: Response): Promise<void> {
+    const { key } = req.params;
+    const url = await s3Service.getPresignedUrl(key);
+    successResponse(res, url);
+  }
+
+  async getUploadUrl(req: Request, res: Response): Promise<void> {
+    const { key, contentType } = req.body;
+    const url = await s3Service.getUploadPresignedUrl(key, contentType);
+    successResponse(res, url);
+  }
+
+  async delete(req: Request, res: Response): Promise<void> {
+    const { key } = req.params;
+    await s3Service.delete(key);
+    messageResponse(res, "File deleted successfully");
+  }
+}

@@ -32,6 +32,7 @@ const STEPS = [
   "templates",
   "dependencies",
   "prisma-generate",
+  "manifest",
 ];
 
 const TEMPLATES_DIR = path.resolve(__dirname, "../../templates/express");
@@ -92,6 +93,7 @@ export async function initCommand(
     await executeStep(targetDir, config, checkpoint, "templates", generateTemplates);
     await executeStep(targetDir, config, checkpoint, "dependencies", installDependencies);
     await executeStep(targetDir, config, checkpoint, "prisma-generate", runPrismaGenerate);
+    await executeStep(targetDir, config, checkpoint, "manifest", generateManifest);
 
     // Clear checkpoint on success
     await clearCheckpoint(targetDir);
@@ -262,6 +264,19 @@ async function runPrismaGenerate(dir: string, _config: ProjectConfig): Promise<v
     });
     child.on("error", reject);
   });
+}
+
+async function generateManifest(dir: string, config: ProjectConfig): Promise<void> {
+  const { writeManifest, createManifest } = await import("../core/manifest.js");
+  const manifest = createManifest(config.projectName);
+  manifest.plugins = {
+    jwt: {
+      version: "1.0.0",
+      installedAt: new Date().toISOString().split("T")[0],
+      source: "core",
+    },
+  };
+  await writeManifest(dir, manifest);
 }
 
 async function resumeGeneration(): Promise<void> {
