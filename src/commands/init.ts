@@ -203,7 +203,7 @@ async function generateTemplates(dir: string, config: ProjectConfig): Promise<vo
     { template: ".gitignore.hbs", output: ".gitignore" },
     { template: "README.md.hbs", output: "README.md" },
     { template: "vitest.config.ts.hbs", output: "vitest.config.ts" },
-    { template: ".eslintrc.json.hbs", output: ".eslintrc.json" },
+    { template: "eslint.config.js.hbs", output: "eslint.config.js" },
   ];
 
   for (const { template, output } of templates) {
