@@ -147,6 +147,7 @@ async function generateScaffold(dir: string, _config: ProjectConfig): Promise<vo
     "src/config",
     "src/middleware",
     "src/modules/auth",
+    "src/modules/admin",
     "src/services",
     "src/utils",
     "prisma",
@@ -164,14 +165,37 @@ async function generateTemplates(dir: string, config: ProjectConfig): Promise<vo
 
   // Core files
   const templates = [
+    // App & Server
     { template: "src/app.ts.hbs", output: "src/app.ts" },
     { template: "src/server.ts.hbs", output: "src/server.ts" },
+    // Config
     { template: "src/config/env.ts.hbs", output: "src/config/env.ts" },
     { template: "src/config/database.ts.hbs", output: "src/config/database.ts" },
     { template: "src/config/swagger.ts.hbs", output: "src/config/swagger.ts" },
+    // Utils
     { template: "src/utils/api-error.ts.hbs", output: "src/utils/api-error.ts" },
     { template: "src/utils/async-handler.ts.hbs", output: "src/utils/async-handler.ts" },
     { template: "src/utils/response.ts.hbs", output: "src/utils/response.ts" },
+    // Middleware
+    { template: "src/middleware/auth.ts.hbs", output: "src/middleware/auth.ts" },
+    { template: "src/middleware/role.ts.hbs", output: "src/middleware/role.ts" },
+    { template: "src/middleware/validate.ts.hbs", output: "src/middleware/validate.ts" },
+    { template: "src/middleware/error.ts.hbs", output: "src/middleware/error.ts" },
+    { template: "src/middleware/logger.ts.hbs", output: "src/middleware/logger.ts" },
+    // Services
+    { template: "src/services/logger.service.ts.hbs", output: "src/services/logger.service.ts" },
+    // Auth module
+    { template: "src/modules/auth/auth.types.ts.hbs", output: "src/modules/auth/auth.types.ts" },
+    { template: "src/modules/auth/auth.validation.ts.hbs", output: "src/modules/auth/auth.validation.ts" },
+    { template: "src/modules/auth/auth.controller.ts.hbs", output: "src/modules/auth/auth.controller.ts" },
+    { template: "src/modules/auth/auth.service.ts.hbs", output: "src/modules/auth/auth.service.ts" },
+    { template: "src/modules/auth/auth.routes.ts.hbs", output: "src/modules/auth/auth.routes.ts" },
+    { template: "src/modules/auth/auth.test.ts.hbs", output: "src/modules/auth/auth.test.ts" },
+    // Admin module
+    { template: "src/modules/admin/admin.controller.ts.hbs", output: "src/modules/admin/admin.controller.ts" },
+    { template: "src/modules/admin/admin.service.ts.hbs", output: "src/modules/admin/admin.service.ts" },
+    { template: "src/modules/admin/admin.routes.ts.hbs", output: "src/modules/admin/admin.routes.ts" },
+    // Prisma & Config
     { template: "prisma/schema.prisma.hbs", output: "prisma/schema.prisma" },
     { template: "package.json.hbs", output: "package.json" },
     { template: "tsconfig.json.hbs", output: "tsconfig.json" },
