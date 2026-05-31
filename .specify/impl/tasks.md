@@ -142,11 +142,11 @@ Blocking prerequisites for all user stories.
 
 **Independent Test:** Run `BackGen add auth` on project without auth, verify auth module installed, endpoints work. Only `auth` feature is available in MVP; other features (payment, storage, notification) return "Feature not available in MVP" error.
 
-- [ ] T068 [US3] Implement add feature command handler in src/commands/add.ts
-- [ ] T069 [US3] Create feature registry (auth, payment, storage, notification) in src/core/feature-registry.ts
-- [ ] T070 [US3] Implement feature detection (check if already installed) in src/commands/add.ts
-- [ ] T071 [US3] Implement feature installer (template copy + integration) in src/core/feature-installer.ts
-- [ ] T072 [US3] Create auth feature definition in src/features/auth.ts
+- [x] T068 [US3] Implement add feature command handler in src/commands/add.ts
+- [x] T069 [US3] Create feature registry (auth, payment, storage, notification) in src/core/feature-registry.ts
+- [x] T070 [US3] Implement feature detection (check if already installed) in src/commands/add.ts
+- [x] T071 [US3] Implement feature installer (template copy + integration) in src/core/feature-installer.ts
+- [x] T072 [US3] Create auth feature definition in src/features/auth.ts
 
 ---
 
@@ -156,15 +156,15 @@ Blocking prerequisites for all user stories.
 
 **Independent Test:** Run `BackGen doctor` on valid project, verify all checks pass. Run on broken project, verify issues reported with fix instructions.
 
-- [ ] T073 [US4] Implement doctor command handler in src/commands/doctor.ts
-- [ ] T074 [US4] Implement Node.js version check (>= 18) in src/commands/doctor.ts
-- [ ] T075 [US4] Implement npm availability check in src/commands/doctor.ts
-- [ ] T076 [US4] Implement .env completeness check in src/commands/doctor.ts
-- [ ] T077 [US4] Implement DATABASE_URL validation in src/commands/doctor.ts
-- [ ] T078 [US4] Implement Prisma schema validity check in src/commands/doctor.ts
-- [ ] T079 [US4] Implement dependency health check in src/commands/doctor.ts
-- [ ] T080 [US4] Implement database connection test in src/commands/doctor.ts
-- [ ] T081 [US4] Implement check result formatter with status icons in src/commands/doctor.ts
+- [x] T073 [US4] Implement doctor command handler in src/commands/doctor.ts
+- [x] T074 [US4] Implement Node.js version check (>= 18) in src/commands/doctor.ts
+- [x] T075 [US4] Implement npm availability check in src/commands/doctor.ts
+- [x] T076 [US4] Implement .env completeness check in src/commands/doctor.ts
+- [x] T077 [US4] Implement DATABASE_URL validation in src/commands/doctor.ts
+- [x] T078 [US4] Implement Prisma schema validity check in src/commands/doctor.ts
+- [x] T079 [US4] Implement dependency health check in src/commands/doctor.ts
+- [x] T080 [US4] Implement database connection test in src/commands/doctor.ts
+- [x] T081 [US4] Implement check result formatter with status icons in src/commands/doctor.ts
 
 ---
 
