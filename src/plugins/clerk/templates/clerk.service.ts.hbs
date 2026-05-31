@@ -5,7 +5,8 @@ import type { ClerkUser, ClerkWebhookEvent } from "./clerk.types.js";
 export class ClerkService {
   async getUser(userId: string): Promise<ClerkUser> {
     try {
-      return await clerkClient.users.getUser(userId);
+      const user = await clerkClient.users.getUser(userId);
+      return user as unknown as ClerkUser;
     } catch {
       throw ApiError.notFound("User not found");
     }
@@ -15,7 +16,7 @@ export class ClerkService {
     const users = await clerkClient.users.getUserList({
       emailAddress: [email],
     });
-    return users.data[0] ?? null;
+    return (users.data[0] as unknown as ClerkUser) ?? null;
   }
 
   async handleWebhook(event: ClerkWebhookEvent): Promise<void> {

@@ -4,7 +4,8 @@ import type { BackGenPlugin, InstallContext } from "../../core/plugin.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const TEMPLATE_DIR = path.join(__dirname, "templates");
+// Templates live in src/, not dist/ — resolve relative to project root
+const TEMPLATE_DIR = path.resolve(__dirname, "../../../src/plugins/stripe/templates");
 
 export const stripePlugin: BackGenPlugin = {
   name: "stripe",

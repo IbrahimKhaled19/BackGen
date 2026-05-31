@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { clerkClient } from "@clerk/express";
+import { getAuth } from "@clerk/express";
 import { ApiError } from "../../utils/api-error.js";
 
 declare global {
@@ -16,44 +16,32 @@ declare global {
   }
 }
 
-export async function clerkAuthMiddleware(
+export function clerkAuthMiddleware(
   req: Request,
   _res: Response,
   next: NextFunction
-): Promise<void> {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    throw ApiError.unauthorized("Missing or invalid authorization header");
-  }
-
-  const token = authHeader.split(" ")[1];
-
+): void {
   try {
-    const verified = await clerkClient.verifyToken(token);
-    const user = await clerkClient.users.getUser(verified.sub);
+    const auth = getAuth(req);
 
-    req.userId = verified.sub;
-    req.clerkUser = {
-      id: user.id,
-      email: user.emailAddresses[0]?.emailAddress ?? "",
-      firstName: user.firstName,
-      lastName: user.lastName,
-    };
+    if (!auth.userId) {
+      throw ApiError.unauthorized("Not authenticated");
+    }
 
+    req.userId = auth.userId;
     next();
-  } catch {
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
     throw ApiError.unauthorized("Invalid or expired token");
   }
 }
 
-export function requireClerkRole(...roles: string[]) {
+export function requireClerkRole(..._roles: string[]) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     if (!req.userId) {
       throw ApiError.unauthorized();
     }
-    // Role checking can be implemented via Clerk metadata
-    // For now, pass through — extend as needed
+    // Role checking via Clerk metadata — extend as needed
     next();
   };
 }

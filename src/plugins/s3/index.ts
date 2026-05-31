@@ -4,7 +4,7 @@ import type { BackGenPlugin, InstallContext } from "../../core/plugin.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const TEMPLATE_DIR = path.join(__dirname, "templates");
+const TEMPLATE_DIR = path.resolve(__dirname, "../../../src/plugins/s3/templates");
 
 export const s3Plugin: BackGenPlugin = {
   name: "s3",
