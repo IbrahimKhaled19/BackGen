@@ -1,12 +1,17 @@
 import { Command } from "commander";
-import { version } from "../package.json";
+import { readFileSync } from "fs";
+import { resolve } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = fileURLToPath(new URL(".", import.meta.url));
+const packageJson = JSON.parse(readFileSync(resolve(__dirname, "../package.json"), "utf-8"));
 
 export const program = new Command();
 
 program
   .name("backgen")
   .description("Generate production-ready backend projects in minutes")
-  .version(version);
+  .version(packageJson.version);
 
 program
   .command("init [project-name]")
