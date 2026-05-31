@@ -82,17 +82,17 @@ Blocking prerequisites for all user stories.
 
 **Independent Test:** Register user via POST /api/auth/register, login via POST /api/auth/login, access protected endpoint with Bearer token, refresh token via POST /api/auth/refresh.
 
-- [ ] T035 [US1] Create auth middleware template (JWT verification) in templates/express/src/middleware/auth.ts.hbs
-- [ ] T036 [US1] Create validation middleware template (Zod) in templates/express/src/middleware/validate.ts.hbs
-- [ ] T037 [US1] Create error handler middleware template in templates/express/src/middleware/error.ts.hbs
-- [ ] T038 [US1] Create auth service template (register, login, refresh, logout) in templates/express/src/services/auth.service.ts.hbs
-- [ ] T039 [US1] Create auth controller template in templates/express/src/modules/auth/auth.controller.ts.hbs
-- [ ] T040 [US1] Create auth validation schemas (Zod) in templates/express/src/modules/auth/auth.validation.ts.hbs
-- [ ] T041 [US1] Create auth types in templates/express/src/modules/auth/auth.types.ts.hbs
-- [ ] T042 [US1] Create auth routes template in templates/express/src/modules/auth/auth.routes.ts.hbs
-- [ ] T043 [US1] Create auth tests template in templates/express/src/modules/auth/auth.test.ts.hbs
-- [ ] T044 [US1] Create logger service template (winston) in templates/express/src/services/logger.service.ts.hbs
-- [ ] T045 [US1] Create request logging middleware (morgan) in templates/express/src/middleware/logger.ts.hbs
+- [x] T035 [US1] Create auth middleware template (JWT verification) in templates/express/src/middleware/auth.ts.hbs
+- [x] T036 [US1] Create validation middleware template (Zod) in templates/express/src/middleware/validate.ts.hbs
+- [x] T037 [US1] Create error handler middleware template in templates/express/src/middleware/error.ts.hbs
+- [x] T038 [US1] Create auth service template (register, login, refresh, logout) in templates/express/src/modules/auth/auth.service.ts.hbs
+- [x] T039 [US1] Create auth controller template in templates/express/src/modules/auth/auth.controller.ts.hbs
+- [x] T040 [US1] Create auth validation schemas (Zod) in templates/express/src/modules/auth/auth.validation.ts.hbs
+- [x] T041 [US1] Create auth types in templates/express/src/modules/auth/auth.types.ts.hbs
+- [x] T042 [US1] Create auth routes template in templates/express/src/modules/auth/auth.routes.ts.hbs
+- [x] T043 [US1] Create auth tests template in templates/express/src/modules/auth/auth.test.ts.hbs
+- [x] T044 [US1] Create logger service template (winston) in templates/express/src/services/logger.service.ts.hbs
+- [x] T045 [US1] Create request logging middleware (morgan) in templates/express/src/middleware/logger.ts.hbs
 
 ---
 

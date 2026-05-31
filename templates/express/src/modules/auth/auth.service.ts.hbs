@@ -1,0 +1,134 @@
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import { prisma } from "../../config/database.js";
+import { env } from "../../config/env.js";
+import { ApiError } from "../../utils/api-error.js";
+import type { RegisterInput, LoginInput, AuthResponse, TokenPair } from "./auth.types.js";
+
+export class AuthService {
+  async register(input: RegisterInput): Promise<AuthResponse> {
+    const existingUser = await prisma.user.findUnique({
+      where: { email: input.email },
+    });
+
+    if (existingUser) {
+      throw ApiError.conflict("Email already exists");
+    }
+
+    const hashedPassword = await bcrypt.hash(input.password, 10);
+
+    const user = await prisma.user.create({
+      data: {
+        email: input.email,
+        password: hashedPassword,
+      },
+    });
+
+    const tokens = this.generateTokens({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    await this.saveRefreshToken(user.id, tokens.refreshToken);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+      },
+      ...tokens,
+    };
+  }
+
+  async login(input: LoginInput): Promise<AuthResponse> {
+    const user = await prisma.user.findUnique({
+      where: { email: input.email },
+    });
+
+    if (!user) {
+      throw ApiError.unauthorized("Invalid credentials");
+    }
+
+    const validPassword = await bcrypt.compare(input.password, user.password);
+
+    if (!validPassword) {
+      throw ApiError.unauthorized("Invalid credentials");
+    }
+
+    const tokens = this.generateTokens({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    await this.saveRefreshToken(user.id, tokens.refreshToken);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+      },
+      ...tokens,
+    };
+  }
+
+  async refresh(refreshToken: string): Promise<{ accessToken: string }> {
+    const token = await prisma.refreshToken.findUnique({
+      where: { token: refreshToken },
+      include: { user: true },
+    });
+
+    if (!token) {
+      throw ApiError.unauthorized("Invalid refresh token");
+    }
+
+    if (token.expiresAt < new Date()) {
+      await prisma.refreshToken.delete({ where: { id: token.id } });
+      throw ApiError.unauthorized("Refresh token expired");
+    }
+
+    const accessToken = jwt.sign(
+      { userId: token.user.id, email: token.user.email, role: token.user.role },
+      env.JWT_SECRET,
+      { expiresIn: env.JWT_EXPIRES_IN }
+    );
+
+    return { accessToken };
+  }
+
+  async logout(refreshToken: string): Promise<void> {
+    await prisma.refreshToken.deleteMany({
+      where: { token: refreshToken },
+    });
+  }
+
+  private generateTokens(payload: { userId: string; email: string; role: string }): TokenPair {
+    const accessToken = jwt.sign(payload, env.JWT_SECRET, {
+      expiresIn: env.JWT_EXPIRES_IN,
+    });
+
+    const refreshToken = jwt.sign(payload, env.JWT_REFRESH_SECRET, {
+      expiresIn: env.JWT_REFRESH_EXPIRES_IN,
+    });
+
+    return { accessToken, refreshToken };
+  }
+
+  private async saveRefreshToken(userId: string, token: string): Promise<void> {
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    await prisma.refreshToken.create({
+      data: {
+        token,
+        userId,
+        expiresAt,
+      },
+    });
+  }
+}
