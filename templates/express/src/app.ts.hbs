@@ -1,0 +1,32 @@
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
+import { env } from "./config/env.js";
+import { errorHandler } from "./middleware/error.js";
+import { logger } from "./services/logger.service.js";
+import { setupSwagger } from "./config/swagger.js";
+
+const app = express();
+
+// Middleware
+app.use(helmet());
+app.use(cors());
+app.use(express.json());
+app.use(morgan("combined"));
+
+// Swagger
+setupSwagger(app);
+
+// Health check
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// Routes will be registered here by resource generator
+// {{REGISTER_ROUTES}}
+
+// Error handler (must be last)
+app.use(errorHandler);
+
+export { app };

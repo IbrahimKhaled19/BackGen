@@ -56,23 +56,23 @@ Blocking prerequisites for all user stories.
 
 **Independent Test:** Run `BackGen init my-api`, verify project structure created, `npm run lint/typecheck/test` pass, server starts, Swagger accessible at /docs, auth endpoints respond.
 
-- [ ] T018 [US1] Implement init command handler with interactive wizard and --resume flag in src/commands/init.ts
-- [ ] T019 [US1] Implement directory validation (abort if not empty) in src/commands/init.ts
-- [ ] T020 [US1] Implement project config collection via Inquirer.js prompts in src/commands/init.ts
-- [ ] T021 [US1] Create Express app setup template in templates/express/src/app.ts.hbs
-- [ ] T022 [US1] Create Express server entry point template in templates/express/src/server.ts.hbs
-- [ ] T023 [US1] Create environment validation config with Zod in templates/express/src/config/env.ts.hbs
-- [ ] T024 [US1] Create database config with Prisma client in templates/express/src/config/database.ts.hbs
-- [ ] T025 [US1] Create Prisma schema template with User and RefreshToken models in templates/express/prisma/schema.prisma.hbs
-- [ ] T026 [US1] Create package.json template with all dependencies in templates/express/package.json.hbs
-- [ ] T027 [US1] Create tsconfig.json template with strict mode in templates/express/tsconfig.json.hbs
-- [ ] T028 [US1] Create ESLint config template in templates/express/eslint.config.js.hbs
-- [ ] T029 [US1] Create Vitest config template in templates/express/vitest.config.ts.hbs
-- [ ] T030 [US1] Create .env.example template in templates/express/.env.example.hbs
-- [ ] T031 [US1] Create .gitignore template in templates/express/.gitignore.hbs
-- [ ] T032 [US1] Create README.md template in templates/express/README.md.hbs
-- [ ] T033 [US1] Implement post-generation npm install step in src/commands/init.ts
-- [ ] T034 [US1] Implement success message with next steps in src/commands/init.ts
+- [x] T018 [US1] Implement init command handler with interactive wizard and --resume flag in src/commands/init.ts
+- [x] T019 [US1] Implement directory validation (abort if not empty) in src/commands/init.ts
+- [x] T020 [US1] Implement project config collection via Inquirer.js prompts in src/commands/init.ts
+- [x] T021 [US1] Create Express app setup template in templates/express/src/app.ts.hbs
+- [x] T022 [US1] Create Express server entry point template in templates/express/src/server.ts.hbs
+- [x] T023 [US1] Create environment validation config with Zod in templates/express/src/config/env.ts.hbs
+- [x] T024 [US1] Create database config with Prisma client in templates/express/src/config/database.ts.hbs
+- [x] T025 [US1] Create Prisma schema template with User and RefreshToken models in templates/express/prisma/schema.prisma.hbs
+- [x] T026 [US1] Create package.json template with all dependencies in templates/express/package.json.hbs
+- [x] T027 [US1] Create tsconfig.json template with strict mode in templates/express/tsconfig.json.hbs
+- [x] T028 [US1] Create ESLint config template in templates/express/.eslintrc.json.hbs
+- [x] T029 [US1] Create Vitest config template in templates/express/vitest.config.ts.hbs
+- [x] T030 [US1] Create .env.example template in templates/express/.env.example.hbs
+- [x] T031 [US1] Create .gitignore template in templates/express/.gitignore.hbs
+- [x] T032 [US1] Create README.md template in templates/express/README.md.hbs
+- [x] T033 [US1] Implement post-generation npm install step in src/commands/init.ts
+- [x] T034 [US1] Implement success message with next steps in src/commands/init.ts
 
 ---
 
