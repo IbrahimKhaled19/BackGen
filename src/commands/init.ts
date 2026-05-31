@@ -132,6 +132,22 @@ async function executeStep(
   fn: (dir: string, config: ProjectConfig) => Promise<void>
 ): Promise<void> {
   await markStep(targetDir, checkpoint, stepName, "in_progress");
+
+  // Dependencies step streams output directly (no spinner)
+  if (stepName === "dependencies") {
+    try {
+      await fn(targetDir, config);
+      await markStep(targetDir, checkpoint, stepName, "complete");
+      console.log(chalk.green("✔ dependencies installed"));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      await markStep(targetDir, checkpoint, stepName, "failed", message);
+      console.log(chalk.red(`✘ dependencies failed: ${message}`));
+      throw error;
+    }
+    return;
+  }
+
   const spinner = ora(`Running: ${stepName}`).start();
 
   try {
@@ -221,8 +237,16 @@ async function generateTemplates(dir: string, config: ProjectConfig): Promise<vo
 }
 
 async function installDependencies(dir: string, _config: ProjectConfig): Promise<void> {
-  const { execSync } = await import("child_process");
-  execSync("npm install", { cwd: dir, stdio: "pipe" });
+  const { spawn } = await import("child_process");
+  console.log(chalk.gray("  Running npm install...\n"));
+  return new Promise((resolve, reject) => {
+    const child = spawn("npm", ["install"], { cwd: dir, stdio: "inherit" });
+    child.on("close", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`npm install exited with code ${code}`));
+    });
+    child.on("error", reject);
+  });
 }
 
 async function resumeGeneration(): Promise<void> {
