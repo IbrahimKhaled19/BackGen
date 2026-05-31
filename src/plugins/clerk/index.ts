@@ -78,12 +78,12 @@ export const clerkPlugin: BackGenPlugin = {
         marker: `app.use("/api/auth", authRoutes);`,
         content: `// Auth routes handled by Clerk plugin`,
       },
-      // Register Clerk routes
+      // Register Clerk routes (replaces marker completely)
       {
         file: "src/app.ts",
         operation: "replace",
         marker: "// {{REGISTER_ROUTES}}",
-        content: `import clerkRoutes from "./modules/clerk/clerk.routes.js";\napp.use("/api/auth", clerkRoutes);\n  // {{REGISTER_ROUTES}}`,
+        content: `import clerkRoutes from "./modules/clerk/clerk.routes.js";\napp.use("/api/auth", clerkRoutes);\n// {{REGISTER_ROUTES}}`,
       },
     ]);
   },
