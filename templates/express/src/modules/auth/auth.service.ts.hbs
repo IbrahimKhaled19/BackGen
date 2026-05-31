@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import jwt, { type SignOptions } from "jsonwebtoken";
 import { prisma } from "../../config/database.js";
 import { env } from "../../config/env.js";
 import { ApiError } from "../../utils/api-error.js";
@@ -95,7 +95,7 @@ export class AuthService {
     const accessToken = jwt.sign(
       { userId: token.user.id, email: token.user.email, role: token.user.role },
       env.JWT_SECRET,
-      { expiresIn: env.JWT_EXPIRES_IN }
+      { expiresIn: env.JWT_EXPIRES_IN } as SignOptions
     );
 
     return { accessToken };
@@ -110,11 +110,11 @@ export class AuthService {
   private generateTokens(payload: { userId: string; email: string; role: string }): TokenPair {
     const accessToken = jwt.sign(payload, env.JWT_SECRET, {
       expiresIn: env.JWT_EXPIRES_IN,
-    });
+    } as SignOptions);
 
     const refreshToken = jwt.sign(payload, env.JWT_REFRESH_SECRET, {
       expiresIn: env.JWT_REFRESH_EXPIRES_IN,
-    });
+    } as SignOptions);
 
     return { accessToken, refreshToken };
   }

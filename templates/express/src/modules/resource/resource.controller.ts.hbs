@@ -11,7 +11,7 @@ export class {{ResourceName}}Controller {
   }
 
   async getById(req: Request, res: Response): Promise<void> {
-    const {{resourceName}} = await service.getById(req.params.id);
+    const {{resourceName}} = await service.getById(req.params.id as string);
     successResponse(res, {{resourceName}});
   }
 
@@ -22,13 +22,13 @@ export class {{ResourceName}}Controller {
     paginatedResponse(res, items, total, page, limit);
   }
 
-  async update(req: Request, res: Response): Promise<void> {
-    const {{resourceName}} = await service.update(req.params.id, req.body);
+  async update(req: Request, res: Response): Promise Promise<void> {
+    const {{resourceName}} = await service.update(req.params.id as string, req.body);
     successResponse(res, {{resourceName}});
   }
 
   async delete(req: Request, res: Response): Promise<void> {
-    await service.delete(req.params.id);
+    await service.delete(req.params.id as string);
     messageResponse(res, "{{ResourceName}} deleted successfully");
   }
 }
