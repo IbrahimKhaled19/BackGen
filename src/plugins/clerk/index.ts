@@ -16,7 +16,7 @@ export const clerkPlugin: BackGenPlugin = {
   dependencies: ["@clerk/express"],
   devDependencies: [],
 
-  conflicts: ["jwt"],
+  // Clerk replaces JWT middleware via file mutation, no hard conflict
 
   env: {
     CLERK_SECRET_KEY: "sk_test_...",
