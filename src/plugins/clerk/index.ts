@@ -44,12 +44,28 @@ export const clerkPlugin: BackGenPlugin = {
     }
 
     await ctx.mutate([
+      // Replace JWT auth middleware import with Clerk middleware
       {
         file: "src/app.ts",
         operation: "replace",
         marker: `import { authMiddleware } from "./middleware/auth.js";`,
         content: `import { clerkAuthMiddleware as authMiddleware } from "./modules/clerk/clerk.middleware.js";`,
       },
+      // Remove JWT auth routes import
+      {
+        file: "src/app.ts",
+        operation: "replace",
+        marker: `import authRoutes from "./modules/auth/auth.routes.js";`,
+        content: `// JWT auth routes replaced by Clerk`,
+      },
+      // Remove JWT auth route registration
+      {
+        file: "src/app.ts",
+        operation: "replace",
+        marker: `app.use("/api/auth", authRoutes);`,
+        content: `// Auth routes handled by Clerk plugin`,
+      },
+      // Register Clerk routes
       {
         file: "src/app.ts",
         operation: "replace",
