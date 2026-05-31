@@ -36,17 +36,17 @@ Project initialization for BackGen CLI tool.
 
 Blocking prerequisites for all user stories.
 
-- [ ] T009 Implement Commander.js CLI skeleton with init/generate/add/doctor commands in src/cli.ts
-- [ ] T010 Create command router connecting CLI commands to handlers in src/commands/index.ts
-- [ ] T011 Implement template engine core with Handlebars loading and rendering in src/core/template-engine.ts
-- [ ] T012 Create template directory structure for Express/PostgreSQL/Prisma stack in templates/
-- [ ] T013 Implement placeholder resolution (ResourceName, resourceName, resourcePlural) in src/core/placeholders.ts
-- [ ] T014 Implement checkpoint system for generation progress in src/core/checkpoint.ts
-- [ ] T014a Implement resume command (BackGen init --resume) in src/commands/init.ts
-- [ ] T014b Implement checkpoint integrity validation on resume in src/core/checkpoint.ts
-- [ ] T015 Create shared utility: ApiError class in templates/express/src/utils/api-error.ts.hbs
-- [ ] T016 Create shared utility: async handler wrapper in templates/express/src/utils/async-handler.ts.hbs
-- [ ] T017 Create shared utility: response formatter in templates/express/src/utils/response.ts.hbs
+- [x] T009 Implement Commander.js CLI skeleton with init/generate/add/doctor commands in src/cli.ts
+- [x] T010 Create command router connecting CLI commands to handlers in src/commands/index.ts
+- [x] T011 Implement template engine core with Handlebars loading and rendering in src/core/template-engine.ts
+- [x] T012 Create template directory structure for Express/PostgreSQL/Prisma stack in templates/
+- [x] T013 Implement placeholder resolution (ResourceName, resourceName, resourcePlural) in src/core/placeholders.ts
+- [x] T014 Implement checkpoint system for generation progress in src/core/checkpoint.ts
+- [x] T014a Implement resume command (BackGen init --resume) in src/commands/init.ts
+- [x] T014b Implement checkpoint integrity validation on resume in src/core/checkpoint.ts
+- [x] T015 Create shared utility: ApiError class in templates/express/src/utils/api-error.ts.hbs
+- [x] T016 Create shared utility: async handler wrapper in templates/express/src/utils/async-handler.ts.hbs
+- [x] T017 Create shared utility: response formatter in templates/express/src/utils/response.ts.hbs
 
 ---
 
