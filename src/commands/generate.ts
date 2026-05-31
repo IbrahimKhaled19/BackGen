@@ -9,7 +9,7 @@ import { createFieldDefinitions } from "../core/field-mapper.js";
 import { addModelToSchema } from "../core/prisma-updater.js";
 import { registerRoute } from "../core/route-registrar.js";
 
-const TEMPLATES_DIR = path.resolve(import.meta.dirname, "../../templates/express");
+const TEMPLATES_DIR = path.resolve(__dirname, "../../templates/express");
 
 const RESOURCE_TEMPLATES = [
   { template: "src/modules/resource/resource.types.ts.hbs", output: "src/modules/{name}/{name}.types.ts" },

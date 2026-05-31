@@ -29,7 +29,7 @@ const STEPS = [
   "dependencies",
 ];
 
-const TEMPLATES_DIR = path.resolve(import.meta.dirname, "../../templates/express");
+const TEMPLATES_DIR = path.resolve(__dirname, "../../templates/express");
 
 export async function initCommand(
   projectName: string | undefined,
@@ -56,10 +56,10 @@ export async function initCommand(
         },
       },
     ]);
-    projectName = answer.projectName;
+    projectName = answer.projectName as string;
   }
 
-  const targetDir = path.resolve(process.cwd(), projectName);
+  const targetDir = path.resolve(process.cwd(), projectName!);
 
   // Check if directory exists and is not empty
   try {
@@ -73,13 +73,13 @@ export async function initCommand(
   }
 
   // Collect configuration
-  const config = await collectConfig(projectName);
+  const config = await collectConfig(projectName!);
 
   // Create project directory
   await fs.mkdir(targetDir, { recursive: true });
 
   // Create checkpoint
-  const checkpoint = await createCheckpoint(targetDir, projectName, STEPS);
+  const checkpoint = await createCheckpoint(targetDir, projectName!, STEPS);
 
   // Execute generation steps
   try {
@@ -90,7 +90,7 @@ export async function initCommand(
     // Clear checkpoint on success
     await clearCheckpoint(targetDir);
 
-    printSuccess(projectName, targetDir);
+    printSuccess(projectName!, targetDir);
   } catch (error) {
     console.error(chalk.red("\nGeneration failed. Run with --resume to continue."));
     throw error;
@@ -142,7 +142,7 @@ async function executeStep(
   }
 }
 
-async function generateScaffold(dir: string, config: ProjectConfig): Promise<void> {
+async function generateScaffold(dir: string, _config: ProjectConfig): Promise<void> {
   const dirs = [
     "src/config",
     "src/middleware",
@@ -242,7 +242,7 @@ async function resumeGeneration(): Promise<void> {
   printSuccess(checkpoint.projectName, dir);
 }
 
-function printSuccess(projectName: string, dir: string): void {
+function printSuccess(projectName: string, _dir: string): void {
   console.log(chalk.green.bold("\n✨ Project generated successfully!\n"));
   console.log("Next steps:\n");
   console.log(chalk.cyan(`  cd ${projectName}`));

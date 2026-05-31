@@ -4,7 +4,7 @@ import { TemplateEngine } from "./template-engine.js";
 import { registerRoute } from "./route-registrar.js";
 import type { FeatureDefinition } from "./feature-registry.js";
 
-const TEMPLATES_DIR = path.resolve(import.meta.dirname, "../../templates/express");
+const TEMPLATES_DIR = path.resolve(__dirname, "../../templates/express");
 
 export async function installFeature(
   projectDir: string,

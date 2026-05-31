@@ -45,9 +45,9 @@ export async function doctorCommand(): Promise<void> {
 
   console.log("");
   if (failed === 0) {
-    console.log(chalk.green.bold("All checks passed!"));
+    console.log(chalk.green.bold(`All ${passed} checks passed!`));
   } else {
-    console.log(chalk.red.bold(`${failed} issue(s) found.`));
+    console.log(chalk.red.bold(`${failed} of ${passed + failed} check(s) failed.`));
   }
   console.log("");
 }

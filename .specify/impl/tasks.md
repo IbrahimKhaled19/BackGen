@@ -172,15 +172,15 @@ Blocking prerequisites for all user stories.
 
 Final validation and quality assurance.
 
-- [ ] T082 Create CLI integration tests in src/__tests__/cli.test.ts
-- [ ] T083 Create template rendering tests in src/__tests__/templates.test.ts
-- [ ] T084 Create end-to-end test: init → start → hit endpoint in src/__tests__/e2e.test.ts
-- [ ] T085 Validate generated projects pass `npm run lint` without modification
-- [ ] T086 Validate generated projects pass `npm run typecheck` without modification
-- [ ] T087 Validate generated projects pass `npm run test` without modification
-- [ ] T088 Add --help and --version global options in src/cli.ts
-- [ ] T089 Add progress indicators (ora) during generation in src/commands/init.ts
-- [ ] T090 Add colored output (chalk) for success/error messages in src/utils/logger.ts
+- [x] T082 Create CLI integration tests in src/__tests__/cli.test.ts
+- [x] T083 Create template rendering tests in src/__tests__/templates.test.ts
+- [x] T084 Create end-to-end test: init → start → hit endpoint in src/__tests__/e2e.test.ts
+- [x] T085 Validate generated projects pass `npm run lint` without modification
+- [x] T086 Validate generated projects pass `npm run typecheck` without modification
+- [x] T087 Validate generated projects pass `npm run test` without modification
+- [x] T088 Add --help and --version global options in src/cli.ts
+- [x] T089 Add progress indicators (ora) during generation in src/commands/init.ts
+- [x] T090 Add colored output (chalk) for success/error messages in src/utils/logger.ts
 
 ---
 
