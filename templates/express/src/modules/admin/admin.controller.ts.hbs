@@ -1,0 +1,27 @@
+import { Request, Response } from "express";
+import { AdminService } from "./admin.service.js";
+import { successResponse } from "../../utils/response.js";
+
+const adminService = new AdminService();
+
+export class AdminController {
+  async getUsers(_req: Request, res: Response): Promise<void> {
+    const users = await adminService.getUsers();
+    successResponse(res, users);
+  }
+
+  async getUser(req: Request, res: Response): Promise<void> {
+    const user = await adminService.getUserById(req.params.id);
+    successResponse(res, user);
+  }
+
+  async updateUserRole(req: Request, res: Response): Promise<void> {
+    const user = await adminService.updateUserRole(req.params.id, req.body.role);
+    successResponse(res, user);
+  }
+
+  async deleteUser(req: Request, res: Response): Promise<void> {
+    await adminService.deleteUser(req.params.id);
+    res.status(200).json({ status: 200, message: "User deleted successfully" });
+  }
+}

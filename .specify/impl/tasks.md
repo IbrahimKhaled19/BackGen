@@ -102,15 +102,15 @@ Blocking prerequisites for all user stories.
 
 **Independent Test:** Register admin user, access admin-only endpoint, access /docs and verify all endpoints documented.
 
-- [ ] T046 [US1] Create role middleware template (RBAC check) in templates/express/src/middleware/role.ts.hbs
-- [ ] T047 [US1] Create admin routes template (user management) in templates/express/src/modules/admin/admin.controller.ts.hbs
-- [ ] T048 [US1] Create admin service template in templates/express/src/modules/admin/admin.service.ts.hbs
-- [ ] T049 [US1] Create admin routes in templates/express/src/modules/admin/admin.routes.ts.hbs
-- [ ] T050 [US1] Create Swagger config template in templates/express/src/config/swagger.ts.hbs
-- [ ] T051 [US1] Create Dockerfile template (multi-stage build) in templates/express/Dockerfile.hbs
-- [ ] T052 [US1] Create docker-compose.yml template in templates/express/docker-compose.yml.hbs
-- [ ] T053 [US1] Create .dockerignore template in templates/express/.dockerignore.hbs
-- [ ] T054 [US1] Wire all modules into app.ts template (routes, middleware, swagger) in templates/express/src/app.ts.hbs
+- [x] T046 [US1] Create role middleware template (RBAC check) in templates/express/src/middleware/role.ts.hbs
+- [x] T047 [US1] Create admin routes template (user management) in templates/express/src/modules/admin/admin.controller.ts.hbs
+- [x] T048 [US1] Create admin service template in templates/express/src/modules/admin/admin.service.ts.hbs
+- [x] T049 [US1] Create admin routes in templates/express/src/modules/admin/admin.routes.ts.hbs
+- [x] T050 [US1] Create Swagger config template in templates/express/src/config/swagger.ts.hbs
+- [x] T051 [US1] Create Dockerfile template (multi-stage build) in templates/express/Dockerfile.hbs
+- [x] T052 [US1] Create docker-compose.yml template in templates/express/docker-compose.yml.hbs
+- [x] T053 [US1] Create .dockerignore template in templates/express/.dockerignore.hbs
+- [x] T054 [US1] Wire all modules into app.ts template (routes, middleware, swagger) in templates/express/src/app.ts.hbs
 
 ---
 

@@ -1,0 +1,65 @@
+import { prisma } from "../../config/database.js";
+import { ApiError } from "../../utils/api-error.js";
+
+export class AdminService {
+  async getUsers() {
+    return prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  async getUserById(id: string) {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      throw ApiError.notFound("User not found");
+    }
+
+    return user;
+  }
+
+  async updateUserRole(id: string, role: string) {
+    const user = await prisma.user.findUnique({ where: { id } });
+
+    if (!user) {
+      throw ApiError.notFound("User not found");
+    }
+
+    return prisma.user.update({
+      where: { id },
+      data: { role: role as "ADMIN" | "USER" },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  async deleteUser(id: string) {
+    const user = await prisma.user.findUnique({ where: { id } });
+
+    if (!user) {
+      throw ApiError.notFound("User not found");
+    }
+
+    await prisma.user.delete({ where: { id } });
+  }
+}

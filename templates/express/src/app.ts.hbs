@@ -1,11 +1,12 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-import morgan from "morgan";
 import { env } from "./config/env.js";
 import { errorHandler } from "./middleware/error.js";
-import { logger } from "./services/logger.service.js";
+import { requestLogger } from "./middleware/logger.js";
 import { setupSwagger } from "./config/swagger.js";
+import authRoutes from "./modules/auth/auth.routes.js";
+import adminRoutes from "./modules/admin/admin.routes.js";
 
 const app = express();
 
@@ -13,7 +14,7 @@ const app = express();
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
-app.use(morgan("combined"));
+app.use(requestLogger);
 
 // Swagger
 setupSwagger(app);
@@ -23,7 +24,12 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// Routes will be registered here by resource generator
+// Auth routes
+app.use("/api/auth", authRoutes);
+
+// Admin routes
+app.use("/api/admin", adminRoutes);
+
 // {{REGISTER_ROUTES}}
 
 // Error handler (must be last)
