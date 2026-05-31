@@ -240,7 +240,7 @@ async function installDependencies(dir: string, _config: ProjectConfig): Promise
   const { spawn } = await import("child_process");
   console.log(chalk.gray("  Running npm install...\n"));
   return new Promise((resolve, reject) => {
-    const child = spawn("npm", ["install"], { cwd: dir, stdio: "inherit" });
+    const child = spawn("npm", ["install"], { cwd: dir, stdio: "inherit", shell: true });
     child.on("close", (code) => {
       if (code === 0) resolve();
       else reject(new Error(`npm install exited with code ${code}`));
