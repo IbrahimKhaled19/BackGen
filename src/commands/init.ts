@@ -31,6 +31,7 @@ const STEPS = [
   "scaffold",
   "templates",
   "dependencies",
+  "prisma-generate",
 ];
 
 const TEMPLATES_DIR = path.resolve(__dirname, "../../templates/express");
@@ -90,6 +91,7 @@ export async function initCommand(
     await executeStep(targetDir, config, checkpoint, "scaffold", generateScaffold);
     await executeStep(targetDir, config, checkpoint, "templates", generateTemplates);
     await executeStep(targetDir, config, checkpoint, "dependencies", installDependencies);
+    await executeStep(targetDir, config, checkpoint, "prisma-generate", runPrismaGenerate);
 
     // Clear checkpoint on success
     await clearCheckpoint(targetDir);
@@ -249,6 +251,19 @@ async function installDependencies(dir: string, _config: ProjectConfig): Promise
   });
 }
 
+async function runPrismaGenerate(dir: string, _config: ProjectConfig): Promise<void> {
+  const { spawn } = await import("child_process");
+  console.log(chalk.gray("  Running prisma generate...\n"));
+  return new Promise((resolve, reject) => {
+    const child = spawn("npx", ["prisma", "generate"], { cwd: dir, stdio: "inherit", shell: true });
+    child.on("close", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`prisma generate exited with code ${code}`));
+    });
+    child.on("error", reject);
+  });
+}
+
 async function resumeGeneration(): Promise<void> {
   const dir = process.cwd();
   const checkpoint = await loadCheckpoint(dir);
@@ -302,5 +317,6 @@ function printSuccess(projectName: string, _dir: string): void {
   console.log(chalk.cyan("  # Edit .env with your database URL and JWT secrets"));
   console.log(chalk.cyan("  npm run db:push"));
   console.log(chalk.cyan("  npm run dev\n"));
-  console.log("Swagger docs: http://localhost:3000/docs\n");
+  console.log("Swagger docs: http://localhost:3000/docs");
+  console.log("Prisma Studio: npm run db:studio\n");
 }
