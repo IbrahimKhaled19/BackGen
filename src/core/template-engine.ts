@@ -1,6 +1,7 @@
 import Handlebars from "handlebars";
 import * as fs from "fs/promises";
 import * as path from "path";
+import { glob } from "glob";
 
 export interface TemplateContext {
   [key: string]: unknown;
@@ -32,22 +33,7 @@ export class TemplateEngine {
   }
 
   async listTemplates(): Promise<string[]> {
-    return this.walkDir(this.templatesDir);
-  }
-
-  private async walkDir(dir: string): Promise<string[]> {
-    const entries = await fs.readdir(dir, { withFileTypes: true });
-    const files: string[] = [];
-
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        files.push(...(await this.walkDir(fullPath)));
-      } else {
-        files.push(path.relative(this.templatesDir, fullPath));
-      }
-    }
-
+    const files = await glob("**/*.hbs", { cwd: this.templatesDir });
     return files;
   }
 }
