@@ -26,7 +26,6 @@ export const clerkPlugin: BackGenPlugin = {
 
   templates: [
     "clerk.middleware.ts.hbs",
-    "clerk.service.ts.hbs",
     "clerk.routes.ts.hbs",
     "clerk.types.ts.hbs",
   ],
@@ -44,6 +43,20 @@ export const clerkPlugin: BackGenPlugin = {
     }
 
     await ctx.mutate([
+      // Add Clerk SDK import
+      {
+        file: "src/app.ts",
+        operation: "replace",
+        marker: `import helmet from "helmet";`,
+        content: `import helmet from "helmet";\nimport { clerkMiddleware } from "@clerk/express";`,
+      },
+      // Add clerkMiddleware() before routes (required by @clerk/express)
+      {
+        file: "src/app.ts",
+        operation: "replace",
+        marker: `app.use(requestLogger);`,
+        content: `app.use(requestLogger);\napp.use(clerkMiddleware());`,
+      },
       // Replace JWT auth middleware import with Clerk middleware
       {
         file: "src/app.ts",

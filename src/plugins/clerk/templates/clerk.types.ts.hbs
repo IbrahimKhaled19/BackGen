@@ -4,12 +4,22 @@ export interface ClerkUser {
   firstName: string | null;
   lastName: string | null;
   imageUrl: string;
+  publicMetadata: Record<string, unknown>;
   createdAt: number;
   updatedAt: number;
 }
 
 export interface ClerkWebhookEvent {
-  type: string;
+  type: "user.created" | "user.updated" | "user.deleted" | string;
   data: ClerkUser;
   object: "event";
+}
+
+export interface ClerkAuthUser {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  imageUrl: string;
+  role: string;
 }

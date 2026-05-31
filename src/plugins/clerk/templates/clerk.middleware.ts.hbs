@@ -6,16 +6,15 @@ declare global {
   namespace Express {
     interface Request {
       userId?: string;
-      clerkUser?: {
-        id: string;
-        email: string;
-        firstName: string | null;
-        lastName: string | null;
-      };
     }
   }
 }
 
+/**
+ * Clerk authentication middleware.
+ * Verifies the session token from the Authorization header.
+ * Sets req.userId with the authenticated Clerk user ID.
+ */
 export function clerkAuthMiddleware(
   req: Request,
   _res: Response,
@@ -32,16 +31,31 @@ export function clerkAuthMiddleware(
     next();
   } catch (error) {
     if (error instanceof ApiError) throw error;
-    throw ApiError.unauthorized("Invalid or expired token");
+    throw ApiError.unauthorized("Invalid or expired session");
   }
 }
 
-export function requireClerkRole(..._roles: string[]) {
-  return (req: Request, _res: Response, next: NextFunction): void => {
+/**
+ * Role-based access middleware using Clerk public metadata.
+ * Usage: requireClerkRole("admin")
+ */
+export function requireClerkRole(...roles: string[]) {
+  return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
     if (!req.userId) {
       throw ApiError.unauthorized();
     }
-    // Role checking via Clerk metadata — extend as needed
+
+    // Role checking via Clerk public metadata
+    // Set roles in Clerk Dashboard > Users > user > Public metadata
+    // Example: { "role": "admin" }
+    const { clerkClient } = await import("@clerk/express");
+    const user = await clerkClient.users.getUser(req.userId);
+    const userRole = (user.publicMetadata?.role as string) ?? "user";
+
+    if (!roles.includes(userRole)) {
+      throw ApiError.forbidden("Insufficient permissions");
+    }
+
     next();
   };
 }
