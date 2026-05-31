@@ -1,0 +1,26 @@
+export interface {{ResourceName}} {
+  id: string;
+  {{#each fields}}
+  {{this.name}}: {{this.tsType}};
+  {{/each}}
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Create{{ResourceName}}Input {
+  {{#each fields}}
+  {{this.name}}: {{this.tsType}};
+  {{/each}}
+}
+
+export interface Update{{ResourceName}}Input {
+  {{#each fields}}
+  {{this.name}}?: {{this.tsType}};
+  {{/each}}
+}
+
+export interface {{ResourceName}}Query {
+  page?: number;
+  limit?: number;
+  search?: string;
+}

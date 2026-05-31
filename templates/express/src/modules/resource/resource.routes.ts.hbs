@@ -1,0 +1,125 @@
+import { Router } from "express";
+import { {{ResourceName}}Controller } from "./resource.controller.js";
+import { authMiddleware } from "../../middleware/auth.js";
+import { validate } from "../../middleware/validate.js";
+import { create{{ResourceName}}Schema, update{{ResourceName}}Schema, get{{ResourceName}}Schema, list{{ResourceName}}Schema } from "./resource.validation.js";
+import { asyncHandler } from "../../utils/async-handler.js";
+
+const router = Router();
+const controller = new {{ResourceName}}Controller();
+
+// All resource routes require authentication
+router.use(authMiddleware);
+
+/**
+ * @swagger
+ * /api/{{resourcePlural}}:
+ *   post:
+ *     summary: Create a {{resourceName}}
+ *     tags: [{{ResourceName}}]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *     responses:
+ *       201:
+ *         description: {{ResourceName}} created
+ *       400:
+ *         description: Validation failed
+ */
+router.post("/", validate(create{{ResourceName}}Schema), asyncHandler(controller.create.bind(controller)));
+
+/**
+ * @swagger
+ * /api/{{resourcePlural}}:
+ *   get:
+ *     summary: List {{resourcePlural}}
+ *     tags: [{{ResourceName}}]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of {{resourcePlural}}
+ */
+router.get("/", validate(list{{ResourceName}}Schema), asyncHandler(controller.list.bind(controller)));
+
+/**
+ * @swagger
+ * /api/{{resourcePlural}}/{id}:
+ *   get:
+ *     summary: Get {{resourceName}} by ID
+ *     tags: [{{ResourceName}}]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: {{ResourceName}} details
+ *       404:
+ *         description: {{ResourceName}} not found
+ */
+router.get("/:id", validate(get{{ResourceName}}Schema), asyncHandler(controller.getById.bind(controller)));
+
+/**
+ * @swagger
+ * /api/{{resourcePlural}}/{id}:
+ *   patch:
+ *     summary: Update {{resourceName}}
+ *     tags: [{{ResourceName}}]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: {{ResourceName}} updated
+ *       404:
+ *         description: {{ResourceName}} not found
+ */
+router.patch("/:id", validate(update{{ResourceName}}Schema), asyncHandler(controller.update.bind(controller)));
+
+/**
+ * @swagger
+ * /api/{{resourcePlural}}/{id}:
+ *   delete:
+ *     summary: Delete {{resourceName}}
+ *     tags: [{{ResourceName}}]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: {{ResourceName}} deleted
+ *       404:
+ *         description: {{ResourceName}} not found
+ */
+router.delete("/:id", validate(get{{ResourceName}}Schema), asyncHandler(controller.delete.bind(controller)));
+
+export default router;

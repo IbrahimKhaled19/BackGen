@@ -120,19 +120,19 @@ Blocking prerequisites for all user stories.
 
 **Independent Test:** Run `BackGen generate resource Product name:string price:number`, verify all files generated (controller, service, repository, validation, types, tests, routes), Prisma schema updated, endpoints accessible.
 
-- [ ] T055 [US2] Implement generate resource command handler in src/commands/generate.ts
-- [ ] T056 [US2] Implement interactive field collection (name:type parsing) in src/commands/generate.ts
-- [ ] T057 [US2] Implement duplicate resource detection (abort if exists) in src/commands/generate.ts
-- [ ] T058 [US2] Create resource controller template (CRUD operations) in templates/express/src/modules/resource/resource.controller.ts.hbs
-- [ ] T059 [US2] Create resource service template (business logic placeholder) in templates/express/src/modules/resource/resource.service.ts.hbs
-- [ ] T060 [US2] Create resource repository template (database operations) in templates/express/src/modules/resource/resource.repository.ts.hbs
-- [ ] T061 [US2] Create resource validation template (Zod schemas) in templates/express/src/modules/resource/resource.validation.ts.hbs
-- [ ] T062 [US2] Create resource types template in templates/express/src/modules/resource/resource.types.ts.hbs
-- [ ] T063 [US2] Create resource routes template (with auth middleware) in templates/express/src/modules/resource/resource.routes.ts.hbs
-- [ ] T064 [US2] Create resource test template (unit + integration) in templates/express/src/modules/resource/resource.test.ts.hbs
-- [ ] T065 [US2] Implement Prisma schema updater — append new model block before closing of schema.prisma using string insertion after last model definition in src/core/prisma-updater.ts
-- [ ] T066 [US2] Implement route registrar — insert import statement and router.use() call into app.ts by finding existing route registration pattern and appending new resource route in src/core/route-registrar.ts
-- [ ] T067 [US2] Implement field type mapper (string/number/boolean/date → Prisma/Zod/TS types) in src/core/field-mapper.ts
+- [x] T055 [US2] Implement generate resource command handler in src/commands/generate.ts
+- [x] T056 [US2] Implement interactive field collection (name:type parsing) in src/commands/generate.ts
+- [x] T057 [US2] Implement duplicate resource detection (abort if exists) in src/commands/generate.ts
+- [x] T058 [US2] Create resource controller template (CRUD operations) in templates/express/src/modules/resource/resource.controller.ts.hbs
+- [x] T059 [US2] Create resource service template (business logic placeholder) in templates/express/src/modules/resource/resource.service.ts.hbs
+- [x] T060 [US2] Create resource repository template (database operations) in templates/express/src/modules/resource/resource.repository.ts.hbs
+- [x] T061 [US2] Create resource validation template (Zod schemas) in templates/express/src/modules/resource/resource.validation.ts.hbs
+- [x] T062 [US2] Create resource types template in templates/express/src/modules/resource/resource.types.ts.hbs
+- [x] T063 [US2] Create resource routes template (with auth middleware) in templates/express/src/modules/resource/resource.routes.ts.hbs
+- [x] T064 [US2] Create resource test template (unit + integration) in templates/express/src/modules/resource/resource.test.ts.hbs
+- [x] T065 [US2] Implement Prisma schema updater — append new model block before closing of schema.prisma using string insertion after last model definition in src/core/prisma-updater.ts
+- [x] T066 [US2] Implement route registrar — insert import statement and router.use() call into app.ts by finding existing route registration pattern and appending new resource route in src/core/route-registrar.ts
+- [x] T067 [US2] Implement field type mapper (string/number/boolean/date → Prisma/Zod/TS types) in src/core/field-mapper.ts
 
 ---
 

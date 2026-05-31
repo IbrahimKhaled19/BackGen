@@ -1,0 +1,39 @@
+import { {{ResourceName}}Repository } from "./resource.repository.js";
+import { ApiError } from "../../utils/api-error.js";
+import type { Create{{ResourceName}}Input, Update{{ResourceName}}Input, {{ResourceName}}Query } from "./resource.types.js";
+
+const repository = new {{ResourceName}}Repository();
+
+export class {{ResourceName}}Service {
+  async create(input: Create{{ResourceName}}Input) {
+    return repository.create(input);
+  }
+
+  async getById(id: string) {
+    const {{resourceName}} = await repository.findById(id);
+    if (!{{resourceName}}) {
+      throw ApiError.notFound("{{ResourceName}} not found");
+    }
+    return {{resourceName}};
+  }
+
+  async list(query: {{ResourceName}}Query) {
+    return repository.findAll(query);
+  }
+
+  async update(id: string, input: Update{{ResourceName}}Input) {
+    const {{resourceName}} = await repository.findById(id);
+    if (!{{resourceName}}) {
+      throw ApiError.notFound("{{ResourceName}} not found");
+    }
+    return repository.update(id, input);
+  }
+
+  async delete(id: string) {
+    const {{resourceName}} = await repository.findById(id);
+    if (!{{resourceName}}) {
+      throw ApiError.notFound("{{ResourceName}} not found");
+    }
+    return repository.delete(id);
+  }
+}

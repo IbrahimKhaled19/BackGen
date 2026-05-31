@@ -1,0 +1,49 @@
+import { prisma } from "../../config/database.js";
+import type { Create{{ResourceName}}Input, Update{{ResourceName}}Input, {{ResourceName}}Query } from "./resource.types.js";
+
+export class {{ResourceName}}Repository {
+  async create(data: Create{{ResourceName}}Input) {
+    return prisma.{{resourceName}}.create({ data });
+  }
+
+  async findById(id: string) {
+    return prisma.{{resourceName}}.findUnique({ where: { id } });
+  }
+
+  async findAll(query: {{ResourceName}}Query) {
+    const { page = 1, limit = 10, search } = query;
+    const skip = (page - 1) * limit;
+
+    const where = search
+      ? {
+          OR: [
+            {{#each fields}}
+            {{#if (eq this.type "string")}}
+            { {{this.name}}: { contains: search, mode: "insensitive" as const } },
+            {{/if}}
+            {{/each}}
+          ],
+        }
+      : {};
+
+    const [items, total] = await Promise.all([
+      prisma.{{resourceName}}.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.{{resourceName}}.count({ where }),
+    ]);
+
+    return { items, total };
+  }
+
+  async update(id: string, data: Update{{ResourceName}}Input) {
+    return prisma.{{resourceName}}.update({ where: { id }, data });
+  }
+
+  async delete(id: string) {
+    return prisma.{{resourceName}}.delete({ where: { id } });
+  }
+}
