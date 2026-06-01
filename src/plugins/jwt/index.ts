@@ -15,6 +15,7 @@ export const jwtPlugin: BackGenPlugin = {
 
   dependencies: ["bcryptjs", "jsonwebtoken"],
   devDependencies: ["@types/jsonwebtoken"],
+  conflicts: ["clerk"],
 
   env: {
     JWT_SECRET: "your-jwt-secret-min-32-characters-long",

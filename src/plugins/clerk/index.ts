@@ -15,6 +15,7 @@ export const clerkPlugin: BackGenPlugin = {
 
   dependencies: ["@clerk/express"],
   devDependencies: [],
+  conflicts: ["jwt"],
 
   env: {
     CLERK_SECRET_KEY: "sk_test_...",

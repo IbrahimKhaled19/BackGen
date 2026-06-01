@@ -60,8 +60,21 @@ export async function addCommand(pluginName: string | undefined): Promise<void> 
       return;
     }
 
+    // Validate conflicts across selected plugins before installing
+    const selected = answer.plugins as string[];
+    for (const name of selected) {
+      const plugin = getPlugin(name);
+      if (!plugin?.conflicts) continue;
+      const conflictWith = plugin.conflicts.filter((c) => selected.includes(c));
+      if (conflictWith.length > 0) {
+        console.error(chalk.red(`Error: "${name}" conflicts with: ${conflictWith.join(", ")}`));
+        console.log(chalk.yellow("Select only one auth provider (jwt or clerk)."));
+        process.exit(1);
+      }
+    }
+
     // Install each selected plugin
-    for (const name of answer.plugins) {
+    for (const name of selected) {
       await installPlugin(projectDir, name, installed);
     }
     return;
