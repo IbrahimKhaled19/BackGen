@@ -24,17 +24,45 @@ program
     await initCommand(projectName, options);
   });
 
-program
-  .command("generate <type> <name> [fields...]")
+// Generate command with subcommands
+const generate = program
+  .command("generate")
   .alias("g")
-  .description("Generate a resource module (e.g., backgen generate resource Product)")
-  .action(async (type: string, name: string, fields: string[]) => {
-    if (type !== "resource") {
-      console.error(`Unknown type: ${type}. Use "resource".`);
-      process.exit(1);
-    }
+  .description("Generate resources, migrations, seeds, and factories");
+
+generate
+  .command("resource <name> [fields...]")
+  .description("Generate a CRUD resource module")
+  .option("--fields <fields>", 'Fields as "name:string,price:number"')
+  .option("--relations <relations>", 'Relations as "doctor:Doctor,patient:Patient"')
+  .action(async (name: string, fields: string[], options: { fields?: string; relations?: string }) => {
     const { generateCommand } = await import("./commands/generate.js");
-    await generateCommand(name, fields);
+    await generateCommand(name, fields, options);
+  });
+
+generate
+  .command("migration [name]")
+  .description("Generate a Prisma migration")
+  .action(async (name: string | undefined) => {
+    const { migrateCommand } = await import("./commands/migrate.js");
+    await migrateCommand(name);
+  });
+
+generate
+  .command("seed <resource>")
+  .description("Generate seed data for a resource")
+  .option("--count <n>", "Number of seed records", "10")
+  .action(async (resource: string, options: { count: string }) => {
+    const { seedCommand } = await import("./commands/seed.js");
+    await seedCommand(resource, parseInt(options.count));
+  });
+
+generate
+  .command("factory <resource>")
+  .description("Generate a test factory for a resource")
+  .action(async (resource: string) => {
+    const { factoryCommand } = await import("./commands/factory.js");
+    await factoryCommand(resource);
   });
 
 program

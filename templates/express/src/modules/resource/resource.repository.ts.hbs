@@ -1,13 +1,33 @@
 import { prisma } from "../../config/database.js";
-import type { Create{{ResourceName}}Input, Update{{ResourceName}}Input, {{ResourceName}}Query } from "./resource.types.js";
+import type { Create{{ResourceName}}Input, Update{{ResourceName}}Input, {{ResourceName}}Query } from "./{{resourceName}}.types.js";
 
 export class {{ResourceName}}Repository {
   async create(data: Create{{ResourceName}}Input) {
-    return prisma.{{resourceName}}.create({ data });
+    return prisma.{{resourceName}}.create({
+      data,
+      {{#if hasRelations}}
+      include: {
+        {{#each relations}}
+        {{#if (eq this.type "belongsTo")}}
+        {{this.name}}: true,
+        {{/if}}
+        {{/each}}
+      },
+      {{/if}}
+    });
   }
 
   async findById(id: string) {
-    return prisma.{{resourceName}}.findUnique({ where: { id } });
+    return prisma.{{resourceName}}.findUnique({
+      where: { id },
+      {{#if hasRelations}}
+      include: {
+        {{#each relations}}
+        {{this.name}}: true,
+        {{/each}}
+      },
+      {{/if}}
+    });
   }
 
   async findAll(query: {{ResourceName}}Query) {
@@ -32,6 +52,13 @@ export class {{ResourceName}}Repository {
         skip,
         take: limit,
         orderBy: { createdAt: "desc" },
+        {{#if hasRelations}}
+        include: {
+          {{#each relations}}
+          {{this.name}}: true,
+          {{/each}}
+        },
+        {{/if}}
       }),
       prisma.{{resourceName}}.count({ where }),
     ]);
@@ -40,7 +67,19 @@ export class {{ResourceName}}Repository {
   }
 
   async update(id: string, data: Update{{ResourceName}}Input) {
-    return prisma.{{resourceName}}.update({ where: { id }, data });
+    return prisma.{{resourceName}}.update({
+      where: { id },
+      data,
+      {{#if hasRelations}}
+      include: {
+        {{#each relations}}
+        {{#if (eq this.type "belongsTo")}}
+        {{this.name}}: true,
+        {{/if}}
+        {{/each}}
+      },
+      {{/if}}
+    });
   }
 
   async delete(id: string) {

@@ -14,6 +14,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const TEMPLATES_DIR = path.resolve(__dirname, "../../templates/express");
 
+export interface RelationDefinition {
+  name: string;
+  type: "belongsTo" | "hasMany";
+  target: string;
+}
+
 const RESOURCE_TEMPLATES = [
   { template: "src/modules/resource/resource.types.ts.hbs", output: "src/modules/{name}/{name}.types.ts" },
   { template: "src/modules/resource/resource.validation.ts.hbs", output: "src/modules/{name}/{name}.validation.ts" },
@@ -24,9 +30,15 @@ const RESOURCE_TEMPLATES = [
   { template: "src/modules/resource/resource.test.ts.hbs", output: "src/modules/{name}/{name}.test.ts" },
 ];
 
+export interface GenerateOptions {
+  fields?: string;
+  relations?: string;
+}
+
 export async function generateCommand(
   name: string,
-  fields: string[]
+  positionalFields: string[],
+  options: GenerateOptions
 ): Promise<void> {
   console.log(chalk.blue.bold(`\n📦 BackGen - Generate Resource: ${name}\n`));
 
@@ -54,7 +66,11 @@ export async function generateCommand(
     // Directory doesn't exist, good
   }
 
-  // Collect fields if not provided
+  // Collect fields
+  let fields = positionalFields;
+  if (options.fields) {
+    fields = options.fields.split(",").map((f) => f.trim());
+  }
   if (fields.length === 0) {
     const answer = await inquirer.prompt([
       {
@@ -81,12 +97,55 @@ export async function generateCommand(
     process.exit(1);
   }
 
+  // Collect relations
+  let relations: RelationDefinition[] = [];
+  if (options.relations) {
+    relations = parseRelations(options.relations);
+  } else if (positionalFields.length > 0 || options.fields) {
+    // Non-interactive mode — skip relation prompt
+    relations = [];
+  } else {
+    // Only ask interactively if fields were also collected interactively
+    const { addRelations } = await inquirer.prompt([
+      {
+        type: "confirm",
+        name: "addRelations",
+        message: "Add relations to other models?",
+        default: false,
+      },
+    ]);
+    if (addRelations) {
+      const answer = await inquirer.prompt([
+        {
+          type: "input",
+          name: "relations",
+          message: "Enter relations (name:Type, comma-separated):",
+          validate: (input: string) => {
+            if (!input.trim()) return true;
+            const rels = input.split(",").map((r) => r.trim());
+            for (const rel of rels) {
+              if (!/^[a-zA-Z_][a-zA-Z0-9_]*\s*:\s*[A-Z][a-zA-Z0-9_]*$/.test(rel)) {
+                return `Invalid relation: "${rel}". Format: name:Type (e.g., doctor:Doctor)`;
+              }
+            }
+            return true;
+          },
+        },
+      ]);
+      if (answer.relations.trim()) {
+        relations = parseRelations(answer.relations);
+      }
+    }
+  }
+
   const placeholders = createPlaceholders(name);
   const engine = new TemplateEngine(TEMPLATES_DIR);
 
   const context = {
     ...placeholders,
     fields: fieldDefs,
+    relations,
+    hasRelations: relations.length > 0,
     projectName: path.basename(projectDir),
   };
 
@@ -104,7 +163,7 @@ export async function generateCommand(
 
     // Add model to Prisma schema
     spinner.text = "Updating Prisma schema...";
-    await addModelToSchema(projectDir, resourceName, fieldDefs);
+    await addModelToSchema(projectDir, resourceName, fieldDefs, relations);
 
     // Register routes in app.ts
     spinner.text = "Registering routes...";
@@ -122,6 +181,14 @@ export async function generateCommand(
     console.log(`    ${moduleName}.controller.ts`);
     console.log(`    ${moduleName}.routes.ts`);
     console.log(`    ${moduleName}.test.ts`);
+
+    if (relations.length > 0) {
+      console.log("\nRelations:");
+      for (const rel of relations) {
+        console.log(chalk.cyan(`  ${rel.name} → ${rel.target} (${rel.type})`));
+      }
+    }
+
     console.log("\nNext steps:");
     console.log(chalk.cyan("  npm run db:push    # Update database"));
     console.log(chalk.cyan("  npm run dev        # Start server\n"));
@@ -129,6 +196,19 @@ export async function generateCommand(
     spinner.fail("Generation failed");
     throw error;
   }
+}
+
+function parseRelations(input: string): RelationDefinition[] {
+  return input
+    .split(",")
+    .map((r) => r.trim())
+    .filter((r) => r.length > 0)
+    .map((r) => {
+      const [name, target] = r.split(":").map((s) => s.trim());
+      // Default: belongsTo for singular, hasMany for plural
+      const type: "belongsTo" | "hasMany" = target.endsWith("s") ? "hasMany" : "belongsTo";
+      return { name, type, target: toPascalCase(target) };
+    });
 }
 
 function toPascalCase(str: string): string {

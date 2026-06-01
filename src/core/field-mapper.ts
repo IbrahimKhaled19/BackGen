@@ -17,11 +17,13 @@ export function mapFieldType(type: string): {
     boolean: { prismaType: "Boolean", zodType: "z.boolean()", tsType: "boolean" },
     date: { prismaType: "DateTime", zodType: "z.coerce.date()", tsType: "Date" },
   };
-  return mapping[type] ?? { prismaType: "String", zodType: "z.string()", tsType: "string" };
+  // Alias datetime → date
+  const normalizedType = type === "datetime" ? "date" : type;
+  return mapping[normalizedType] ?? { prismaType: "String", zodType: "z.string()", tsType: "string" };
 }
 
 export function parseFieldDefinition(field: string): { name: string; type: string } | null {
-  const match = field.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*(string|number|boolean|date)$/);
+  const match = field.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*(string|number|boolean|date|datetime)$/);
   if (!match) return null;
   return { name: match[1], type: match[2] };
 }

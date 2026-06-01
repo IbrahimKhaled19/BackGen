@@ -283,6 +283,77 @@ describe("BackGen E2E", () => {
     });
   });
 
+  // ── Generate Resource with Relations ──────────────────
+
+  describe("generate resource with relations", () => {
+    beforeAll(() => {
+      cli("generate resource Appointment date:datetime status:string --relations doctor:Doctor", projectDir);
+    });
+
+    it("creates appointment module", async () => {
+      expect(await exists(path.join(projectDir, "src/modules/appointment/appointment.controller.ts"))).toBe(true);
+    });
+
+    it("adds relation fields to Prisma schema", async () => {
+      const schema = await read(path.join(projectDir, "prisma/schema.prisma"));
+      expect(schema).toContain("model Appointment");
+      expect(schema).toContain("doctorId String");
+      expect(schema).toContain("doctor Doctor @relation");
+      expect(schema).toContain("DateTime");
+    });
+
+    it("includes foreign key in validation", async () => {
+      const val = await read(path.join(projectDir, "src/modules/appointment/appointment.validation.ts"));
+      expect(val).toContain("doctorId");
+      expect(val).toContain("z.string().uuid()");
+    });
+  });
+
+  // ── Seed Generator ────────────────────────────────────
+
+  describe("generate seed", () => {
+    beforeAll(() => {
+      cli("generate seed Product --count 5", projectDir);
+    });
+
+    it("creates seed file", async () => {
+      expect(await exists(path.join(projectDir, "prisma/seeds/product.ts"))).toBe(true);
+    });
+
+    it("generates correct number of records", async () => {
+      const seed = await read(path.join(projectDir, "prisma/seeds/product.ts"));
+      expect(seed).toContain("i <= 5");
+    });
+
+    it("includes resource fields", async () => {
+      const seed = await read(path.join(projectDir, "prisma/seeds/product.ts"));
+      expect(seed).toContain("name:");
+      expect(seed).toContain("price:");
+    });
+  });
+
+  // ── Factory Generator ─────────────────────────────────
+
+  describe("generate factory", () => {
+    beforeAll(() => {
+      cli("generate factory Product", projectDir);
+    });
+
+    it("creates factory file", async () => {
+      expect(await exists(path.join(projectDir, "src/factories/product.factory.ts"))).toBe(true);
+    });
+
+    it("exports create function", async () => {
+      const factory = await read(path.join(projectDir, "src/factories/product.factory.ts"));
+      expect(factory).toContain("createProduct");
+    });
+
+    it("exports list function", async () => {
+      const factory = await read(path.join(projectDir, "src/factories/product.factory.ts"));
+      expect(factory).toContain("createProductList");
+    });
+  });
+
   // ── Sync ──────────────────────────────────────────────
 
   describe("sync", () => {
