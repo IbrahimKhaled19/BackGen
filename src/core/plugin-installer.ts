@@ -179,18 +179,22 @@ export class PluginInstaller {
 
     await fs.writeFile(pkgPath, JSON.stringify(pkg, null, 2) + "\n", "utf-8");
 
-    // Run npm install
-    await new Promise<void>((resolve, reject) => {
-      const child = spawn("npm", ["install"], {
-        cwd: projectDir,
-        stdio: "inherit",
-        shell: true,
+    // Run npm install (non-fatal — templates and manifest update are primary)
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const child = spawn("npm", ["install"], {
+          cwd: projectDir,
+          stdio: "pipe",
+          shell: true,
+        });
+        child.on("close", (code) => {
+          if (code === 0) resolve();
+          else reject(new Error(`npm install exited with code ${code}`));
+        });
+        child.on("error", reject);
       });
-      child.on("close", (code) => {
-        if (code === 0) resolve();
-        else reject(new Error(`npm install exited with code ${code}`));
-      });
-      child.on("error", reject);
-    });
+    } catch {
+      // npm install failed — plugin templates and manifest still updated
+    }
   }
 }

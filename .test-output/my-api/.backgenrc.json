@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "name": "my-api",
+    "framework": "express",
+    "database": "postgresql",
+    "orm": "prisma"
+  },
+  "plugins": {}
+}

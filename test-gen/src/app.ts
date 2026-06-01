@@ -23,7 +23,7 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// \{{REGISTER_ROUTES}}
+// {{REGISTER_ROUTES}}
 
 // Error handler (must be last)
 app.use(errorHandler);

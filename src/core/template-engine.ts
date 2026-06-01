@@ -7,6 +7,11 @@ export interface TemplateContext {
   [key: string]: unknown;
 }
 
+// Register Handlebars helpers
+Handlebars.registerHelper("eq", function (a: unknown, b: unknown) {
+  return a === b;
+});
+
 export class TemplateEngine {
   private templatesDir: string;
 

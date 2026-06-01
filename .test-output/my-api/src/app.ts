@@ -23,7 +23,9 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// \{{REGISTER_ROUTES}}
+import authRoutes from "./modules/auth/auth.routes.js";
+app.use("/api/auth", authRoutes);
+// {{REGISTER_ROUTES}}
 
 // Error handler (must be last)
 app.use(errorHandler);

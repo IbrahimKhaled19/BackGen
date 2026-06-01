@@ -19,6 +19,8 @@ const __dirname = path.dirname(__filename);
 
 export interface InitOptions {
   resume?: boolean;
+  defaults?: boolean;
+  skipInstall?: boolean;
 }
 
 interface ProjectConfig {
@@ -79,7 +81,7 @@ export async function initCommand(
   }
 
   // Collect configuration
-  const config = await collectConfig(projectName!);
+  const config = await collectConfig(projectName!, options.defaults);
 
   // Create project directory
   await fs.mkdir(targetDir, { recursive: true });
@@ -91,8 +93,10 @@ export async function initCommand(
   try {
     await executeStep(targetDir, config, checkpoint, "scaffold", generateScaffold);
     await executeStep(targetDir, config, checkpoint, "templates", generateTemplates);
-    await executeStep(targetDir, config, checkpoint, "dependencies", installDependencies);
-    await executeStep(targetDir, config, checkpoint, "prisma-generate", runPrismaGenerate);
+    if (!options.skipInstall) {
+      await executeStep(targetDir, config, checkpoint, "dependencies", installDependencies);
+      await executeStep(targetDir, config, checkpoint, "prisma-generate", runPrismaGenerate);
+    }
     await executeStep(targetDir, config, checkpoint, "manifest", generateManifest);
 
     // Clear checkpoint on success
@@ -105,7 +109,15 @@ export async function initCommand(
   }
 }
 
-async function collectConfig(projectName: string): Promise<ProjectConfig> {
+async function collectConfig(projectName: string, useDefaults?: boolean): Promise<ProjectConfig> {
+  if (useDefaults) {
+    return {
+      projectName,
+      enableRbac: false,
+      enableDocker: true,
+    };
+  }
+
   const answers = await inquirer.prompt([
     {
       type: "confirm",

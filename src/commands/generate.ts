@@ -98,7 +98,7 @@ export async function generateCommand(
 
     // Generate all resource files
     for (const { template, output } of RESOURCE_TEMPLATES) {
-      const outputPath = path.join(projectDir, output.replace("{name}", moduleName));
+      const outputPath = path.join(projectDir, output.replaceAll("{name}", moduleName));
       await engine.renderToFile(template, context, outputPath);
     }
 
