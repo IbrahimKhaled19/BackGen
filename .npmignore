@@ -6,3 +6,5 @@ docs/
 .git/
 .github/
 *.tgz
+.openclaude/
+PLAN.md
