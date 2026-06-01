@@ -74,9 +74,9 @@ program
   });
 
 program
-  .command("remove <plugin>")
+  .command("remove [plugin]")
   .description("Remove a plugin from project")
-  .action(async (plugin: string) => {
+  .action(async (plugin: string | undefined) => {
     const { removeCommand } = await import("./commands/remove.js");
     await removeCommand(plugin);
   });
