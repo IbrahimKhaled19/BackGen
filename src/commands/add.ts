@@ -22,18 +22,21 @@ export async function addCommand(pluginName: string | undefined): Promise<void> 
   console.log(chalk.blue.bold("\n🔌 BackGen - Add Plugin\n"));
 
   const projectDir = process.cwd();
+  const installed = await getInstalledPlugins(projectDir);
 
-  // If no plugin specified, show interactive selector
+  // If no plugin specified, show interactive multi-select
   if (!pluginName) {
     const categories = getCategories();
-    const choices: Array<{ name: string; value: string }> = [];
+    const choices: Array<{ name: string; value: string; disabled?: string }> = [];
 
     for (const cat of categories) {
       const plugins = getPluginsByCategory(cat);
       for (const p of plugins) {
+        const isInstalled = !!installed[p.name];
         choices.push({
           name: `${p.name} (${cat}) — ${p.description}`,
           value: p.name,
+          disabled: isInstalled ? "already installed" : undefined,
         });
       }
     }
@@ -45,17 +48,35 @@ export async function addCommand(pluginName: string | undefined): Promise<void> 
 
     const answer = await inquirer.prompt([
       {
-        type: "list",
-        name: "plugin",
-        message: "Select a plugin to install:",
+        type: "checkbox",
+        name: "plugins",
+        message: "Select plugins to install (space to select, enter to confirm):",
         choices,
       },
     ]);
-    pluginName = answer.plugin;
+
+    if (answer.plugins.length === 0) {
+      console.log(chalk.yellow("No plugins selected."));
+      return;
+    }
+
+    // Install each selected plugin
+    for (const name of answer.plugins) {
+      await installPlugin(projectDir, name, installed);
+    }
+    return;
   }
 
-  // Get plugin
-  const plugin = getPlugin(pluginName!);
+  // Single plugin specified via argument
+  await installPlugin(projectDir, pluginName, installed);
+}
+
+async function installPlugin(
+  projectDir: string,
+  pluginName: string,
+  installed: Record<string, { version: string; installedAt: string; source: string }>
+): Promise<void> {
+  const plugin = getPlugin(pluginName);
   if (!plugin) {
     console.error(chalk.red(`Error: Unknown plugin "${pluginName}".`));
     console.log("\nAvailable plugins:");
@@ -70,15 +91,13 @@ export async function addCommand(pluginName: string | undefined): Promise<void> 
     process.exit(1);
   }
 
-  // Check if already installed
-  const installed = await getInstalledPlugins(projectDir);
-  if (installed[pluginName!]) {
+  if (installed[pluginName]) {
     console.error(chalk.red(`Error: Plugin "${pluginName}" is already installed.`));
     process.exit(1);
   }
 
   // Check conflicts
-  const conflicts = checkConflicts(pluginName!, Object.keys(installed));
+  const conflicts = checkConflicts(pluginName, Object.keys(installed));
   if (conflicts.length > 0) {
     console.error(chalk.red(`Error: Plugin "${pluginName}" conflicts with: ${conflicts.join(", ")}`));
     console.log(chalk.yellow(`Remove them first: ${conflicts.map((c) => `backgen remove ${c}`).join(", ")}`));
@@ -86,7 +105,7 @@ export async function addCommand(pluginName: string | undefined): Promise<void> 
   }
 
   // Check requirements
-  const missing = checkRequirements(pluginName!, Object.keys(installed));
+  const missing = checkRequirements(pluginName, Object.keys(installed));
   if (missing.length > 0) {
     console.error(chalk.red(`Error: Plugin "${pluginName}" requires: ${missing.join(", ")}`));
     console.log(chalk.yellow(`Install them first: ${missing.map((r) => `backgen add ${r}`).join(", ")}`));
@@ -101,20 +120,19 @@ export async function addCommand(pluginName: string | undefined): Promise<void> 
     await installer.install(projectDir, plugin);
     spinner.succeed(`${pluginName} installed!`);
 
-    console.log(chalk.green(`\n✨ Plugin "${pluginName}" added!\n`));
-
     if (plugin.env) {
-      console.log("Environment variables added to .env.example:");
+      console.log("  Env vars added to .env.example:");
       for (const key of Object.keys(plugin.env)) {
-        console.log(chalk.cyan(`  ${key}`));
+        console.log(chalk.cyan(`    ${key}`));
       }
-      console.log("");
     }
 
-    console.log("Next steps:");
-    console.log(chalk.cyan("  # Edit .env with your credentials"));
-    console.log(chalk.cyan("  npm run typecheck"));
-    console.log(chalk.cyan("  npm run dev\n"));
+    // Update installed map for subsequent conflict/requirement checks
+    installed[pluginName] = {
+      version: plugin.version,
+      installedAt: new Date().toISOString().split("T")[0],
+      source: "core",
+    };
   } catch (error) {
     spinner.fail(`Failed to install ${pluginName}`);
     throw error;
