@@ -10,7 +10,7 @@ export async function addModelToSchema(
   relations: RelationDefinition[] = []
 ): Promise<void> {
   const schemaPath = path.join(projectDir, "prisma", "schema.prisma");
-  const schema = await fs.readFile(schemaPath, "utf-8");
+  let schema = await fs.readFile(schemaPath, "utf-8");
 
   // Check if model already exists
   if (schema.includes(`model ${resourceName}`)) {
@@ -25,9 +25,33 @@ export async function addModelToSchema(
     throw new Error("Invalid Prisma schema: no closing brace found");
   }
 
-  const updatedSchema = schema.slice(0, lastBrace + 1) + "\n\n" + modelBlock + "\n";
+  schema = schema.slice(0, lastBrace + 1) + "\n\n" + modelBlock + "\n";
 
-  await fs.writeFile(schemaPath, updatedSchema, "utf-8");
+  // Add inverse relation fields to target models
+  // For each belongsTo relation (e.g., Appointment belongsTo Patient),
+  // add `appointments Appointment[]` to the Patient model
+  for (const rel of relations) {
+    if (rel.type === "belongsTo") {
+      const inverseFieldName = toCamelCase(resourceName) + "s";
+      const inverseLine = `  ${inverseFieldName} ${resourceName}[]`;
+
+      // Find the target model and add the inverse field before its closing brace
+      const modelRegex = new RegExp(`(model ${rel.target} \\{[\\s\\S]*?)(\\n\\})`);
+      const match = schema.match(modelRegex);
+      if (match) {
+        const modelContent = match[1];
+        // Only add if not already present
+        if (!modelContent.includes(`${inverseFieldName} ${resourceName}[]`)) {
+          schema = schema.replace(
+            match[0],
+            modelContent + "\n" + inverseLine + "\n}"
+          );
+        }
+      }
+    }
+  }
+
+  await fs.writeFile(schemaPath, schema, "utf-8");
 }
 
 function generateModelBlock(
@@ -58,4 +82,8 @@ ${allFields}
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }`;
+}
+
+function toCamelCase(str: string): string {
+  return str.charAt(0).toLowerCase() + str.slice(1);
 }

@@ -6,9 +6,8 @@ export interface {{ResourceName}} {
   {{#each relations}}
   {{#if (eq this.type "belongsTo")}}
   {{this.name}}Id: string;
-  {{this.name}}?: {{this.target}};
   {{else}}
-  {{this.name}}?: {{this.target}}[];
+  {{this.name}}?: unknown[];
   {{/if}}
   {{/each}}
   createdAt: Date;

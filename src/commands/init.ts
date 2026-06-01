@@ -319,6 +319,9 @@ async function applyPreset(projectDir: string, presetName: string): Promise<void
       console.log(chalk.yellow(`  ⚠ ${resource.name} already exists or failed`));
     }
   }
+
+  // Run prisma generate after all models are added
+  await runPrismaGenerate(projectDir, {} as ProjectConfig);
 }
 
 async function resumeGeneration(): Promise<void> {

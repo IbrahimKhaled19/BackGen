@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
-import { {{ResourceName}}Service } from "./resource.service.js";
+import { {{ResourceName}}Service } from "./{{resourceName}}.service.js";
+import type { {{ResourceName}}Query } from "./{{resourceName}}.types.js";
 import { successResponse, createdResponse, messageResponse, paginatedResponse } from "../../utils/response.js";
 
 const service = new {{ResourceName}}Service();

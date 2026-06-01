@@ -49,6 +49,12 @@ export const s3Plugin: BackGenPlugin = {
         marker: "// {{REGISTER_ROUTES}}",
         content: `import storageRoutes from "./modules/storage/s3.routes.js";\napp.use("/api/storage", storageRoutes);\n  // {{REGISTER_ROUTES}}`,
       },
+      {
+        file: "src/config/env.ts",
+        operation: "replace",
+        marker: "LOG_LEVEL: z.enum([\"error\", \"warn\", \"info\", \"debug\"]).default(\"info\"),",
+        content: `LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),\n  AWS_ACCESS_KEY_ID: z.string().min(1),\n  AWS_SECRET_ACCESS_KEY: z.string().min(1),\n  AWS_REGION: z.string().default("us-east-1"),\n  AWS_S3_BUCKET: z.string().min(1),`,
+      },
     ]);
   },
 };

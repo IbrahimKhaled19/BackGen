@@ -72,13 +72,24 @@ export const jwtPlugin: BackGenPlugin = {
       path.join(middlewareDir, "role.ts")
     );
 
-    // Register routes in app.ts
+    // Register routes in app.ts + inject env vars + add Prisma models
     await ctx.mutate([
       {
         file: "src/app.ts",
         operation: "replace",
         marker: "// {{REGISTER_ROUTES}}",
         content: `import authRoutes from "./modules/auth/auth.routes.js";\napp.use("/api/auth", authRoutes);\n// {{REGISTER_ROUTES}}`,
+      },
+      {
+        file: "src/config/env.ts",
+        operation: "replace",
+        marker: "LOG_LEVEL: z.enum([\"error\", \"warn\", \"info\", \"debug\"]).default(\"info\"),",
+        content: `LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),\n  JWT_SECRET: z.string().min(32),\n  JWT_REFRESH_SECRET: z.string().min(32),\n  JWT_EXPIRES_IN: z.string().default("15m"),\n  JWT_REFRESH_EXPIRES_IN: z.string().default("7d"),`,
+      },
+      {
+        file: "prisma/schema.prisma",
+        operation: "append",
+        content: `\n\nmodel User {\n  id            String         @id @default(uuid())\n  email         String         @unique\n  password      String\n  role          Role           @default(USER)\n  refreshTokens RefreshToken[]\n  createdAt     DateTime       @default(now())\n  updatedAt     DateTime       @updatedAt\n}\n\nmodel RefreshToken {\n  id        String   @id @default(uuid())\n  token     String   @unique\n  userId    String\n  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)\n  expiresAt DateTime\n  createdAt DateTime @default(now())\n}\n\nenum Role {\n  ADMIN\n  USER\n}`,
       },
     ]);
   },

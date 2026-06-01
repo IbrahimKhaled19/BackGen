@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { {{ResourceName}}Controller } from "./resource.controller.js";
+import { {{ResourceName}}Controller } from "./{{resourceName}}.controller.js";
 import { authMiddleware } from "../../middleware/auth.js";
 import { validate } from "../../middleware/validate.js";
-import { create{{ResourceName}}Schema, update{{ResourceName}}Schema, get{{ResourceName}}Schema, list{{ResourceName}}Schema } from "./resource.validation.js";
+import { create{{ResourceName}}Schema, update{{ResourceName}}Schema, get{{ResourceName}}Schema, list{{ResourceName}}Schema } from "./{{resourceName}}.validation.js";
 import { asyncHandler } from "../../utils/async-handler.js";
 
 const router = Router();

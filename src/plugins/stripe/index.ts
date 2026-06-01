@@ -50,6 +50,12 @@ export const stripePlugin: BackGenPlugin = {
         marker: "// {{REGISTER_ROUTES}}",
         content: `import stripeRoutes from "./modules/stripe/stripe.routes.js";\napp.use("/api/payments", stripeRoutes);\n  // {{REGISTER_ROUTES}}`,
       },
+      {
+        file: "src/config/env.ts",
+        operation: "replace",
+        marker: "LOG_LEVEL: z.enum([\"error\", \"warn\", \"info\", \"debug\"]).default(\"info\"),",
+        content: `LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),\n  STRIPE_SECRET_KEY: z.string().min(1),\n  STRIPE_WEBHOOK_SECRET: z.string().min(1),\n  STRIPE_PUBLISHABLE_KEY: z.string().min(1),`,
+      },
     ]);
   },
 };
