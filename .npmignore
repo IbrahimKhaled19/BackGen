@@ -1,0 +1,8 @@
+src/__tests__/
+src/**/*.test.ts
+.test-output/
+.specify/
+docs/
+.git/
+.github/
+*.tgz
