@@ -21,6 +21,7 @@ export interface InitOptions {
   resume?: boolean;
   defaults?: boolean;
   skipInstall?: boolean;
+  preset?: string;
 }
 
 interface ProjectConfig {
@@ -98,6 +99,11 @@ export async function initCommand(
       await executeStep(targetDir, config, checkpoint, "prisma-generate", runPrismaGenerate);
     }
     await executeStep(targetDir, config, checkpoint, "manifest", generateManifest);
+
+    // Apply preset if specified
+    if (options.preset) {
+      await applyPreset(targetDir, options.preset);
+    }
 
     // Clear checkpoint on success
     await clearCheckpoint(targetDir);
@@ -267,6 +273,52 @@ async function generateManifest(dir: string, config: ProjectConfig): Promise<voi
   const { writeManifest, createManifest } = await import("../core/manifest.js");
   const manifest = createManifest(config.projectName);
   await writeManifest(dir, manifest);
+}
+
+async function applyPreset(projectDir: string, presetName: string): Promise<void> {
+  const { getPreset } = await import("../presets/registry.js");
+  const preset = getPreset(presetName);
+
+  if (!preset) {
+    console.error(chalk.red(`Unknown preset: "${presetName}".`));
+    console.log("\nAvailable presets:");
+    const { listPresets } = await import("../presets/registry.js");
+    for (const p of listPresets()) {
+      console.log(chalk.cyan(`  ${p.name}`) + ` — ${p.description}`);
+    }
+    process.exit(1);
+  }
+
+  const { PluginInstaller } = await import("../core/plugin-installer.js");
+  const { getPlugin } = await import("../core/plugin-registry.js");
+  const { generateCommand } = await import("./generate.js");
+  const TEMPLATES_DIR = path.resolve(__dirname, "../../templates/express");
+  const installer = new PluginInstaller(TEMPLATES_DIR);
+
+  // Install preset plugins
+  for (const pluginName of preset.plugins ?? []) {
+    const plugin = getPlugin(pluginName);
+    if (plugin) {
+      try {
+        await installer.install(projectDir, plugin);
+        console.log(chalk.green(`  ✔ ${pluginName} plugin installed`));
+      } catch {
+        console.log(chalk.yellow(`  ⚠ ${pluginName} plugin already installed or failed`));
+      }
+    }
+  }
+
+  // Generate preset resources
+  for (const resource of preset.resources) {
+    try {
+      process.chdir(projectDir);
+      await generateCommand(resource.name, resource.fields, {
+        relations: resource.relations?.join(","),
+      });
+    } catch {
+      console.log(chalk.yellow(`  ⚠ ${resource.name} already exists or failed`));
+    }
+  }
 }
 
 async function resumeGeneration(): Promise<void> {
