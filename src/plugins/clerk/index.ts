@@ -16,8 +16,6 @@ export const clerkPlugin: BackGenPlugin = {
   dependencies: ["@clerk/express"],
   devDependencies: [],
 
-  // Clerk replaces JWT middleware via file mutation, no hard conflict
-
   env: {
     CLERK_SECRET_KEY: "sk_test_...",
     CLERK_PUBLISHABLE_KEY: "pk_test_...",
@@ -50,35 +48,14 @@ export const clerkPlugin: BackGenPlugin = {
         marker: `import helmet from "helmet";`,
         content: `import helmet from "helmet";\nimport { clerkMiddleware } from "@clerk/express";`,
       },
-      // Add clerkMiddleware() before routes (required by @clerk/express)
+      // Add clerkMiddleware() before routes
       {
         file: "src/app.ts",
         operation: "replace",
         marker: `app.use(requestLogger);`,
         content: `app.use(requestLogger);\napp.use(clerkMiddleware());`,
       },
-      // Replace JWT auth middleware import with Clerk middleware
-      {
-        file: "src/app.ts",
-        operation: "replace",
-        marker: `import { authMiddleware } from "./middleware/auth.js";`,
-        content: `import { clerkAuthMiddleware as authMiddleware } from "./modules/clerk/clerk.middleware.js";`,
-      },
-      // Remove JWT auth routes import
-      {
-        file: "src/app.ts",
-        operation: "replace",
-        marker: `import authRoutes from "./modules/auth/auth.routes.js";`,
-        content: `// JWT auth routes replaced by Clerk`,
-      },
-      // Remove JWT auth route registration
-      {
-        file: "src/app.ts",
-        operation: "replace",
-        marker: `app.use("/api/auth", authRoutes);`,
-        content: `// Auth routes handled by Clerk plugin`,
-      },
-      // Register Clerk routes (replaces marker completely)
+      // Register Clerk routes
       {
         file: "src/app.ts",
         operation: "replace",

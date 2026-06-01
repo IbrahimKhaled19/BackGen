@@ -1,9 +1,11 @@
 import type { BackGenPlugin } from "./plugin.js";
+import { jwtPlugin } from "../plugins/jwt/index.js";
 import { stripePlugin } from "../plugins/stripe/index.js";
 import { s3Plugin } from "../plugins/s3/index.js";
 import { clerkPlugin } from "../plugins/clerk/index.js";
 
 const PLUGINS: Record<string, BackGenPlugin> = {
+  jwt: jwtPlugin,
   stripe: stripePlugin,
   s3: s3Plugin,
   clerk: clerkPlugin,

@@ -6,8 +6,6 @@ import { env } from "./config/env.js";
 import { errorHandler } from "./middleware/error.js";
 import { requestLogger } from "./middleware/logger.js";
 import { setupSwagger } from "./config/swagger.js";
-import authRoutes from "./modules/auth/auth.routes.js";
-import adminRoutes from "./modules/admin/admin.routes.js";
 
 const app = express();
 
@@ -24,12 +22,6 @@ setupSwagger(app);
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
-
-// Auth routes
-app.use("/api/auth", authRoutes);
-
-// Admin routes
-app.use("/api/admin", adminRoutes);
 
 // {{REGISTER_ROUTES}}
 
