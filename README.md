@@ -1,5 +1,8 @@
 # BackGen
 
+<img width="1600" height="900" alt="showcase" src="https://github.com/user-attachments/assets/cd3888d3-fa9d-4e4e-a595-4f10ae039871" />
+
+
 > Generate production-ready backend foundations so developers can focus on business logic, not boilerplate.
 
 BackGen is a CLI tool that generates complete Express.js backend projects with authentication, database, API documentation, Docker, and testing — all working out of the box.
