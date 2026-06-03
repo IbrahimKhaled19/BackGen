@@ -9,207 +9,193 @@ BackGen evolves through three stages:
 | Stage | What | Differentiator |
 |-------|------|----------------|
 | **Stage 1** | Scaffolder | CLI + templates |
-| **Stage 2** | Backend framework accelerator | Plugins + resources + presets |
+| **Stage 2** | Backend framework accelerator | Plugins + resources + presets + hardening |
 | **Stage 3** | Backend platform | Marketplace + schema-first + AI modeling |
 
 End state — developer runs:
 
 ```bash
-backgen init healthcare
+backgen init saas-core
 backgen add clerk
 backgen add stripe
 backgen add resend
 backgen add s3
 backgen add monitoring
+backgen upgrade
 backgen generate schema schema.yaml
 ```
 
-Production-ready backend in under 5 minutes.
+Production-ready multi-tenant backend in under 5 minutes.
 
 ---
 
-## Current State (V2 Complete)
+## Current State (V4 Complete)
 
 ### Architecture
 
 | Component | Status |
 |-----------|--------|
-| CLI (Commander.js) | Done |
+| CLI (Commander.js, subcommands) | Done |
 | Plugin system (interfaces, registry, installer) | Done |
-| Manifest (.backgenrc.json) | Done |
+| Manifest (.backgenrc.json, versions, source) | Done |
 | Template engine (Handlebars + eq helper) | Done |
-| File mutation API | Done |
+| File mutation API (append/prepend/replace) | Done |
 | Checkpoint/resume system | Done |
-| E2E test suite (50 tests) | Done |
+| Domain presets (5) | Done |
+| E2E test suite (59 tests) | Done |
+| npm published (`@ibrahimkhaled19/backgen`) | Done |
 
 ### Commands
 
 | Command | Description | Status |
 |---------|-------------|--------|
-| `backgen init [name]` | Generate project with interactive wizard | Done |
-| `backgen add [plugin]` | Install plugin with interactive selector | Done |
-| `backgen remove <plugin>` | Uninstall plugin | Done |
+| `backgen init [name\|preset]` | Generate project, interactive or `--defaults` | Done |
+| `backgen add [plugin...]` | Install plugins, multi-select, conflict-check | Done |
+| `backgen remove [plugin...]` | Uninstall plugins, multi-select | Done |
 | `backgen sync` | Reconcile manifest with project | Done |
-| `backgen doctor` | Project health check | Done |
-| `backgen generate resource <name>` | CRUD resource generator | Done |
+| `backgen doctor` | Health check | Done |
+| `backgen generate resource\|migration\|seed\|factory <name>` | CRUD scaffolding | Done |
 
 ### Plugins
 
-| Plugin | Category | Command | Status |
-|--------|----------|---------|--------|
-| JWT | auth | `backgen add jwt` | Done |
-| Clerk | auth | `backgen add clerk` | Done |
-| Stripe | payment | `backgen add stripe` | Done |
-| S3 | storage | `backgen add s3` | Done |
+| Plugin | Category | Status |
+|--------|----------|--------|
+| JWT | auth | Done |
+| Clerk | auth | Done (conflicts: jwt) |
+| Stripe | payment | Done |
+| S3 | storage | Done |
+
+### Domain Presets
+
+| Preset | Resources |
+|--------|-----------|
+| Healthcare | Patient, Doctor, Appointment, Prescription, MedicalRecord, Availability, Review |
+| SaaS | User, Organization, Membership, Subscription, Invoice |
+| E-commerce | Product, Category, Order, OrderItem, Cart, Payment |
+| CRM | Contact, Company, Deal, Activity, Pipeline |
+| LMS | Course, Lesson, Enrollment, Progress, Certificate |
 
 ### Init Output
 
-`backgen init` generates a bare project with:
+`backgen init` generates project with:
 - Express + TypeScript (strict mode)
 - Prisma + PostgreSQL
-- Zod validation
+- Zod validation (env, request, response)
 - Swagger/OpenAPI
 - Docker + docker-compose
 - Winston logging
 - ESLint + Vitest
 - `.backgenrc.json` manifest
 
-No auth by default. Users choose: `backgen add jwt` or `backgen add clerk`.
+No auth by default. User chooses: `backgen add jwt` or `backgen add clerk`.
 
 ---
 
-## V3: Resource Generator (NEXT)
+## V4.5: SaaS Core (Multi-Tenant Foundation)
 
-**Goal:** Make `backgen generate resource` powerful enough for real products.
+**Goal:** Multi-tenant infra without billing. SaaS shell any team can build on.
 
-**Why this is next:** Saves more real-world time than adding more providers. A developer building a healthcare app needs Appointment with Doctor/Patient relations — not a tenth auth provider.
+**Why first:** Most startups are SaaS. Multi-tenant is the hardest infra to retrofit. Ship it before billing, not after.
 
-### Features
-
-#### Relations
+**Why slimmed:** Earlier roadmap piled billing + audit into V4.5. That bloated scope. Billing + audit moved to V9 (Enterprise) where they belong.
 
 ```bash
-backgen generate resource Appointment \
-  --fields "date:datetime,status:string" \
-  --relations "doctor:Doctor,patient:Patient"
-```
-
-Generates:
-- Prisma model with `@relation` directives
-- Service with relation queries (include/select)
-- Controller with nested responses
-- Validation with foreign key schemas
-
-#### Non-Interactive Mode
-
-```bash
-backgen generate resource Product \
-  --fields "name:string,price:number,stock:number"
-```
-
-For CI/CD pipelines, AI agents, automation scripts.
-
-#### Migration Generator
-
-```bash
-backgen generate migration
-```
-
-Creates Prisma migration from schema changes.
-
-#### Seed Generator
-
-```bash
-backgen generate seed User --count 10
-```
-
-Creates seed data for development.
-
-#### Factory Generator
-
-```bash
-backgen generate factory User
-```
-
-Creates test factories for integration tests.
-
-### Implementation
-
-| Task | Description |
-|------|-------------|
-| `--fields` flag | Non-interactive field specification |
-| `--relations` flag | Relation definitions |
-| Relation parsing | `name:Type` format |
-| Prisma template update | `@relation` directives |
-| Service template update | `include`/`select` queries |
-| Validation template update | Foreign key validation |
-| Migration generator | `prisma migrate` wrapper |
-| Seed generator | Template-based seed data |
-| Factory generator | Test data factories |
-
----
-
-## V4: Domain Presets
-
-**Goal:** One command to generate a complete domain-specific backend.
-
-### Presets
-
-| Preset | Command | Resources |
-|--------|---------|-----------|
-| Healthcare | `backgen init healthcare` | Patient, Doctor, Appointment, Prescription, MedicalRecord, Availability, Review |
-| SaaS | `backgen init saas` | User, Organization, Membership, Subscription, Invoice |
-| E-commerce | `backgen init ecommerce` | Product, Category, Order, OrderItem, Cart, Payment |
-| CRM | `backgen init crm` | Contact, Company, Deal, Activity, Pipeline |
-| LMS | `backgen init lms` | Course, Lesson, Enrollment, Progress, Certificate |
-| Fintech | `backgen init fintech` | Account, Transaction, Transfer, Balance, AuditLog |
-| Marketplace | `backgen init marketplace` | Seller, Product, Order, Review, Commission |
-
-### Each Preset Includes
-
-- Domain-specific Prisma models
-- Pre-built CRUD endpoints
-- Role-based access control
-- Common integrations (auth, payments, email)
-- Seed data
-- Docker configuration
-
----
-
-## V4.5: SaaS Essentials
-
-**Goal:** The most commercially valuable preset — a huge percentage of startups are SaaS products.
-
-**Why dedicated release:** Multi-tenant SaaS is complex enough to warrant its own focus. Generic presets can't handle the nuances.
-
-```bash
-backgen init saas
+backgen init saas-core
 ```
 
 ### Includes
 
 | Component | What |
 |-----------|------|
-| Organizations | Multi-tenant org model |
-| Teams | Team membership, roles |
-| Invitations | Email invitations, accept/decline |
-| RBAC | Owner, admin, member, viewer roles |
-| Subscriptions | Plan management, upgrades |
-| Billing | Stripe integration, invoices |
-| Audit Logs | Who did what when |
-| Tenant Middleware | Automatic tenant scoping |
+| Organizations | Tenant root model, slug, settings |
+| Memberships | User↔Org join, role enum |
+| Invitations | Email invite, accept/decline, expiry |
+| Teams | Optional sub-org grouping |
+| RBAC | Owner / Admin / Member / Viewer |
+| Tenant Middleware | Auto-scope queries to `req.org` |
+| Soft Delete | `deletedAt` on tenant-scoped models |
+| Audit Trail Stub | Hook points for V9 audit plugin |
 
-### This Becomes the Flagship
+### Excludes (moved to V9)
 
-If BackGen can generate a production-ready multi-tenant SaaS foundation, that alone drives adoption.
+- Stripe billing/subscriptions
+- Invoice generation
+- Full audit log API
+- Feature flags
+- Advanced permissions (ABAC)
+
+### Init Workflow
+
+```bash
+backgen init saas-core
+backgen add jwt          # or clerk
+backgen add resend       # V6: invite emails
+backgen add stripe       # V9: billing later
+```
+
+### Why This Order
+
+SaaS Core ships a usable shell. V4.6 hardens it. V9 layers billing/audit. No rewrites.
+
+---
+
+## V4.6: Production Hardening (NEW)
+
+**Goal:** Generated apps pass first deploy. Close the gap between `npm run dev` and production.
+
+**Why this version:** Every preset in V4 generates code that works locally but fails on real deploys. Rate limits, request IDs, graceful shutdown, sanitization — table stakes. Address before adding more features.
+
+**Why before V5:** Hardening is a template concern, not a generator concern. Do it once for Prisma+Express, then port to Drizzle/Mongoose in V5.
+
+### Features
+
+| Concern | Implementation |
+|---------|----------------|
+| Rate Limiting | `express-rate-limit` per route, Redis-backed option, `/api/*` default |
+| Request ID | `x-request-id` middleware, propagate to logs + error responses |
+| Graceful Shutdown | SIGTERM/SIGINT handlers, drain connections, close Prisma |
+| Input Sanitization | `xss` + `mongo-sanitize` on body params, before Zod |
+| Soft Delete | `deletedAt DateTime?` base, query helpers (`findActive`, `softDelete`) |
+| Transactions | `prisma.$transaction` wrapper, retry on serialization failure |
+| Security Headers | `helmet` (already present), CSP, HSTS, referrer policy |
+| Health Checks | `/health` (liveness), `/ready` (DB ping, deps) |
+| Error Envelope | Consistent `{ error, code, requestId, details }` shape |
+| Timeout | Request timeout middleware (default 30s, configurable) |
+| Body Size Limit | `express.json({ limit: "1mb" })` + per-route override |
+| CORS | Strict origin allowlist from env, not `*` |
+
+### Plugins Added
+
+```bash
+backgen add ratelimit         # rate limit + Redis option
+backgen add sanitize          # XSS + NoSQL injection guard
+backgen add softdelete        # base model + helpers
+backgen add health            # /health, /ready, /metrics
+```
+
+Or all-in-one: `backgen init --hardened` flag on init.
+
+### Verification
+
+Each feature ships with:
+- Unit test
+- Integration test (supertest)
+- Load test (autocannon) for rate limit
+- Docs entry in generated README
+
+### Why Not V6
+
+V6 = DevOps tooling (CI/CD, log shipping, monitoring). V4.6 = app code. Different layer.
 
 ---
 
 ## V5: Multi-ORM Support
 
-**Goal:** Resource generators work across ORMs. Affects every future feature.
+**Goal:** Resource generators work across ORMs. Single generator abstraction, multiple backends.
 
-**Why reorder:** ORM choice impacts all code generation. Get this right before building more infrastructure.
+**Why before V8:** Schema-first (V8) needs to emit code for whichever ORM user picked. Multi-ORM is prerequisite, not parallel.
+
+**Why after V4.6:** V4.6 templates written for Prisma. Port hardening to Drizzle/Mongoose during V5. Don't harden twice.
 
 ### Supported ORMs
 
@@ -226,6 +212,8 @@ interface ResourceGenerator {
   generateModel(fields: FieldDefinition[]): string;
   generateService(resourceName: string): string;
   generateRepository(resourceName: string): string;
+  generateValidation(fields: FieldDefinition[]): string;
+  generateMigration(): Promise<string>;
 }
 ```
 
@@ -238,42 +226,58 @@ Implementations:
 
 ```bash
 backgen init my-api --orm drizzle
+backgen init my-api --orm mongoose
 backgen generate resource Product --orm prisma
 ```
+
+### Migration Concerns
+
+| Concern | Approach |
+|---------|----------|
+| Prisma → Drizzle schema | Convert directives, drop `@relation` for explicit FKs |
+| Drizzle types | `InferSelectModel`, `InferInsertModel` |
+| Mongoose | `Schema<Document>`, `Model<T>`, separate `_id` vs `id` |
+| Validation | Zod schemas remain ORM-agnostic |
+| Transactions | Drizzle `db.transaction`, Mongoose `session.withTransaction` |
+
+### Port Checklist
+
+- [ ] V4.6 hardening middleware (works for any ORM, no port)
+- [ ] Plugin env injection (ORM-agnostic)
+- [ ] File mutation API (ORM-agnostic)
+- [ ] Resource generator (per-ORM implementation)
+- [ ] Manifest schema (add `orm` field, version 1.1.0)
 
 ---
 
 ## V6: DevOps & Infrastructure
 
-**Goal:** CI/CD and observability — developers use these daily.
+**Goal:** CI/CD, logging, monitoring, background jobs. Tools developers use daily.
 
-**Why move earlier:** `backgen add ci github` and `backgen add logging pino` are used far more often than Kubernetes.
+**Why move earlier:** `backgen add ci github` and `backgen add monitoring` are first-day needs, not enterprise needs.
 
 ### CI/CD
 
 ```bash
 backgen add ci github
-```
-
-Generates `.github/workflows/ci.yml`:
-- Lint
-- Test
-- Build
-- Deploy (configurable target)
-
-```bash
 backgen add ci gitlab
 ```
+
+Generates `.github/workflows/ci.yml` (or `.gitlab-ci.yml`):
+- Lint (ESLint)
+- Typecheck (tsc --noEmit)
+- Test (vitest run)
+- Build (tsc)
+- Optional deploy step (configurable)
 
 ### Logging
 
 ```bash
 backgen add logging pino
+backgen add logging winston   # default
 ```
 
-Options:
-- Pino (fast, JSON structured)
-- Winston (flexible, transports)
+Pino faster, JSON native. Winston flexible, more transports.
 
 ### Monitoring
 
@@ -282,81 +286,95 @@ backgen add monitoring
 ```
 
 Options:
-- Prometheus metrics
-- Grafana dashboards
+- Prometheus metrics endpoint
 - OpenTelemetry tracing
 - Sentry error tracking
 
 ### Infrastructure Plugins
 
 ```bash
-backgen add jobs bullmq       # Background jobs
-backgen add ratelimit redis   # Rate limiting
-backgen add webhook           # Webhook delivery
-backgen add versioning        # API versioning
+backgen add jobs bullmq           # Background jobs (Redis)
+backgen add ratelimit redis       # Rate limiting with shared store
+backgen add webhook               # Webhook delivery + signing
+backgen add versioning            # API versioning (v1, v2 namespaces)
+backgen add email resend          # Transactional email
+backgen add email sendgrid
+backgen add email postmark
+backgen add cache redis           # Cache layer
+backgen add search meilisearch    # Full-text search
+backgen add search algolia
+backgen add queue sqs             # AWS SQS
+backgen add storage gcs           # Google Cloud Storage
 ```
+
+### Observability Defaults
+
+`backgen init` includes:
+- `/health` (liveness)
+- `/ready` (DB + Redis ping)
+- `/metrics` (Prometheus)
+- Structured logs with `requestId`
+- Error tracking hook (no-op if Sentry not configured)
 
 ---
 
-## V7: Developer Experience
+## V7: Developer Experience (Slim)
 
-**Goal:** Lifecycle commands that increase retention. Help after project creation.
+**Goal:** Lifecycle commands that keep developers in the BackGen ecosystem.
 
-**Why dedicated release:** Doctor, sync, upgrade, graph — these keep developers in the BackGen ecosystem long after init.
+**Why slimmed:** Earlier roadmap had `graph`, `codemod`, `upgrade`. First two were speculative. Cut. Focus on commands with clear ROI.
 
 ### Commands
 
-| Command | Purpose |
-|---------|---------|
-| `backgen doctor` | Health check (already done) |
-| `backgen sync` | Reconcile manifest (already done) |
-| `backgen upgrade` | Upgrade templates, dependencies |
-| `backgen graph` | Visualize module dependencies |
-| `backgen codemod` | Apply code modifications |
+| Command | Status | Purpose |
+|---------|--------|---------|
+| `backgen doctor` | Done | Health check |
+| `backgen sync` | Done | Reconcile manifest |
+| `backgen upgrade` | Planned | Upgrade templates + deps safely |
+| `backgen doctor --fix` | Planned | Auto-fix common issues |
 
 ### Upgrade System
 
 ```bash
 backgen upgrade
+backgen upgrade --patch
+backgen upgrade --plugin stripe
 ```
 
-- Compare current templates with installed versions
-- Apply safe migrations
+- Compare installed plugin versions with latest bundled
 - Show diff before applying
-- Rollback support
+- Dry-run by default
+- Rollback via `backgen upgrade --rollback`
+- Backward-compatible manifest migrations
 
-### Dependency Graph
-
-```bash
-backgen graph
-```
-
-Outputs:
-```
-auth.controller
-  → auth.service
-    → prisma (database)
-    → jwt (token)
-  → auth.validation
-    → zod
-```
-
-### Code Mods
+### Doctor Enhancements
 
 ```bash
-backgen codemod add-swagger-tags
-backgen codemod upgrade-express-5
+backgen doctor           # health report
+backgen doctor --fix     # auto-fix: missing .env keys, prisma generate, etc.
+backgen doctor --strict  # exit 1 on warnings
 ```
 
-Automated code transformations.
+Checks expand to:
+- Plugin health (env vars present, deps installed)
+- Schema drift (manifest vs project state)
+- Security (secrets in env, no hardcoded keys)
+- Performance (bundle size, dep count)
+
+### Cut From Roadmap
+
+- `backgen graph` — text-based dep graph, low ROI, defer to V8
+- `backgen codemod` — needs stable AST transforms, defer until plugin pattern stabilizes
 
 ---
 
 ## V8: Schema-First Development
 
-**Goal:** Define entire backend in YAML, generate everything.
+**Goal:** Define entire backend in YAML. Generate everything.
 
-**Why huge:** This is the kind of feature teams pay for. Define domain once, get complete backend.
+**Why after V5:** Generator abstraction needed to emit code for Prisma/Drizzle/Mongoose. Multi-ORM is prerequisite.
+
+**Why huge:** Teams will pay for this. Define domain once, get complete backend. Closer to a product than a CLI.
 
 ### Schema Format
 
@@ -371,6 +389,7 @@ project:
 plugins:
   - jwt
   - stripe
+  - resend
 
 resources:
   Patient:
@@ -394,61 +413,79 @@ resources:
   Appointment:
     fields:
       date: datetime
-      status: string
-      notes: string
+      status: enum(Scheduled|Completed|Cancelled)
+      notes: text
     relations:
       patient: Patient
       doctor: Doctor
-
-relations:
-  Appointment:
-    patient: Patient (belongsTo)
-    doctor: Doctor (belongsTo)
 ```
 
 ### Command
 
 ```bash
 backgen generate schema backgen.yaml
+backgen schema diff
+backgen schema validate
+backgen schema apply
 ```
 
 Generates:
 - All Prisma models with relations
-- All CRUD endpoints
-- All validation schemas
-- All tests
+- All CRUD endpoints (controller, service, validation, routes)
+- All tests (unit + integration)
 - Swagger documentation
 - Seed data
+- Migration plan
 
-### OpenAPI Import
+### Imports
 
 ```bash
 backgen import openapi api.yaml
+backgen import prisma schema.prisma
+backgen import postman collection.json
 ```
 
-Generates routes, controllers, validation, DTOs, tests from OpenAPI spec.
+Reverse: given existing schema, generate BackGen project.
 
-### Prisma Import
+### Drift Detection
 
 ```bash
-backgen import prisma schema.prisma
+backgen schema diff
 ```
 
-Generates services, controllers, routes, validation from existing Prisma schema.
+Output:
+```
+- Appointment.status: enum(Scheduled|Completed|Cancelled) → string
++ Patient.middleName: string?
++ new resource: Insurance
+```
+
+Apply with `backgen schema apply` (with confirmation).
+
+### Why Now
+
+V4.5 (multi-tenant) + V5 (multi-ORM) + V6 (plugins) + V7 (upgrade) = stable foundation. V8 layers declarative generation on top.
 
 ---
 
 ## V9: Enterprise Features
 
-### Multi-Tenant
+**Goal:** Move billing, audit, advanced permissions out of V4.5 into proper Enterprise tier.
+
+**Why this version:** SaaS Core (V4.5) shipped without billing. Teams that need billing layer it in here. Audit + flags + advanced RBAC round out the platform.
+
+### Billing (moved from V4.5)
 
 ```bash
-backgen add tenancy
+backgen add billing stripe
 ```
 
-- Tenant model, organization, membership, invitation
-- Tenant-scoped queries
-- Tenant middleware
+- Plan model (free, pro, enterprise)
+- Subscription state machine
+- Webhook handler (subscription.created/updated/cancelled)
+- Invoice generation
+- Usage-based pricing support
+- Customer portal link
 
 ### Audit Logging
 
@@ -456,9 +493,11 @@ backgen add tenancy
 backgen add audit
 ```
 
-- User actions, resource changes, auth events
-- IP addresses, user agents
-- Audit log API
+- Auto-capture: create, update, delete on tagged models
+- Auth events (login, logout, password change)
+- IP + user agent
+- Audit log API (`GET /audit-logs?resource=Patient&userId=...`)
+- Export to S3/Postgres
 
 ### Feature Flags
 
@@ -466,146 +505,221 @@ backgen add audit
 backgen add flags
 ```
 
-- `isFeatureEnabled("new-dashboard")`
+- `isFeatureEnabled("new-dashboard")` runtime check
 - Flag management API
 - Percentage rollouts
+- User/segment targeting
+- A/B test variant assignment
 
-### Permissions
+### Advanced Permissions (ABAC)
 
 ```bash
 backgen add permissions
 ```
 
-- RBAC, ABAC
-- Permission middleware
-- Role hierarchy
+- Attribute-based access control
+- Permission rules as code (`can('read', 'Patient', { owner: user.id })`)
+- Policy evaluation middleware
+- Role hierarchy (Owner > Admin > Member > Viewer + custom)
+
+### Why Not V4.5
+
+V4.5 was bloated. Splitting:
+- V4.5 = tenant infra
+- V9 = money (billing), trust (audit), flexibility (flags, ABAC)
 
 ---
 
-## V10: AI-Friendly Features
+## V10: Plugin Authoring (NEW)
 
-### Explain
+**Goal:** Make plugin authoring a first-class workflow. No marketplace (V11) without authors.
 
-```bash
-backgen explain UserService
-```
+**Why this version:** Marketplace without authoring tools = empty shelf. V10 ships the toolkit, V11 ships the shelf.
 
-Explains generated code in plain English.
-
-### Refactor
+### Plugin Template
 
 ```bash
-backgen refactor auth
+backgen create plugin my-plugin
 ```
 
-Upgrades module architecture with breaking change detection.
-
-### Review
-
-```bash
-backgen review
+Generates:
+```
+my-plugin/
+  index.ts               # BackGenPlugin export
+  templates/             # Handlebars templates
+  src/
+  __tests__/             # Plugin test fixtures
+  README.md
+  backgen.plugin.json    # Manifest
+  package.json
+  tsconfig.json
 ```
 
-Checks architecture violations, security issues, missing tests.
+### Authoring Commands
 
-### Generate from Prompt
+| Command | Purpose |
+|---------|---------|
+| `backgen create plugin <name>` | Scaffold plugin package |
+| `backgen plugin validate` | Lint plugin structure |
+| `backgen plugin test` | Run plugin tests in isolated project |
+| `backgen plugin publish` | Publish to npm with `backgen-plugin` keyword |
+| `backgen plugin docs` | Generate plugin docs from templates + manifest |
 
-```bash
-backgen generate module \
-  --prompt "Appointment booking system"
-```
+### Test Fixtures
 
-Suggests: Appointment, Schedule, Doctor, Patient, Availability.
+Standardized test harness:
+- Isolated project per test
+- Mock `InstallContext`
+- Snapshot test for generated files
+- Diff test for file mutations
+- Manifest assertions
 
----
+### Manifest Schema
 
-## V11: Kubernetes
-
-```bash
-backgen add kubernetes
-```
-
-- deployment.yaml, service.yaml, ingress.yaml
-- configmap.yaml, secret.yaml
-- Helm chart (optional)
-
----
-
-## V12: Marketplace Ecosystem
-
-The long-term differentiator.
-
-### Community Plugins
-
-```bash
-backgen marketplace
-backgen add @backgen/stripe
-backgen add @backgen/clerk
-backgen add @company/custom-auth
-```
-
-### Plugin Structure
-
-```
-packages/
-  plugin-stripe/
-    index.ts
-    templates/
-```
-
-Each plugin exports:
-```ts
-export default stripePlugin;
-```
-
-### Plugin Interface
-
-```ts
-interface BackGenPlugin {
-  name: string;
-  category: string;
-  description: string;
-  version: string;
-
-  dependencies?: string[];
-  devDependencies?: string[];
-  requires?: string[];
-  conflicts?: string[];
-
-  env?: Record<string, string>;
-  templates: string[];
-
-  install(ctx: InstallContext): Promise<void>;
-  uninstall?(ctx: InstallContext): Promise<void>;
-  upgrade?(ctx: UpgradeContext): Promise<void>;
-}
-```
-
-### Manifest
-
+Versioned:
 ```json
 {
+  "schemaVersion": "1.0.0",
+  "name": "@acme/stripe-extras",
   "version": "1.0.0",
-  "project": {
-    "name": "my-api",
-    "framework": "express",
-    "database": "postgres",
-    "orm": "prisma"
-  },
-  "plugins": {
-    "stripe": {
-      "version": "1.0.0",
-      "installedAt": "2026-06-01",
-      "source": "core"
-    },
-    "@company/custom-auth": {
-      "version": "2.1.0",
-      "installedAt": "2026-06-01",
-      "source": "community"
-    }
+  "category": "payment",
+  "compatibility": {
+    "backgen": ">=1.5.0"
   }
 }
 ```
+
+Breaking changes get `schemaVersion: "2.0.0"`.
+
+### Documentation Site
+
+- Plugin authoring guide
+- Template API reference
+- Manifest schema reference
+- Example plugins (community-contributed)
+- Plugin review checklist
+
+### Why Before Marketplace
+
+Marketplace (V11) needs:
+- Plugin template (V10)
+- Validation (V10)
+- Test harness (V10)
+- Docs (V10)
+
+Without these, marketplace = npm search with extra steps.
+
+---
+
+## V11: Marketplace Ecosystem
+
+**Goal:** Community plugin discovery + install. The long-term differentiator.
+
+**Why after V10:** See above. Can't curate what users can't author.
+
+```bash
+backgen marketplace
+backgen marketplace search "auth"
+backgen add @backgen/stripe-extras
+backgen add @company/custom-auth
+backgen plugin publish
+```
+
+### Registry
+
+Central plugin registry (separate service):
+- Plugin metadata + version history
+- Search by category, framework, ORM
+- Compatibility matrix
+- Download counts + ratings
+- Verified publisher badges
+
+### Curation
+
+- Automated checks: manifest valid, tests pass, security scan
+- Manual review for "verified" badge
+- Deprecation policy (12-month support window)
+- Yanking for security issues
+
+### Plugin Lifecycle
+
+```bash
+backgen plugin publish       # → registry
+backgen plugin unpublish     # soft delete, 30-day grace
+backgen plugin deprecate     # mark old versions
+backgen plugin transfer      # change ownership
+```
+
+### Revenue (Optional)
+
+- Free tier: unlimited community plugins
+- Verified badge: paid review
+- Featured placement: sponsored
+
+Not in scope for V11 initial release. Add if traction.
+
+---
+
+## V12: AI-Assisted Scaffolding (Stretch)
+
+**Goal:** One unique AI feature. Defer everything else to Cursor/Copilot.
+
+**Why demoted:** Earlier roadmap had `backgen explain`, `backgen refactor`, `backgen review`. All compete with Cursor/Copilot and lose. Keep only what BackGen can do better.
+
+**Why kept:** Schema-aware AI generation is genuinely valuable. BackGen has the schema context; general AI tools don't.
+
+### In Scope
+
+```bash
+backgen suggest
+```
+
+Reads current project state, suggests:
+- Missing resources (e.g., User model has no `sessions` table)
+- Missing relations (e.g., Appointment has no `cancellationReason` field)
+- Missing plugins (e.g., no rate limiting on `/api/auth/*`)
+- Missing tests (e.g., 3 resources have no integration tests)
+
+```bash
+backgen generate module --prompt "Appointment booking with reminders"
+```
+
+Suggests:
+- Appointment, Reminder, Schedule, Doctor, Patient, Availability
+- Auto-generates with sensible defaults
+- User reviews + applies
+
+### Out of Scope (defer to general AI tools)
+
+- `backgen explain` — Cursor does this
+- `backgen refactor` — Cursor does this
+- `backgen review` — Cursor/PR review tools do this
+- Code completion — never compete with Copilot
+
+### Why This Is The Only AI Feature
+
+BackGen has schema context. Use it. Don't try to be a general AI coding assistant.
+
+---
+
+## Production Gaps Tracking
+
+Production hardening items from V4 audit, mapped to V4.6:
+
+| Gap | V4.6 Feature |
+|-----|--------------|
+| No rate limiting | `backgen add ratelimit` |
+| No request ID | middleware + logger integration |
+| No graceful shutdown | SIGTERM handler + Prisma disconnect |
+| No input sanitization | `backgen add sanitize` |
+| No soft delete | `backgen add softdelete` |
+| No transaction wrapper | `prisma.$transaction` helper |
+| No health check | `/health`, `/ready` |
+| Generic CORS | Strict origin allowlist |
+| No timeout | Request timeout middleware |
+| No body size limit | `express.json({ limit })` |
+
+All addressed in V4.6. None deferred to V6+.
 
 ---
 
@@ -615,17 +729,18 @@ interface BackGenPlugin {
 |---------|-------|--------------|-------|
 | V1 | Foundation | CLI, templates, init, generate resource | Scaffolder |
 | V2 | Plugin System | Plugins, manifest, add/remove/sync | Scaffolder |
-| **V3** | **Resource Generator** | **Relations, --fields, migrations, seeds** | **Accelerator** |
+| V3 | Resource Generator | Relations, --fields, migrations, seeds | Accelerator |
 | V4 | Domain Presets | healthcare, saas, ecommerce, crm, lms | Accelerator |
-| V4.5 | SaaS Essentials | Multi-tenant, orgs, teams, billing, audit | Accelerator |
+| **V4.5** | **SaaS Core** | **Multi-tenant, orgs, teams, RBAC (no billing)** | **Accelerator** |
+| **V4.6** | **Production Hardening** | **Rate limit, request ID, graceful shutdown, soft delete** | **Accelerator** |
 | V5 | Multi-ORM | Prisma, Drizzle, Mongoose generators | Accelerator |
 | V6 | DevOps | CI/CD, logging, monitoring, jobs, webhooks | Accelerator |
-| V7 | DX | upgrade, graph, codemod | Accelerator |
-| V8 | Schema-First | YAML definition, OpenAPI import, Prisma import | Platform |
-| V9 | Enterprise | Tenancy, audit, flags, permissions | Platform |
-| V10 | AI Features | explain, refactor, review, prompt generation | Platform |
-| V11 | Kubernetes | K8s manifests, Helm charts | Platform |
-| V12 | Marketplace | Community plugins, third-party ecosystem | Platform |
+| V7 | DX (slim) | upgrade, doctor --fix | Accelerator |
+| V8 | Schema-First | YAML definition, OpenAPI/Prisma import, drift | Platform |
+| V9 | Enterprise | Billing, audit, flags, ABAC | Platform |
+| **V10** | **Plugin Authoring** | **Template, validation, test harness, docs** | **Platform** |
+| V11 | Marketplace | Community plugin registry + install | Platform |
+| V12 | AI (stretch) | suggest, generate module from prompt | Platform |
 
 ---
 
@@ -636,7 +751,21 @@ interface BackGenPlugin {
 3. **Plugin-first** — Everything is a plugin, including auth
 4. **Manifest is truth** — `.backgenrc.json` tracks everything
 5. **Fail safe** — Checkpoint/resume, non-fatal npm install
-6. **Test everything** — 50 E2E tests cover all commands
+6. **Test everything** — 59 E2E tests + integration per resource
 7. **Developer owns code** — No BackGen artifacts in generated projects
-8. **Domain over tools** — `backgen init healthcare` beats `backgen explain code` for adoption
-9. **Relations over providers** — V3 resource relations save more time than a tenth auth provider
+8. **Domain over tools** — `backgen init saas-core` beats `backgen explain code` for adoption
+9. **Harden before scale** — V4.6 ships before V6+ because deploys fail without it
+10. **Author before distribute** — V10 plugin authoring ships before V11 marketplace
+11. **Schema context wins** — Only AI feature we ship is schema-aware suggestions
+
+---
+
+## Stage Gates
+
+| Stage | Entry Criteria | Exit Criteria |
+|-------|----------------|---------------|
+| 1 → 2 | Plugin system, manifest, 4 plugins, E2E tests | ✅ Met (V4) |
+| 2 → 3 | Multi-ORM support, production hardening, schema-first generation | V8 complete |
+| 3 → mature | Marketplace live, 20+ community plugins, plugin authoring docs | V11 complete + 12-month adoption window |
+
+Stage 3 doesn't end at V12. It transitions from "platform" to "ecosystem." BackGen's value compounds with each community plugin.

@@ -1,8 +1,10 @@
 # BackGen
 
+[![CI](https://github.com/IbrahimKhaled19/BackGen/actions/workflows/ci.yml/badge.svg)](https://github.com/IbrahimKhaled19/BackGen/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/@ibrahimkhaled19/backgen.svg)](https://www.npmjs.com/package/@ibrahimkhaled19/backgen)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 <img width="1600" height="900" alt="showcase" src="https://github.com/user-attachments/assets/cd3888d3-fa9d-4e4e-a595-4f10ae039871" />
-
-
 > Generate production-ready backend foundations so developers can focus on business logic, not boilerplate.
 
 BackGen is a CLI tool that generates complete Express.js backend projects with authentication, database, API documentation, Docker, and testing — all working out of the box.
@@ -23,6 +25,7 @@ Swagger docs at `http://localhost:3000/docs` in under 60 seconds.
 - **Prisma + PostgreSQL** — schema, migrations, Prisma Studio
 - **Plugin System** — auth, payments, storage via `backgen add`
 - **Resource Generator** — CRUD modules with relations, validation, Swagger
+- **Domain Presets** — healthcare, SaaS, ecommerce, CRM, LMS — full domain in one command
 - **Seed & Factory Generators** — development data and test factories
 - **Docker** — multi-stage Dockerfile + docker-compose
 - **Swagger/OpenAPI** — auto-generated API documentation
@@ -38,6 +41,9 @@ npm install -g backgen
 
 # Create a project
 backgen init my-api
+
+# Create a full domain from a preset
+backgen init healthcare-api --preset healthcare
 
 # Add authentication
 backgen add jwt
@@ -63,8 +69,10 @@ Generate a new backend project.
 
 ```bash
 backgen init my-api
-backgen init my-api --defaults          # non-interactive
-backgen init my-api --skip-install      # skip npm install
+backgen init my-api --defaults               # non-interactive
+backgen init my-api --skip-install           # skip npm install
+backgen init my-api --preset healthcare      # generate full domain
+backgen init my-api --preset saas --defaults  # domain + non-interactive
 ```
 
 **Output:**
@@ -102,6 +110,37 @@ backgen add s3              # AWS S3 storage
 | `s3` | storage | AWS S3 upload, download, presigned URLs |
 
 **Conflict detection:** `jwt` and `clerk` cannot be installed together.
+
+---
+
+## Domain Presets
+
+Generate a complete domain in one command. Each preset creates multiple resources with relations, auto-installs JWT auth, and wires everything together.
+
+```bash
+backgen init my-api --preset healthcare
+backgen init my-api --preset saas --defaults
+```
+
+### healthcare
+
+Patient, Doctor, Appointment, Prescription, MedicalRecord — appointments between patients and doctors, prescriptions linked to patients, medical records per patient.
+
+### saas
+
+Organization, Team, Membership, Subscription, Invoice — organizations with teams and memberships, subscriptions with invoices.
+
+### ecommerce
+
+Category, Product, Cart, Order, OrderItem, Payment — products in categories, carts with items, orders with line items and payments.
+
+### crm
+
+Contact, Company, Deal, Activity — companies with contacts, deals tracked through pipeline, activity logging.
+
+### lms
+
+Course, Lesson, Enrollment, Progress, Certificate — courses with lessons, student enrollments, progress tracking, certificates.
 
 ---
 
@@ -349,6 +388,7 @@ npm run lint
 59 tests covering:
 - CLI help and version
 - Init: project structure, configs, manifest
+- Init with domain presets: preset-specific resources and relations
 - Add plugin: files, routes, env vars, manifest
 - Generate resource: module files, Prisma model, routes, validation
 - Generate with relations: foreign keys, Prisma includes
@@ -399,8 +439,8 @@ npm run lint
 | V1 | Foundation | Done |
 | V2 | Plugin System | Done |
 | V3 | Resource Generator | Done |
-| V4 | Domain Presets | Next |
-| V4.5 | SaaS Essentials | Planned |
+| V4 | Domain Presets | Done |
+| V4.5 | SaaS Essentials | Next |
 | V5 | Multi-ORM | Planned |
 | V6 | DevOps & Infrastructure | Planned |
 | V7 | Developer Experience | Planned |

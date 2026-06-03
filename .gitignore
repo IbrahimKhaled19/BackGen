@@ -12,3 +12,5 @@ Thumbs.db
 coverage/
 .test-output/
 test-gen/
+demo/
+specs/

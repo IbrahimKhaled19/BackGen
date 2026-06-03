@@ -1,5 +1,5 @@
 {
-  "name": "backgen",
+  "name": "@ibrahimkhaled19/backgen",
   "version": "1.0.0",
   "type": "module",
   "description": "Generate production-ready backend projects in minutes",

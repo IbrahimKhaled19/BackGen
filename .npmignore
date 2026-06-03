@@ -8,3 +8,5 @@ docs/
 *.tgz
 .openclaude/
 PLAN.md
+specs/
+demo/
