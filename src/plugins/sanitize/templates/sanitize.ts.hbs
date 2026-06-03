@@ -1,0 +1,30 @@
+import type { Request, Response, NextFunction } from "express";
+import xss from "xss";
+import mongoSanitize from "express-mongo-sanitize";
+
+/**
+ * Sanitize request body/params/query against XSS payloads and NoSQL operator
+ * injection. Runs BEFORE Zod validation so malicious inputs are cleaned first.
+ */
+function cleanObject(input: unknown): unknown {
+  if (input === null || input === undefined) return input;
+  if (Array.isArray(input)) return input.map(cleanObject);
+  if (typeof input === "string") return xss(input);
+  if (typeof input === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(input as Record<string, unknown>)) {
+      out[k] = cleanObject(v);
+    }
+    return out;
+  }
+  return input;
+}
+
+export function sanitizeInput(req: Request, _res: Response, next: NextFunction): void {
+  if (req.body) req.body = cleanObject(req.body);
+  if (req.params) req.params = cleanObject(req.params) as typeof req.params;
+  // express-mongo-sanitize strips $ and . keys from req.body/query
+  mongoSanitize.sanitize(req.body);
+  mongoSanitize.sanitize(req.query);
+  next();
+}

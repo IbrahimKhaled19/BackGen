@@ -1,0 +1,24 @@
+import type { Request, Response } from "express";
+import { prisma } from "../config/database.js";
+import { logger } from "../services/logger.service.js";
+
+/**
+ * Readiness probe — confirms DB connectivity.
+ * Returns 200 with { status, db, timestamp } when healthy, 503 otherwise.
+ * Liveness /health is kept lightweight (process-level only).
+ */
+export async function readyCheck(_req: Request, res: Response): Promise<void> {
+  let dbOk = false;
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    dbOk = true;
+  } catch (err) {
+    logger.error("DB readiness check failed", err);
+  }
+  const status = dbOk ? 200 : 503;
+  res.status(status).json({
+    status: dbOk ? "ok" : "degraded",
+    db: dbOk ? "up" : "down",
+    timestamp: new Date().toISOString(),
+  });
+}

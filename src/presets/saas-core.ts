@@ -25,7 +25,7 @@ export const saasCorePreset: DomainPreset = {
   resources: [
     {
       name: "Organization",
-      fields: ["name:string", "slug:string:unique", "logo:string"],
+      fields: ["name:string", "slug:string", "logo:string"],
       softDelete: true,
     },
     {

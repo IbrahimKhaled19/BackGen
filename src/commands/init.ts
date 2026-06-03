@@ -227,8 +227,6 @@ async function generateTemplates(dir: string, config: ProjectConfig): Promise<vo
     { template: "src/middleware/validate.ts.hbs", output: "src/middleware/validate.ts" },
     { template: "src/middleware/error.ts.hbs", output: "src/middleware/error.ts" },
     { template: "src/middleware/logger.ts.hbs", output: "src/middleware/logger.ts" },
-    { template: "src/middleware/tenant.ts.hbs", output: "src/middleware/tenant.ts" },
-    { template: "src/middleware/rbac.ts.hbs", output: "src/middleware/rbac.ts" },
     // Services
     { template: "src/services/logger.service.ts.hbs", output: "src/services/logger.service.ts" },
     // Prisma & Config
@@ -365,8 +363,22 @@ async function applyPreset(projectDir: string, presetName: string): Promise<void
 
 async function injectTenantMiddleware(projectDir: string): Promise<void> {
   const { PluginInstaller } = await import("../core/plugin-installer.js");
+  const { TemplateEngine } = await import("../core/template-engine.js");
   const TEMPLATES_DIR = path.resolve(__dirname, "../../templates/express");
   const installer = new PluginInstaller(TEMPLATES_DIR);
+  const engine = new TemplateEngine(TEMPLATES_DIR);
+
+  // Render tenant + rbac middleware templates (saas-core specific)
+  await engine.renderToFile(
+    "src/middleware/tenant.ts.hbs",
+    {},
+    path.join(projectDir, "src/middleware/tenant.ts")
+  );
+  await engine.renderToFile(
+    "src/middleware/rbac.ts.hbs",
+    {},
+    path.join(projectDir, "src/middleware/rbac.ts")
+  );
 
   await installer.applyMutations(projectDir, [
     {
