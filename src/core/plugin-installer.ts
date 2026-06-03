@@ -164,7 +164,7 @@ export class PluginInstaller {
     let pkg: { dependencies?: Record<string, string>; devDependencies?: Record<string, string> };
     try {
       pkg = JSON.parse(await fs.readFile(pkgPath, "utf-8"));
-    } catch (err) {
+    } catch {
       // package.json missing (e.g. --skip-install in tests). Log + continue.
       console.warn(`[${plugin.name}] package.json not found, skipping dep injection. Run \`npm install\` then re-run \`backgen sync\`.`);
       return;
