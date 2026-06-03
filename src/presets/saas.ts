@@ -1,5 +1,10 @@
 import type { DomainPreset } from "./registry.js";
 
+/**
+ * @deprecated Split in V4.5. Use `saas-core` for multi-tenant infra,
+ * then add billing in V9 (`backgen add billing stripe`) when ready.
+ * This preset remains for backward compatibility.
+ */
 export const saasPreset: DomainPreset = {
   name: "saas",
   description: "Multi-tenant SaaS — organizations, teams, memberships, subscriptions",

@@ -36,7 +36,8 @@ generate
   .description("Generate a CRUD resource module")
   .option("--fields <fields>", 'Fields as "name:string,price:number"')
   .option("--relations <relations>", 'Relations as "doctor:Doctor,patient:Patient"')
-  .action(async (name: string, fields: string[], options: { fields?: string; relations?: string }) => {
+  .option("--soft-delete", "Add deletedAt field and tombstone semantics")
+  .action(async (name: string, fields: string[], options: { fields?: string; relations?: string; softDelete?: boolean }) => {
     const { generateCommand } = await import("./commands/generate.js");
     await generateCommand(name, fields, options);
   });

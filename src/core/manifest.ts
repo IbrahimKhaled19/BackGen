@@ -9,6 +9,7 @@ export interface ProjectManifest {
     framework: string;
     database: string;
     orm: string;
+    preset?: string;
   };
   plugins: Record<string, PluginMetadata>;
 }
@@ -30,14 +31,15 @@ export async function writeManifest(projectDir: string, manifest: ProjectManifes
   await fs.writeFile(filePath, JSON.stringify(manifest, null, 2) + "\n", "utf-8");
 }
 
-export function createManifest(projectName: string): ProjectManifest {
+export function createManifest(projectName: string, preset?: string): ProjectManifest {
   return {
-    version: "1.0.0",
+    version: "1.1.0",
     project: {
       name: projectName,
       framework: "express",
       database: "postgresql",
       orm: "prisma",
+      ...(preset ? { preset } : {}),
     },
     plugins: {},
   };

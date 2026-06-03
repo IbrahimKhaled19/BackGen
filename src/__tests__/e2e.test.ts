@@ -92,7 +92,7 @@ describe("BackGen E2E", () => {
 
     it("creates .backgenrc.json manifest", async () => {
       const manifest = await readJson(path.join(projectDir, ".backgenrc.json"));
-      expect(manifest.version).toBe("1.0.0");
+      expect(manifest.version).toBe("1.1.0");
       expect(manifest.project.name).toBe("my-api");
       expect(manifest.project.framework).toBe("express");
       expect(manifest.plugins).toEqual({});

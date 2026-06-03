@@ -33,6 +33,7 @@ const RESOURCE_TEMPLATES = [
 export interface GenerateOptions {
   fields?: string;
   relations?: string;
+  softDelete?: boolean;
 }
 
 export async function generateCommand(
@@ -146,6 +147,7 @@ export async function generateCommand(
     fields: fieldDefs,
     relations,
     hasRelations: relations.length > 0,
+    softDelete: options.softDelete ?? false,
     projectName: path.basename(projectDir),
   };
 
@@ -163,7 +165,7 @@ export async function generateCommand(
 
     // Add model to Prisma schema
     spinner.text = "Updating Prisma schema...";
-    await addModelToSchema(projectDir, resourceName, fieldDefs, relations);
+    await addModelToSchema(projectDir, resourceName, fieldDefs, relations, options.softDelete ?? false);
 
     // Register routes in app.ts
     spinner.text = "Registering routes...";

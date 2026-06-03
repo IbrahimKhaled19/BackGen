@@ -32,4 +32,11 @@ export class {{ResourceName}}Controller {
     await service.delete(req.params.id as string);
     messageResponse(res, "{{ResourceName}} deleted successfully");
   }
+  {{#if softDelete}}
+
+  async restore(req: Request, res: Response): Promise<void> {
+    const {{resourceName}} = await service.restore(req.params.id as string);
+    successResponse(res, {{resourceName}});
+  }
+  {{/if}}
 }

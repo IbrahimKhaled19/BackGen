@@ -121,5 +121,27 @@ router.patch("/:id", validate(update{{ResourceName}}Schema), asyncHandler(contro
  *         description: {{ResourceName}} not found
  */
 router.delete("/:id", validate(get{{ResourceName}}Schema), asyncHandler(controller.delete.bind(controller)));
+{{#if softDelete}}
+
+/**
+ * @swagger
+ * /api/{{resourcePlural}}/{id}/restore:
+ *   post:
+ *     summary: Restore a soft-deleted {{resourceName}}
+ *     tags: [{{ResourceName}}]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: {{ResourceName}} restored
+ */
+router.post("/:id/restore", validate(get{{ResourceName}}Schema), asyncHandler(controller.restore.bind(controller)));
+{{/if}}
 
 export default router;

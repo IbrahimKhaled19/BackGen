@@ -82,7 +82,7 @@ export class PluginInstaller {
     await removePluginFromManifest(projectDir, plugin.name);
   }
 
-  private async applyMutations(projectDir: string, mutations: FileMutation[]): Promise<void> {
+  async applyMutations(projectDir: string, mutations: FileMutation[]): Promise<void> {
     for (const mutation of mutations) {
       const filePath = path.join(projectDir, mutation.file);
       let content: string;

@@ -28,6 +28,7 @@ interface ProjectConfig {
   projectName: string;
   enableRbac: boolean;
   enableDocker: boolean;
+  preset?: string;
 }
 
 const STEPS = [
@@ -82,7 +83,7 @@ export async function initCommand(
   }
 
   // Collect configuration
-  const config = await collectConfig(projectName!, options.defaults);
+  const config = await collectConfig(projectName!, options.defaults, options.preset);
 
   // Create project directory
   await fs.mkdir(targetDir, { recursive: true });
@@ -101,8 +102,8 @@ export async function initCommand(
     await executeStep(targetDir, config, checkpoint, "manifest", generateManifest);
 
     // Apply preset if specified
-    if (options.preset) {
-      await applyPreset(targetDir, options.preset);
+    if (config.preset) {
+      await applyPreset(targetDir, config.preset);
     }
 
     // Clear checkpoint on success
@@ -115,12 +116,17 @@ export async function initCommand(
   }
 }
 
-async function collectConfig(projectName: string, useDefaults?: boolean): Promise<ProjectConfig> {
+async function collectConfig(
+  projectName: string,
+  useDefaults?: boolean,
+  preset?: string
+): Promise<ProjectConfig> {
   if (useDefaults) {
     return {
       projectName,
       enableRbac: false,
       enableDocker: true,
+      preset,
     };
   }
 
@@ -143,6 +149,7 @@ async function collectConfig(projectName: string, useDefaults?: boolean): Promis
     projectName,
     enableRbac: answers.enableRbac,
     enableDocker: answers.enableDocker,
+    preset,
   };
 }
 
@@ -220,10 +227,13 @@ async function generateTemplates(dir: string, config: ProjectConfig): Promise<vo
     { template: "src/middleware/validate.ts.hbs", output: "src/middleware/validate.ts" },
     { template: "src/middleware/error.ts.hbs", output: "src/middleware/error.ts" },
     { template: "src/middleware/logger.ts.hbs", output: "src/middleware/logger.ts" },
+    { template: "src/middleware/tenant.ts.hbs", output: "src/middleware/tenant.ts" },
+    { template: "src/middleware/rbac.ts.hbs", output: "src/middleware/rbac.ts" },
     // Services
     { template: "src/services/logger.service.ts.hbs", output: "src/services/logger.service.ts" },
     // Prisma & Config
     { template: "prisma/schema.prisma.hbs", output: "prisma/schema.prisma" },
+    { template: "prisma.config.ts.hbs", output: "prisma.config.ts" },
     { template: "package.json.hbs", output: "package.json" },
     { template: "tsconfig.json.hbs", output: "tsconfig.json" },
     { template: ".env.example.hbs", output: ".env.example" },
@@ -271,7 +281,7 @@ async function runPrismaGenerate(dir: string, _config: ProjectConfig): Promise<v
 
 async function generateManifest(dir: string, config: ProjectConfig): Promise<void> {
   const { writeManifest, createManifest } = await import("../core/manifest.js");
-  const manifest = createManifest(config.projectName);
+  const manifest = createManifest(config.projectName, config.preset);
   await writeManifest(dir, manifest);
 }
 
@@ -292,6 +302,7 @@ async function applyPreset(projectDir: string, presetName: string): Promise<void
   const { PluginInstaller } = await import("../core/plugin-installer.js");
   const { getPlugin } = await import("../core/plugin-registry.js");
   const { generateCommand } = await import("./generate.js");
+  const { readManifest } = await import("../core/manifest.js");
   const TEMPLATES_DIR = path.resolve(__dirname, "../../templates/express");
   const installer = new PluginInstaller(TEMPLATES_DIR);
 
@@ -308,20 +319,71 @@ async function applyPreset(projectDir: string, presetName: string): Promise<void
     }
   }
 
+  // Auth check for presets that reference User model (V4.5 saas-core)
+  const manifest = await readManifest(projectDir);
+  const hasAuth = manifest?.plugins.jwt || manifest?.plugins.clerk;
+
   // Generate preset resources
   for (const resource of preset.resources) {
+    const resourceNeedsAuth = resource.relations?.some((rel) =>
+      rel.endsWith(":User")
+    );
+
+    if (resourceNeedsAuth && !hasAuth) {
+      console.log(
+        chalk.yellow(
+          `  ⚠ Skipping ${resource.name} (references User; run \`backgen add jwt\` then \`backgen sync\`)`
+        )
+      );
+      continue;
+    }
+
     try {
       process.chdir(projectDir);
       await generateCommand(resource.name, resource.fields, {
         relations: resource.relations?.join(","),
+        softDelete: resource.softDelete,
       });
     } catch {
       console.log(chalk.yellow(`  ⚠ ${resource.name} already exists or failed`));
     }
   }
 
-  // Run prisma generate after all models are added
-  await runPrismaGenerate(projectDir, {} as ProjectConfig);
+  // V4.5 SaaS Core: inject tenant middleware into app.ts
+  if (presetName === "saas-core") {
+    await injectTenantMiddleware(projectDir);
+    console.log(chalk.green("  ✔ Tenant + RBAC middleware registered"));
+  }
+
+  // Run prisma generate after all models are added (non-fatal)
+  try {
+    await runPrismaGenerate(projectDir, {} as ProjectConfig);
+  } catch (err) {
+    console.log(chalk.yellow(`  ⚠ prisma generate failed (non-fatal): ${(err as Error).message}`));
+  }
+}
+
+async function injectTenantMiddleware(projectDir: string): Promise<void> {
+  const { PluginInstaller } = await import("../core/plugin-installer.js");
+  const TEMPLATES_DIR = path.resolve(__dirname, "../../templates/express");
+  const installer = new PluginInstaller(TEMPLATES_DIR);
+
+  await installer.applyMutations(projectDir, [
+    {
+      file: "src/app.ts",
+      operation: "replace",
+      marker: "// {{REGISTER_AUTH_MIDDLEWARE}}",
+      content: `import { tenantMiddleware } from "./middleware/tenant.js";
+// {{REGISTER_AUTH_MIDDLEWARE}}`,
+    },
+    {
+      file: "src/app.ts",
+      operation: "replace",
+      marker: "// {{REGISTER_MIDDLEWARE}}",
+      content: `app.use(tenantMiddleware);
+// {{REGISTER_MIDDLEWARE}}`,
+    },
+  ]);
 }
 
 async function resumeGeneration(): Promise<void> {

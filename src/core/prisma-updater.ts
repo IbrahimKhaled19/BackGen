@@ -7,7 +7,8 @@ export async function addModelToSchema(
   projectDir: string,
   resourceName: string,
   fields: FieldDefinition[],
-  relations: RelationDefinition[] = []
+  relations: RelationDefinition[] = [],
+  softDelete: boolean = false
 ): Promise<void> {
   const schemaPath = path.join(projectDir, "prisma", "schema.prisma");
   let schema = await fs.readFile(schemaPath, "utf-8");
@@ -17,7 +18,7 @@ export async function addModelToSchema(
     throw new Error(`Model ${resourceName} already exists in schema`);
   }
 
-  const modelBlock = generateModelBlock(resourceName, fields, relations);
+  const modelBlock = generateModelBlock(resourceName, fields, relations, softDelete);
 
   // Find the last closing brace and append after it
   const lastBrace = schema.lastIndexOf("}");
@@ -57,7 +58,8 @@ export async function addModelToSchema(
 function generateModelBlock(
   resourceName: string,
   fields: FieldDefinition[],
-  relations: RelationDefinition[]
+  relations: RelationDefinition[],
+  softDelete: boolean = false
 ): string {
   const fieldLines = fields
     .map((f) => `  ${f.name} ${f.prismaType}`)
@@ -76,9 +78,11 @@ function generateModelBlock(
 
   const allFields = [fieldLines, relationLines].filter(Boolean).join("\n");
 
+  const softDeleteLine = softDelete ? "\n  deletedAt DateTime?" : "";
+
   return `model ${resourceName} {
   id String @id @default(uuid())
-${allFields}
+${allFields}${softDeleteLine}
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }`;

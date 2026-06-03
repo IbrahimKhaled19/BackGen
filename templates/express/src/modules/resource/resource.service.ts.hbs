@@ -36,4 +36,10 @@ export class {{ResourceName}}Service {
     }
     return repository.delete(id);
   }
+  {{#if softDelete}}
+
+  async restore(id: string) {
+    return repository.restore(id);
+  }
+  {{/if}}
 }
