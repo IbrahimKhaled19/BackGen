@@ -98,10 +98,16 @@ describe("BackGen E2E", () => {
       expect(manifest.plugins).toEqual({});
     });
 
-    it("creates shared middleware (validate, error, logger)", async () => {
-      expect(await exists(path.join(projectDir, "src/middleware/validate.ts"))).toBe(true);
-      expect(await exists(path.join(projectDir, "src/middleware/error.ts"))).toBe(true);
-      expect(await exists(path.join(projectDir, "src/middleware/logger.ts"))).toBe(true);
+    it("creates shared middleware (core/security/observability subfolders)", async () => {
+      expect(await exists(path.join(projectDir, "src/middleware/core/validate.ts"))).toBe(true);
+      expect(await exists(path.join(projectDir, "src/middleware/core/errors.ts"))).toBe(true);
+      expect(await exists(path.join(projectDir, "src/middleware/core/logger.ts"))).toBe(true);
+      expect(await exists(path.join(projectDir, "src/middleware/security/sanitize.ts"))).toBe(true);
+      expect(await exists(path.join(projectDir, "src/middleware/security/cors-strict.ts"))).toBe(true);
+      expect(await exists(path.join(projectDir, "src/middleware/observability/request-id.ts"))).toBe(true);
+      expect(await exists(path.join(projectDir, "src/middleware/observability/request-timeout.ts"))).toBe(true);
+      expect(await exists(path.join(projectDir, "src/middleware/observability/health.ts"))).toBe(true);
+      expect(await exists(path.join(projectDir, "src/middleware/graceful-shutdown.ts"))).toBe(true);
     });
 
     it("does NOT create auth middleware", async () => {

@@ -1,6 +1,7 @@
 src/__tests__/
 src/**/*.test.ts
-.test-output/
+.test-output-*/
+-test-output/
 .specify/
 docs/
 .git/

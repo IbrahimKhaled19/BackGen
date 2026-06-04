@@ -1,0 +1,22 @@
+import rateLimit, { type RateLimitRequestHandler } from "express-rate-limit";
+import { env } from "../../config/env.js";
+import { logger } from "../../services/logger.service.js";
+
+// In-memory store by default. Set REDIS_URL for multi-process/multi-instance.
+export const rateLimitMw: RateLimitRequestHandler = rateLimit({
+  windowMs: env.RATE_LIMIT_WINDOW_MS,
+  max: env.RATE_LIMIT_MAX,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (_req, res) => {
+    res.status(429).json({
+      status: 429,
+      message: "Too many requests, please try again later",
+      requestId: (_req as { id?: string }).id,
+    });
+  },
+});
+
+logger.info(
+  `[rate-limit] enabled: ${env.RATE_LIMIT_MAX} reqs per ${env.RATE_LIMIT_WINDOW_MS}ms`
+);

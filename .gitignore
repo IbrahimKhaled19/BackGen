@@ -1,6 +1,7 @@
 node_modules/
 build/
 dist/
+docs/
 *.log
 .env*
 .DS_Store
@@ -10,7 +11,7 @@ Thumbs.db
 .vscode/
 .idea/
 coverage/
-.test-output/
+.test-output*
 test-gen/
 demo/
 specs/

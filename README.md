@@ -37,7 +37,7 @@ Swagger docs at `http://localhost:3000/docs` in under 60 seconds.
 
 ```bash
 # Install globally
-npm install -g backgen
+npm install -g @ibrahimkhaled19/backgen
 
 # Create a project
 backgen init my-api

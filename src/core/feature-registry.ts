@@ -18,8 +18,8 @@ export const FEATURES: Record<string, FeatureDefinition> = {
       "src/modules/auth/auth.routes.ts.hbs",
       "src/modules/auth/auth.test.ts.hbs",
       "src/middleware/auth.ts.hbs",
-      "src/middleware/validate.ts.hbs",
-      "src/middleware/error.ts.hbs",
+      "src/middleware/core/validate.ts.hbs",
+      "src/middleware/core/errors.ts.hbs",
     ],
   },
   payment: {

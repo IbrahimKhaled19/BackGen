@@ -86,9 +86,10 @@ program
 program
   .command("sync")
   .description("Sync project with manifest (.backgenrc.json)")
-  .action(async () => {
+  .option("-y, --yes", "Auto-confirm V4.6.0 → V4.6.1 migration prompts")
+  .action(async (options: { yes?: boolean }) => {
     const { syncCommand } = await import("./commands/sync.js");
-    await syncCommand();
+    await syncCommand({ yes: options.yes ?? false });
   });
 
 program

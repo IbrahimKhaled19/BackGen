@@ -223,10 +223,19 @@ async function generateTemplates(dir: string, config: ProjectConfig): Promise<vo
     { template: "src/utils/api-error.ts.hbs", output: "src/utils/api-error.ts" },
     { template: "src/utils/async-handler.ts.hbs", output: "src/utils/async-handler.ts" },
     { template: "src/utils/response.ts.hbs", output: "src/utils/response.ts" },
-    // Middleware (shared)
-    { template: "src/middleware/validate.ts.hbs", output: "src/middleware/validate.ts" },
-    { template: "src/middleware/error.ts.hbs", output: "src/middleware/error.ts" },
-    { template: "src/middleware/logger.ts.hbs", output: "src/middleware/logger.ts" },
+    // Middleware (core — V4.6.1)
+    { template: "src/middleware/core/errors.ts.hbs", output: "src/middleware/core/errors.ts" },
+    { template: "src/middleware/core/logger.ts.hbs", output: "src/middleware/core/logger.ts" },
+    { template: "src/middleware/core/validate.ts.hbs", output: "src/middleware/core/validate.ts" },
+    // Middleware (security — V4.6.1)
+    { template: "src/middleware/security/cors-strict.ts.hbs", output: "src/middleware/security/cors-strict.ts" },
+    { template: "src/middleware/security/sanitize.ts.hbs", output: "src/middleware/security/sanitize.ts" },
+    // Middleware (observability — V4.6.1)
+    { template: "src/middleware/observability/request-id.ts.hbs", output: "src/middleware/observability/request-id.ts" },
+    { template: "src/middleware/observability/request-timeout.ts.hbs", output: "src/middleware/observability/request-timeout.ts" },
+    { template: "src/middleware/observability/health.ts.hbs", output: "src/middleware/observability/health.ts" },
+    // Middleware (root — V4.6.1)
+    { template: "src/middleware/graceful-shutdown.ts.hbs", output: "src/middleware/graceful-shutdown.ts" },
     // Services
     { template: "src/services/logger.service.ts.hbs", output: "src/services/logger.service.ts" },
     // Prisma & Config

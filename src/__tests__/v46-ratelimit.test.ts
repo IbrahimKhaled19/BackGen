@@ -44,21 +44,21 @@ describe("V4.6 ratelimit plugin", () => {
     await fs.rm(TEST_DIR, { recursive: true, force: true });
   });
 
-  it("creates rate-limit middleware", async () => {
-    expect(await exists(path.join(projectDir, "src/middleware/rate-limit.ts"))).toBe(true);
+  it("creates rate-limit middleware in security/", async () => {
+    expect(await exists(path.join(projectDir, "src/middleware/security/rate-limit.ts"))).toBe(true);
   });
 
   it("uses express-rate-limit", async () => {
-    const m = await read(path.join(projectDir, "src/middleware/rate-limit.ts"));
+    const m = await read(path.join(projectDir, "src/middleware/security/rate-limit.ts"));
     expect(m).toContain("rateLimit");
     expect(m).toContain("windowMs");
     expect(m).toContain("max");
   });
 
-  it("supports optional Redis store", async () => {
-    const m = await read(path.join(projectDir, "src/middleware/rate-limit.ts"));
-    expect(m).toContain("REDIS_URL");
-    expect(m).toContain("Redis");
+  it("uses env-driven config", async () => {
+    const m = await read(path.join(projectDir, "src/middleware/security/rate-limit.ts"));
+    expect(m).toContain("env.RATE_LIMIT_WINDOW_MS");
+    expect(m).toContain("env.RATE_LIMIT_MAX");
   });
 
   it("registers rate limit on /api in app.ts", async () => {
