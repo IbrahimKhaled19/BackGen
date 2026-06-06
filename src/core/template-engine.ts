@@ -12,15 +12,47 @@ Handlebars.registerHelper("eq", function (a: unknown, b: unknown) {
   return a === b;
 });
 
+Handlebars.registerHelper("or", function (...args: unknown[]) {
+  // Last arg is Handlebars options object
+  const conditions = args.slice(0, -1);
+  return conditions.some(Boolean);
+});
+
 export class TemplateEngine {
   private templatesDir: string;
+  private ormTemplatesDir: string | null;
 
-  constructor(templatesDir: string) {
+  constructor(templatesDir: string, ormTemplatesDir?: string) {
     this.templatesDir = templatesDir;
+    this.ormTemplatesDir = ormTemplatesDir ?? null;
+  }
+
+  async resolveTemplate(relativePath: string): Promise<string> {
+    // Check ORM-specific dir first
+    if (this.ormTemplatesDir) {
+      const ormPath = path.join(this.ormTemplatesDir, relativePath);
+      try {
+        await fs.access(ormPath);
+        return ormPath;
+      } catch {
+        // Fall through to base
+      }
+    }
+    // Fallback to base templates dir
+    return path.join(this.templatesDir, relativePath);
+  }
+
+  async hasTemplate(relativePath: string): Promise<boolean> {
+    try {
+      await fs.access(await this.resolveTemplate(relativePath));
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async render(templatePath: string, context: TemplateContext): Promise<string> {
-    const fullPath = path.join(this.templatesDir, templatePath);
+    const fullPath = await this.resolveTemplate(templatePath);
     const templateContent = await fs.readFile(fullPath, "utf-8");
     const template = Handlebars.compile(templateContent);
     return template(context);

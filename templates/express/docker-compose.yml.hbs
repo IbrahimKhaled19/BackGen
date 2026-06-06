@@ -7,13 +7,26 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      {{#if (eq orm "mongoose")}}
+      - DATABASE_URL=mongodb://db:27017/{{projectName}}
+      {{else}}
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/{{projectName}}
+      {{/if}}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
     depends_on:
       - db
 
   db:
+    {{#if (eq orm "mongoose")}}
+    image: mongo:7
+    environment:
+      - MONGO_INITDB_DATABASE={{projectName}}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    {{else}}
     image: postgres:16-alpine
     environment:
       - POSTGRES_USER=postgres
@@ -23,6 +36,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    {{/if}}
 
 volumes:
-  postgres_data:
+  {{#if (eq orm "mongoose")}}mongo_data:{{else}}postgres_data:{{/if}}

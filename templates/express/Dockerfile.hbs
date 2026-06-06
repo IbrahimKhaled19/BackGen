@@ -18,9 +18,15 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
+{{#if (eq orm "prisma")}}
 COPY --from=builder /app/prisma ./prisma
-
-RUN npx prisma generate
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+{{/if}}
+{{#if (eq orm "drizzle")}}
+COPY --from=builder /app/src/db/schema ./src/db/schema
+RUN npx drizzle-kit generate
+{{/if}}
 
 EXPOSE 3000
 

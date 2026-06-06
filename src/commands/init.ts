@@ -22,6 +22,7 @@ export interface InitOptions {
   defaults?: boolean;
   skipInstall?: boolean;
   preset?: string;
+  orm?: string;
 }
 
 interface ProjectConfig {
@@ -29,13 +30,14 @@ interface ProjectConfig {
   enableRbac: boolean;
   enableDocker: boolean;
   preset?: string;
+  orm: string;
 }
 
 const STEPS = [
   "scaffold",
   "templates",
   "dependencies",
-  "prisma-generate",
+  "codegen",
   "manifest",
 ];
 
@@ -83,13 +85,13 @@ export async function initCommand(
   }
 
   // Collect configuration
-  const config = await collectConfig(projectName!, options.defaults, options.preset);
+  const config = await collectConfig(projectName!, options.defaults, options.preset, options.orm);
 
   // Create project directory
   await fs.mkdir(targetDir, { recursive: true });
 
   // Create checkpoint
-  const checkpoint = await createCheckpoint(targetDir, projectName!, STEPS);
+  const checkpoint = await createCheckpoint(targetDir, projectName!, STEPS, config.orm);
 
   // Execute generation steps
   try {
@@ -97,7 +99,7 @@ export async function initCommand(
     await executeStep(targetDir, config, checkpoint, "templates", generateTemplates);
     if (!options.skipInstall) {
       await executeStep(targetDir, config, checkpoint, "dependencies", installDependencies);
-      await executeStep(targetDir, config, checkpoint, "prisma-generate", runPrismaGenerate);
+      await executeStep(targetDir, config, checkpoint, "codegen", runCodegen);
     }
     await executeStep(targetDir, config, checkpoint, "manifest", generateManifest);
 
@@ -109,7 +111,7 @@ export async function initCommand(
     // Clear checkpoint on success
     await clearCheckpoint(targetDir);
 
-    printSuccess(projectName!, targetDir);
+    printSuccess(projectName!, config.orm);
   } catch (error) {
     console.error(chalk.red("\nGeneration failed. Run with --resume to continue."));
     throw error;
@@ -119,7 +121,8 @@ export async function initCommand(
 async function collectConfig(
   projectName: string,
   useDefaults?: boolean,
-  preset?: string
+  preset?: string,
+  orm?: string
 ): Promise<ProjectConfig> {
   if (useDefaults) {
     return {
@@ -127,8 +130,25 @@ async function collectConfig(
       enableRbac: false,
       enableDocker: true,
       preset,
+      orm: orm ?? "prisma",
     };
   }
+
+  const ormAnswer = orm
+    ? { orm }
+    : await inquirer.prompt([
+        {
+          type: "list",
+          name: "orm",
+          message: "Select ORM:",
+          choices: [
+            { name: "Prisma (PostgreSQL)", value: "prisma" },
+            { name: "Drizzle (PostgreSQL)", value: "drizzle" },
+            { name: "Mongoose (MongoDB)", value: "mongoose" },
+          ],
+          default: "prisma",
+        },
+      ]);
 
   const answers = await inquirer.prompt([
     {
@@ -150,6 +170,7 @@ async function collectConfig(
     enableRbac: answers.enableRbac,
     enableDocker: answers.enableDocker,
     preset,
+    orm: ormAnswer.orm,
   };
 }
 
@@ -191,15 +212,23 @@ async function executeStep(
   }
 }
 
-async function generateScaffold(dir: string, _config: ProjectConfig): Promise<void> {
+async function generateScaffold(dir: string, config: ProjectConfig): Promise<void> {
   const dirs = [
     "src/config",
     "src/middleware",
     "src/services",
     "src/utils",
-    "prisma",
     "tests",
   ];
+
+  // ORM-specific directories
+  if (config.orm === "prisma") {
+    dirs.push("prisma", "prisma/seeds");
+  } else if (config.orm === "drizzle") {
+    dirs.push("src/db/schema", "src/db/seeds");
+  } else if (config.orm === "mongoose") {
+    dirs.push("src/models", "src/seeds");
+  }
 
   for (const d of dirs) {
     await fs.mkdir(path.join(dir, d), { recursive: true });
@@ -207,11 +236,16 @@ async function generateScaffold(dir: string, _config: ProjectConfig): Promise<vo
 }
 
 async function generateTemplates(dir: string, config: ProjectConfig): Promise<void> {
-  const engine = new TemplateEngine(TEMPLATES_DIR);
+  const ormTemplatesDir = path.resolve(
+    TEMPLATES_DIR,
+    "..",
+    `express.${config.orm}`
+  );
+  const engine = new TemplateEngine(TEMPLATES_DIR, ormTemplatesDir);
   const context = { ...config };
 
-  // Core files
-  const templates = [
+  // Core files (shared across all ORMs)
+  const templates: Array<{ template: string; output: string }> = [
     // App & Server
     { template: "src/app.ts.hbs", output: "src/app.ts" },
     { template: "src/server.ts.hbs", output: "src/server.ts" },
@@ -238,9 +272,7 @@ async function generateTemplates(dir: string, config: ProjectConfig): Promise<vo
     { template: "src/middleware/graceful-shutdown.ts.hbs", output: "src/middleware/graceful-shutdown.ts" },
     // Services
     { template: "src/services/logger.service.ts.hbs", output: "src/services/logger.service.ts" },
-    // Prisma & Config
-    { template: "prisma/schema.prisma.hbs", output: "prisma/schema.prisma" },
-    { template: "prisma.config.ts.hbs", output: "prisma.config.ts" },
+    // Config files (shared)
     { template: "package.json.hbs", output: "package.json" },
     { template: "tsconfig.json.hbs", output: "tsconfig.json" },
     { template: ".env.example.hbs", output: ".env.example" },
@@ -249,6 +281,23 @@ async function generateTemplates(dir: string, config: ProjectConfig): Promise<vo
     { template: "vitest.config.ts.hbs", output: "vitest.config.ts" },
     { template: "eslint.config.js.hbs", output: "eslint.config.js" },
   ];
+
+  // ORM-specific templates
+  if (config.orm === "prisma") {
+    templates.push(
+      { template: "prisma/schema.prisma.hbs", output: "prisma/schema.prisma" },
+      { template: "prisma.config.ts.hbs", output: "prisma.config.ts" }
+    );
+  } else if (config.orm === "drizzle") {
+    templates.push(
+      { template: "drizzle.config.ts.hbs", output: "drizzle.config.ts" },
+      { template: "src/db/schema/index.ts.hbs", output: "src/db/schema/index.ts" }
+    );
+  } else if (config.orm === "mongoose") {
+    templates.push(
+      { template: "src/models/index.ts.hbs", output: "src/models/index.ts" }
+    );
+  }
 
   for (const { template, output } of templates) {
     await engine.renderToFile(template, context, path.join(dir, output));
@@ -273,22 +322,55 @@ async function installDependencies(dir: string, _config: ProjectConfig): Promise
   });
 }
 
-async function runPrismaGenerate(dir: string, _config: ProjectConfig): Promise<void> {
+async function runCodegen(dir: string, config: ProjectConfig): Promise<void> {
   const { spawn } = await import("child_process");
-  console.log(chalk.gray("  Running prisma generate...\n"));
-  return new Promise((resolve, reject) => {
-    const child = spawn("npx", ["prisma", "generate"], { cwd: dir, stdio: "inherit", shell: true });
-    child.on("close", (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`prisma generate exited with code ${code}`));
+
+  if (config.orm === "prisma") {
+    console.log(chalk.gray("  Running prisma generate...\n"));
+    return new Promise((resolve, reject) => {
+      const child = spawn("npx", ["prisma", "generate"], { cwd: dir, stdio: "inherit", shell: true });
+      child.on("close", (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`prisma generate exited with code ${code}`));
+      });
+      child.on("error", reject);
     });
-    child.on("error", reject);
-  });
+  }
+
+  if (config.orm === "drizzle") {
+    // Only run drizzle-kit generate if schema files exist (skip during bare init)
+    const schemaDir = path.join(dir, "src", "db", "schema");
+    let hasModels = false;
+    try {
+      const files = await fs.readdir(schemaDir);
+      hasModels = files.filter((f) => f.endsWith(".ts") && f !== "index.ts").length > 0;
+    } catch {
+      // schema dir not found, no models
+    }
+
+    if (!hasModels) {
+      console.log(chalk.gray("  No Drizzle schema files found yet. Run drizzle-kit generate after adding resources.\n"));
+      return;
+    }
+
+    console.log(chalk.gray("  Running drizzle-kit generate...\n"));
+    return new Promise((resolve, reject) => {
+      const child = spawn("npx", ["drizzle-kit", "generate"], { cwd: dir, stdio: "inherit", shell: true });
+      child.on("close", (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`drizzle-kit generate exited with code ${code}`));
+      });
+      child.on("error", reject);
+    });
+  }
+
+  // Mongoose: no codegen step needed
+  console.log(chalk.gray("  Mongoose does not require a code generation step.\n"));
 }
 
 async function generateManifest(dir: string, config: ProjectConfig): Promise<void> {
   const { writeManifest, createManifest } = await import("../core/manifest.js");
-  const manifest = createManifest(config.projectName, config.preset);
+  const manifest = createManifest(config.projectName, config.orm, config.preset);
   await writeManifest(dir, manifest);
 }
 
@@ -310,8 +392,9 @@ async function applyPreset(projectDir: string, presetName: string): Promise<void
   const { getPlugin } = await import("../core/plugin-registry.js");
   const { generateCommand } = await import("./generate.js");
   const { readManifest } = await import("../core/manifest.js");
+  const manifest = await readManifest(projectDir);
   const TEMPLATES_DIR = path.resolve(__dirname, "../../templates/express");
-  const installer = new PluginInstaller(TEMPLATES_DIR);
+  const installer = new PluginInstaller(TEMPLATES_DIR, manifest?.project?.orm ?? "prisma");
 
   // Install preset plugins
   for (const pluginName of preset.plugins ?? []) {
@@ -327,7 +410,6 @@ async function applyPreset(projectDir: string, presetName: string): Promise<void
   }
 
   // Auth check for presets that reference User model (V4.5 saas-core)
-  const manifest = await readManifest(projectDir);
   const hasAuth = manifest?.plugins.jwt || manifest?.plugins.clerk;
 
   // Generate preset resources
@@ -364,7 +446,7 @@ async function applyPreset(projectDir: string, presetName: string): Promise<void
 
   // Run prisma generate after all models are added (non-fatal)
   try {
-    await runPrismaGenerate(projectDir, {} as ProjectConfig);
+    await runCodegen(projectDir, { orm: manifest?.project?.orm ?? "prisma" } as ProjectConfig);
   } catch (err) {
     console.log(chalk.yellow(`  ⚠ prisma generate failed (non-fatal): ${(err as Error).message}`));
   }
@@ -373,19 +455,23 @@ async function applyPreset(projectDir: string, presetName: string): Promise<void
 async function injectTenantMiddleware(projectDir: string): Promise<void> {
   const { PluginInstaller } = await import("../core/plugin-installer.js");
   const { TemplateEngine } = await import("../core/template-engine.js");
+  const { readManifest } = await import("../core/manifest.js");
   const TEMPLATES_DIR = path.resolve(__dirname, "../../templates/express");
-  const installer = new PluginInstaller(TEMPLATES_DIR);
-  const engine = new TemplateEngine(TEMPLATES_DIR);
+  const manifest = await readManifest(projectDir);
+  const orm = manifest?.project?.orm ?? "prisma";
+  const ormTemplatesDir = path.resolve(TEMPLATES_DIR, "..", `express.${orm}`);
+  const installer = new PluginInstaller(TEMPLATES_DIR, orm);
+  const engine = new TemplateEngine(TEMPLATES_DIR, ormTemplatesDir);
 
   // Render tenant + rbac middleware templates (saas-core specific)
   await engine.renderToFile(
     "src/middleware/tenant.ts.hbs",
-    {},
+    { orm },
     path.join(projectDir, "src/middleware/tenant.ts")
   );
   await engine.renderToFile(
     "src/middleware/rbac.ts.hbs",
-    {},
+    { orm },
     path.join(projectDir, "src/middleware/rbac.ts")
   );
 
@@ -434,6 +520,7 @@ async function resumeGeneration(): Promise<void> {
     projectName: checkpoint.projectName,
     enableRbac: true,
     enableDocker: true,
+    orm: checkpoint.orm || "prisma",
   };
 
   const stepFns: Record<string, (dir: string, config: ProjectConfig) => Promise<void>> = {
@@ -449,17 +536,28 @@ async function resumeGeneration(): Promise<void> {
   }
 
   await clearCheckpoint(dir);
-  printSuccess(checkpoint.projectName, dir);
+  printSuccess(checkpoint.projectName, checkpoint.orm || "prisma");
 }
 
-function printSuccess(projectName: string, _dir: string): void {
+function printSuccess(projectName: string, orm: string): void {
   console.log(chalk.green.bold("\n✨ Project generated successfully!\n"));
   console.log("Next steps:\n");
   console.log(chalk.cyan(`  cd ${projectName}`));
   console.log(chalk.cyan("  cp .env.example .env"));
-  console.log(chalk.cyan("  # Edit .env with your database URL and JWT secrets"));
-  console.log(chalk.cyan("  npm run db:push"));
-  console.log(chalk.cyan("  npm run dev\n"));
-  console.log("Swagger docs: http://localhost:3000/docs");
-  console.log("Prisma Studio: npm run db:studio\n");
+  console.log(chalk.cyan("  # Edit .env with your database URL and secrets"));
+
+  if (orm === "prisma") {
+    console.log(chalk.cyan("  npm run db:push"));
+    console.log(chalk.cyan("  npm run dev\n"));
+    console.log("Swagger docs: http://localhost:3000/docs");
+    console.log("Prisma Studio: npm run db:studio\n");
+  } else if (orm === "drizzle") {
+    console.log(chalk.cyan("  npm run db:push"));
+    console.log(chalk.cyan("  npm run dev\n"));
+    console.log("Swagger docs: http://localhost:3000/docs");
+    console.log("Drizzle Studio: npm run db:studio\n");
+  } else {
+    console.log(chalk.cyan("  npm run dev\n"));
+    console.log("Swagger docs: http://localhost:3000/docs");
+  }
 }

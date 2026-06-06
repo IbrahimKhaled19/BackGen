@@ -1,0 +1,12 @@
+import mongoose from "mongoose";
+
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set. Copy .env.example to .env and fill in DATABASE_URL.");
+}
+
+export async function connectDatabase(): Promise<void> {
+  await mongoose.connect(connectionString as string);
+}
+
+export { mongoose };

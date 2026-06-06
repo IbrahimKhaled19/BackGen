@@ -1,6 +1,12 @@
 import * as path from "path";
+import * as fs from "fs/promises";
 import { fileURLToPath } from "url";
-import type { BackGenPlugin, InstallContext } from "../../core/plugin.js";
+import type { BackGenPlugin, FileMutation, InstallContext } from "../../core/plugin.js";
+import {
+  getPluginModelPath,
+  getUserModelSnippet,
+  getRefreshTokenModelSnippet,
+} from "../../core/schema-helpers.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -72,8 +78,8 @@ export const jwtPlugin: BackGenPlugin = {
       path.join(middlewareDir, "role.ts")
     );
 
-    // Register routes in app.ts + inject env vars + add Prisma models
-    await ctx.mutate([
+    // Register routes in app.ts + inject env vars + add model schemas per ORM
+    const mutations: FileMutation[] = [
       {
         file: "src/app.ts",
         operation: "replace",
@@ -86,11 +92,34 @@ export const jwtPlugin: BackGenPlugin = {
         marker: "LOG_LEVEL: z.enum([\"error\", \"warn\", \"info\", \"debug\"]).default(\"info\"),",
         content: `LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),\n  JWT_SECRET: z.string().min(32),\n  JWT_REFRESH_SECRET: z.string().min(32),\n  JWT_EXPIRES_IN: z.string().default("15m"),\n  JWT_REFRESH_EXPIRES_IN: z.string().default("7d"),`,
       },
-      {
+    ];
+
+    // Add User + RefreshToken models per ORM
+    if (ctx.orm === "prisma") {
+      mutations.push({
         file: "prisma/schema.prisma",
         operation: "append",
         content: `\n\nmodel User {\n  id            String         @id @default(uuid())\n  email         String         @unique\n  password      String\n  role          Role           @default(USER)\n  refreshTokens RefreshToken[]\n  createdAt     DateTime       @default(now())\n  updatedAt     DateTime       @updatedAt\n}\n\nmodel RefreshToken {\n  id        String   @id @default(uuid())\n  token     String   @unique\n  userId    String\n  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)\n  expiresAt DateTime\n  createdAt DateTime @default(now())\n}\n\nenum Role {\n  ADMIN\n  USER\n}`,
-      },
-    ]);
+      });
+    }
+
+    await ctx.mutate(mutations);
+
+    // For Drizzle/Mongoose: write separate model files
+    if (ctx.orm !== "prisma") {
+      const userPath = getPluginModelPath(ctx.orm, "User");
+      const tokenPath = getPluginModelPath(ctx.orm, "RefreshToken");
+      await fs.mkdir(path.join(ctx.projectDir, userPath.dir), { recursive: true });
+      await fs.writeFile(
+        path.join(ctx.projectDir, userPath.file),
+        getUserModelSnippet(ctx.orm),
+        "utf-8"
+      );
+      await fs.writeFile(
+        path.join(ctx.projectDir, tokenPath.file),
+        getRefreshTokenModelSnippet(ctx.orm),
+        "utf-8"
+      );
+    }
   },
 };

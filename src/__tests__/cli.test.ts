@@ -32,22 +32,18 @@ describe("Field Mapper", () => {
 
   it("should map field types correctly", () => {
     expect(mapFieldType("string")).toEqual({
-      prismaType: "String",
       zodType: "z.string()",
       tsType: "string",
     });
     expect(mapFieldType("number")).toEqual({
-      prismaType: "Float",
       zodType: "z.number()",
       tsType: "number",
     });
     expect(mapFieldType("boolean")).toEqual({
-      prismaType: "Boolean",
       zodType: "z.boolean()",
       tsType: "boolean",
     });
     expect(mapFieldType("date")).toEqual({
-      prismaType: "DateTime",
       zodType: "z.coerce.date()",
       tsType: "Date",
     });
@@ -57,9 +53,9 @@ describe("Field Mapper", () => {
     const fields = createFieldDefinitions(["name:string", "price:number", "active:boolean"]);
     expect(fields).toHaveLength(3);
     expect(fields[0].name).toBe("name");
-    expect(fields[0].prismaType).toBe("String");
+    expect(fields[0].zodType).toBe("z.string()");
     expect(fields[1].name).toBe("price");
-    expect(fields[1].prismaType).toBe("Float");
+    expect(fields[1].tsType).toBe("number");
   });
 });
 

@@ -10,6 +10,7 @@ export interface FileMutation {
 export interface InstallContext {
   projectDir: string;
   projectName: string;
+  orm: string;
   engine: TemplateEngine;
   mutate(mutations: FileMutation[]): Promise<void>;
 }

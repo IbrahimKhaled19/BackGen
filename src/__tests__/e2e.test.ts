@@ -92,7 +92,7 @@ describe("BackGen E2E", () => {
 
     it("creates .backgenrc.json manifest", async () => {
       const manifest = await readJson(path.join(projectDir, ".backgenrc.json"));
-      expect(manifest.version).toBe("1.1.0");
+      expect(manifest.version).toBe("1.2.0");
       expect(manifest.project.name).toBe("my-api");
       expect(manifest.project.framework).toBe("express");
       expect(manifest.plugins).toEqual({});
@@ -135,6 +135,156 @@ describe("BackGen E2E", () => {
 
     it("creates logger service", async () => {
       expect(await exists(path.join(projectDir, "src/services/logger.service.ts"))).toBe(true);
+    });
+  });
+
+  // ── Init (Drizzle) ──────────────────────────────────────
+
+  describe("init (Drizzle)", () => {
+    const drizzleDir = path.join(TEST_DIR, "demo-drizzle");
+
+    beforeAll(async () => {
+      await rm(drizzleDir);
+      cli("init demo-drizzle --defaults --orm drizzle --skip-install", TEST_DIR);
+    });
+
+    afterAll(async () => {
+      await rm(drizzleDir);
+    });
+
+    it("creates project directory", async () => {
+      expect(await exists(drizzleDir)).toBe(true);
+    });
+
+    it("creates package.json with Drizzle deps", async () => {
+      const pkg = await readJson(path.join(drizzleDir, "package.json"));
+      expect(pkg.name).toBe("demo-drizzle");
+      expect(pkg.dependencies).toHaveProperty("drizzle-orm");
+      expect(pkg.dependencies).toHaveProperty("pg");
+      expect(pkg.dependencies).not.toHaveProperty("@prisma/client");
+      expect(pkg.dependencies).not.toHaveProperty("mongoose");
+    });
+
+    it("creates Drizzle schema directory", async () => {
+      expect(await exists(path.join(drizzleDir, "src/db/schema"))).toBe(true);
+    });
+
+    it("creates Drizzle config", async () => {
+      expect(await exists(path.join(drizzleDir, "drizzle.config.ts"))).toBe(true);
+    });
+
+    it("does NOT create Prisma directory", async () => {
+      expect(await exists(path.join(drizzleDir, "prisma"))).toBe(false);
+    });
+
+    it("creates .env.example with postgres URL", async () => {
+      const env = await read(path.join(drizzleDir, ".env.example"));
+      expect(env).toContain("postgresql://");
+    });
+
+    it("creates env.ts with URL validation", async () => {
+      const envTs = await read(path.join(drizzleDir, "src/config/env.ts"));
+      expect(envTs).toContain("z.string().url()");
+    });
+
+    it("creates .backgenrc.json with drizzle orm", async () => {
+      const manifest = await readJson(path.join(drizzleDir, ".backgenrc.json"));
+      expect(manifest.project.orm).toBe("drizzle");
+    });
+  });
+
+  // ── Init (Mongoose) ─────────────────────────────────────
+
+  describe("init (Mongoose)", () => {
+    const mongoDir = path.join(TEST_DIR, "demo-mongo");
+
+    beforeAll(async () => {
+      await rm(mongoDir);
+      cli("init demo-mongo --defaults --orm mongoose --skip-install", TEST_DIR);
+    });
+
+    afterAll(async () => {
+      await rm(mongoDir);
+    });
+
+    it("creates project directory", async () => {
+      expect(await exists(mongoDir)).toBe(true);
+    });
+
+    it("creates package.json with Mongoose deps", async () => {
+      const pkg = await readJson(path.join(mongoDir, "package.json"));
+      expect(pkg.name).toBe("demo-mongo");
+      expect(pkg.dependencies).toHaveProperty("mongoose");
+      expect(pkg.dependencies).not.toHaveProperty("@prisma/client");
+      expect(pkg.dependencies).not.toHaveProperty("drizzle-orm");
+    });
+
+    it("creates Mongoose models directory", async () => {
+      expect(await exists(path.join(mongoDir, "src/models"))).toBe(true);
+    });
+
+    it("does NOT create Prisma or Drizzle directories", async () => {
+      expect(await exists(path.join(mongoDir, "prisma"))).toBe(false);
+      expect(await exists(path.join(mongoDir, "src/db"))).toBe(false);
+    });
+
+    it("creates .env.example with MongoDB URL", async () => {
+      const env = await read(path.join(mongoDir, ".env.example"));
+      expect(env).toContain("mongodb://");
+    });
+
+    it("creates env.ts with string validation (not URL)", async () => {
+      const envTs = await read(path.join(mongoDir, "src/config/env.ts"));
+      expect(envTs).toContain("DATABASE_URL: z.string()"); // mongoose uses z.string(), not z.string().url()
+    });
+
+    it("creates .backgenrc.json with mongoose orm", async () => {
+      const manifest = await readJson(path.join(mongoDir, ".backgenrc.json"));
+      expect(manifest.project.orm).toBe("mongoose");
+    });
+  });
+
+  // ── Generate Resource (Mongoose) ────────────────────
+
+  describe("generate resource (Mongoose)", () => {
+    const mongoGenDir = path.join(TEST_DIR, "demo-mongo-gen");
+
+    beforeAll(() => {
+      cli("init demo-mongo-gen --orm mongoose --defaults --skip-install", TEST_DIR);
+      cli("generate resource Product name:string price:number stock:number", mongoGenDir);
+    });
+
+    afterAll(async () => {
+      await rm(mongoGenDir);
+    });
+
+    it("creates resource module files", async () => {
+      expect(await exists(path.join(mongoGenDir, "src/modules/product/product.controller.ts"))).toBe(true);
+      expect(await exists(path.join(mongoGenDir, "src/modules/product/product.service.ts"))).toBe(true);
+      expect(await exists(path.join(mongoGenDir, "src/modules/product/product.repository.ts"))).toBe(true);
+      expect(await exists(path.join(mongoGenDir, "src/modules/product/product.routes.ts"))).toBe(true);
+      expect(await exists(path.join(mongoGenDir, "src/modules/product/product.types.ts"))).toBe(true);
+      expect(await exists(path.join(mongoGenDir, "src/modules/product/product.validation.ts"))).toBe(true);
+      expect(await exists(path.join(mongoGenDir, "src/modules/product/product.test.ts"))).toBe(true);
+    });
+
+    it("creates Mongoose model file", async () => {
+      const model = await read(path.join(mongoGenDir, "src/models", "Product.model.ts"));
+      expect(model).toContain("mongoose.model");
+      expect(model).toContain("new Schema");
+      expect(model).toContain("name: { type: String }");
+      expect(model).toContain("price: { type: Number }");
+    });
+
+    it("registers resource routes in app.ts", async () => {
+      const app = await read(path.join(mongoGenDir, "src/app.ts"));
+      expect(app).toContain("productRoutes");
+      expect(app).toContain("/api/products");
+    });
+
+    it("adds Mongoose model to barrel", async () => {
+      const barrel = await read(path.join(mongoGenDir, "src/models", "index.ts"));
+      expect(barrel).toContain("export { Product } from \"./Product.model.js\"");
     });
   });
 
@@ -304,7 +454,7 @@ describe("BackGen E2E", () => {
       const schema = await read(path.join(projectDir, "prisma/schema.prisma"));
       expect(schema).toContain("model Appointment");
       expect(schema).toContain("doctorId String");
-      expect(schema).toContain("doctor Doctor @relation");
+      expect(schema).toMatch(/doctor\s+Doctor @relation/);
       expect(schema).toContain("DateTime");
     });
 

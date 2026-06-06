@@ -1,5 +1,15 @@
 import type { Request, Response, NextFunction } from "express";
+{{#if (eq orm "prisma")}}
 import { prisma } from "../config/database.js";
+{{/if}}
+{{#if (eq orm "mongoose")}}
+import { Organization } from "../models/index.js";
+{{/if}}
+{{#if (eq orm "drizzle")}}
+import { db } from "../config/database.js";
+import { Organization } from "../db/schema/index.js";
+import { eq, and, isNull } from "drizzle-orm";
+{{/if}}
 import { ApiError } from "../utils/api-error.js";
 
 declare global {
@@ -38,6 +48,7 @@ export async function tenantMiddleware(
       throw new ApiError(400, "Organization context required (x-org-id header or auth claim)");
     }
 
+{{#if (eq orm "prisma")}}
     const org = await prisma.organization.findFirst({
       where: { id: orgId, deletedAt: null },
       select: { id: true, slug: true },
@@ -48,6 +59,41 @@ export async function tenantMiddleware(
     }
 
     req.organization = org;
+{{/if}}
+{{#if (eq orm "mongoose")}}
+    const orgDoc = await Organization.findOne({
+      _id: orgId,
+      deletedAt: null,
+    }).select("slug").lean();
+
+    if (!orgDoc) {
+      throw new ApiError(404, "Organization not found");
+    }
+
+    req.organization = {
+      id: orgId,
+      slug: orgDoc.slug,
+    };
+{{/if}}
+{{#if (eq orm "drizzle")}}
+    const [org] = await db
+      .select({ id: Organization.id, slug: Organization.slug })
+      .from(Organization)
+      .where(
+        and(
+          eq(Organization.id, orgId),
+          isNull(Organization.deletedAt)
+        )
+      )
+      .limit(1);
+
+    if (!org) {
+      throw new ApiError(404, "Organization not found");
+    }
+
+    req.organization = org;
+{{/if}}
+
     next();
   } catch (err) {
     next(err);

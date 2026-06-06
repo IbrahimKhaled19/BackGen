@@ -18,7 +18,8 @@ program
   .description("Generate a new backend project")
   .option("--resume", "Resume a previously failed generation")
   .option("--defaults", "Use default options (non-interactive)")
-  .option("--skip-install", "Skip npm install and prisma generate")
+  .option("--skip-install", "Skip npm install and code generation")
+  .option("--orm <orm>", "ORM to use (prisma, drizzle, mongoose)")
   .option("--preset <preset>", "Domain preset (healthcare, saas, ecommerce, crm, lms)")
   .action(async (projectName: string | undefined, options: { resume?: boolean; defaults?: boolean; skipInstall?: boolean; preset?: string }) => {
     const { initCommand } = await import("./commands/init.js");

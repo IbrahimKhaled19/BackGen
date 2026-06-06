@@ -4,7 +4,7 @@ import ora from "ora";
 import * as path from "path";
 import { PluginInstaller } from "../core/plugin-installer.js";
 import { getPlugin } from "../core/plugin-registry.js";
-import { getInstalledPlugins } from "../core/manifest.js";
+import { getInstalledPlugins, readManifest } from "../core/manifest.js";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -72,7 +72,9 @@ async function removePlugin(
   const spinner = ora(`Removing ${pluginName}...`).start();
 
   try {
-    const installer = new PluginInstaller(TEMPLATES_DIR);
+    const manifest = await readManifest(projectDir);
+    const orm = manifest?.project?.orm ?? "prisma";
+    const installer = new PluginInstaller(TEMPLATES_DIR, orm);
     await installer.uninstall(projectDir, plugin);
     spinner.succeed(`${pluginName} removed!`);
   } catch (error) {

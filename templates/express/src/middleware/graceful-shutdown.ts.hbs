@@ -1,5 +1,13 @@
 import type { Server } from "http";
+{{#if (eq orm "prisma")}}
 import { prisma } from "../config/database.js";
+{{/if}}
+{{#if (eq orm "mongoose")}}
+import { mongoose } from "../config/database.js";
+{{/if}}
+{{#if (eq orm "drizzle")}}
+import { pool } from "../config/database.js";
+{{/if}}
 
 export function attachGracefulShutdown(server: Server, signals: NodeJS.EventEmitter["eventNames"] extends (infer T)[] ? T : never = ["SIGTERM", "SIGINT"] as never): void {
   for (const signal of signals as string[]) {
@@ -13,13 +21,25 @@ export function attachGracefulShutdown(server: Server, signals: NodeJS.EventEmit
           process.exit(1);
         }
         try {
+          {{#if (eq orm "prisma")}}
           await prisma.$disconnect();
           // eslint-disable-next-line no-console
           console.log("[shutdown] prisma disconnected, exiting");
+          {{/if}}
+          {{#if (eq orm "mongoose")}}
+          await mongoose.disconnect();
+          // eslint-disable-next-line no-console
+          console.log("[shutdown] mongoose disconnected, exiting");
+          {{/if}}
+          {{#if (eq orm "drizzle")}}
+          await pool.end();
+          // eslint-disable-next-line no-console
+          console.log("[shutdown] pool disconnected, exiting");
+          {{/if}}
           process.exit(0);
         } catch (disconnectErr) {
           // eslint-disable-next-line no-console
-          console.error("[shutdown] prisma disconnect failed:", disconnectErr);
+          console.error("[shutdown] disconnect failed:", disconnectErr);
           process.exit(1);
         }
       });

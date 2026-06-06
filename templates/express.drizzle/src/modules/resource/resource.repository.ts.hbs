@@ -1,0 +1,91 @@
+import { eq, count, sql, and } from "drizzle-orm";
+import { db } from "../../config/database.js";
+import { {{resourceName}} } from "../../db/schema/index.js";
+import type { Create{{ResourceName}}Input, Update{{ResourceName}}Input, {{ResourceName}}Query } from "./{{resourceName}}.types.js";
+
+export class {{ResourceName}}Repository {
+  async create(data: Create{{ResourceName}}Input) {
+    const [item] = await db
+      .insert({{resourceName}})
+      .values(data)
+      .returning();
+    return item;
+  }
+
+  async findById(id: string) {
+    const [item] = await db
+      .select()
+      .from({{resourceName}})
+      .where(eq({{resourceName}}.id, id));
+    return item ?? null;
+  }
+
+  async findAll(query: {{ResourceName}}Query) {
+    const { page = 1, limit = 10, search } = query;
+    const offset = (page - 1) * limit;
+
+    const filters = [];
+    {{#if softDelete}}
+    filters.push(eq({{resourceName}}.deletedAt, null));
+    {{/if}}
+    if (search) {
+      filters.push(
+        sql`${ {{~resourceName}}.{{#each fields}}{{#if (eq this.type "string")}}{{this.name}}{{/if}}{{/each}} }::text ILIKE ${'%' + search + '%'}`
+      );
+    }
+
+    const whereClause = filters.length > 0 ? and(...filters) : undefined;
+
+    const [items, total] = await Promise.all([
+      db
+        .select()
+        .from({{resourceName}})
+        .where(whereClause)
+        .limit(limit)
+        .offset(offset)
+        .orderBy(sql`${ {{resourceName}}.createdAt } desc`),
+      db
+        .select({ count: count() })
+        .from({{resourceName}})
+        .where(whereClause)
+        .then((r) => Number(r[0]?.count ?? 0)),
+    ]);
+
+    return { items, total };
+  }
+
+  async update(id: string, data: Update{{ResourceName}}Input) {
+    const [item] = await db
+      .update({{resourceName}})
+      .set(data)
+      .where(eq({{resourceName}}.id, id))
+      .returning();
+    return item;
+  }
+
+  async delete(id: string) {
+    {{#if softDelete}}
+    const [item] = await db
+      .update({{resourceName}})
+      .set({ deletedAt: new Date() })
+      .where(eq({{resourceName}}.id, id))
+      .returning();
+    return item;
+    {{else}}
+    await db
+      .delete({{resourceName}})
+      .where(eq({{resourceName}}.id, id));
+    {{/if}}
+  }
+
+  {{#if softDelete}}
+  async restore(id: string) {
+    const [item] = await db
+      .update({{resourceName}})
+      .set({ deletedAt: null })
+      .where(eq({{resourceName}}.id, id))
+      .returning();
+    return item;
+  }
+  {{/if}}
+}

@@ -1,0 +1,70 @@
+import { eq } from "drizzle-orm";
+import { db } from "../../config/database.js";
+import { user } from "../../db/schema/index.js";
+import { ApiError } from "../../utils/api-error.js";
+
+export class AdminService {
+  async getUsers() {
+    const users = await db
+      .select({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      })
+      .from(user);
+    return users;
+  }
+
+  async getUserById(id: string) {
+    const [found] = await db
+      .select({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      })
+      .from(user)
+      .where(eq(user.id, id));
+
+    if (!found) {
+      throw ApiError.notFound("User not found");
+    }
+
+    return found;
+  }
+
+  async updateUserRole(id: string, role: string) {
+    const [found] = await db.select().from(user).where(eq(user.id, id));
+
+    if (!found) {
+      throw ApiError.notFound("User not found");
+    }
+
+    const [updated] = await db
+      .update(user)
+      .set({ role: role as "ADMIN" | "USER" })
+      .where(eq(user.id, id))
+      .returning({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      });
+
+    return updated;
+  }
+
+  async deleteUser(id: string) {
+    const [found] = await db.select().from(user).where(eq(user.id, id));
+
+    if (!found) {
+      throw ApiError.notFound("User not found");
+    }
+
+    await db.delete(user).where(eq(user.id, id));
+  }
+}

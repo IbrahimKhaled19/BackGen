@@ -7,8 +7,10 @@ import { fileURLToPath } from "url";
 import { TemplateEngine } from "../core/template-engine.js";
 import { createPlaceholders } from "../core/placeholders.js";
 import { createFieldDefinitions } from "../core/field-mapper.js";
-import { addModelToSchema } from "../core/prisma-updater.js";
+import { createSchemaGenerator } from "../core/schema-generator.js";
+import { readManifest } from "../core/manifest.js";
 import { registerRoute } from "../core/route-registrar.js";
+import { spawn } from "child_process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,9 +48,20 @@ export async function generateCommand(
   const projectDir = process.cwd();
 
   // Check we're in a BackGen project
+  let orm = "prisma";
   try {
     await fs.access(path.join(projectDir, "package.json"));
-    await fs.access(path.join(projectDir, "prisma", "schema.prisma"));
+    const manifest = await readManifest(projectDir);
+    orm = manifest?.project?.orm ?? "prisma";
+    // Verify schema directory exists for this ORM
+    const schemaGen = createSchemaGenerator(orm);
+    const schemaPath = schemaGen.getSchemaPath(projectDir);
+    try {
+      await fs.access(schemaPath);
+    } catch {
+      // For Prisma it's a file, for others a directory — try stat
+      await fs.stat(schemaPath);
+    }
   } catch {
     console.error(chalk.red("Error: Not in a BackGen project directory."));
     process.exit(1);
@@ -140,7 +153,8 @@ export async function generateCommand(
   }
 
   const placeholders = createPlaceholders(name);
-  const engine = new TemplateEngine(TEMPLATES_DIR);
+  const ormTemplatesDir = path.resolve(TEMPLATES_DIR, "..", `express.${orm}`);
+  const engine = new TemplateEngine(TEMPLATES_DIR, ormTemplatesDir);
 
   const context = {
     ...placeholders,
@@ -163,13 +177,32 @@ export async function generateCommand(
       await engine.renderToFile(template, context, outputPath);
     }
 
-    // Add model to Prisma schema
-    spinner.text = "Updating Prisma schema...";
-    await addModelToSchema(projectDir, resourceName, fieldDefs, relations, options.softDelete ?? false);
+    // Add model to schema
+    spinner.text = `Updating ${orm} schema...`;
+    const schemaGen = createSchemaGenerator(orm);
+    await schemaGen.addModel(projectDir, resourceName, fieldDefs, relations, options.softDelete ?? false);
 
     // Register routes in app.ts
     spinner.text = "Registering routes...";
     await registerRoute(projectDir, name);
+
+    // Run drizzle-kit generate for Drizzle projects (non-fatal)
+    if (orm === "drizzle") {
+      spinner.text = "Running drizzle-kit generate...";
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const child = spawn("npx", ["drizzle-kit", "generate"], { cwd: projectDir, stdio: "inherit", shell: true });
+          child.on("close", (code) => {
+            if (code === 0) resolve();
+            else reject(new Error(`drizzle-kit generate exited with code ${code}`));
+          });
+          child.on("error", reject);
+        });
+      } catch (err) {
+        console.log(chalk.yellow(`  ⚠ drizzle-kit generate failed (non-fatal): ${(err as Error).message}`));
+        console.log(chalk.yellow("  Run `npx drizzle-kit generate` manually after dependencies are installed."));
+      }
+    }
 
     spinner.succeed("Resource generated successfully!");
 

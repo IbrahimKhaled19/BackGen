@@ -2,6 +2,7 @@ import chalk from "chalk";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { execSync } from "child_process";
+import { readManifest } from "../core/manifest.js";
 
 interface CheckResult {
   name: string;
@@ -22,7 +23,9 @@ export async function doctorCommand(): Promise<void> {
   checks.push(await checkProjectDir(projectDir));
   checks.push(await checkEnvFile(projectDir));
   checks.push(await checkDatabaseUrl(projectDir));
-  checks.push(await checkPrismaSchema(projectDir));
+  const manifest = await readManifest(projectDir);
+  const orm = manifest?.project?.orm ?? "prisma";
+  checks.push(await checkSchemaFile(projectDir, orm));
   checks.push(await checkDependencies(projectDir));
 
   // Print results
@@ -138,19 +141,30 @@ async function checkDatabaseUrl(dir: string): Promise<CheckResult> {
   }
 }
 
-async function checkPrismaSchema(dir: string): Promise<CheckResult> {
+async function checkSchemaFile(dir: string, orm: string): Promise<CheckResult> {
+  const schemaPaths: Record<string, string> = {
+    prisma: path.join(dir, "prisma", "schema.prisma"),
+    drizzle: path.join(dir, "src", "db", "schema"),
+    mongoose: path.join(dir, "src", "models"),
+  };
+  const labels: Record<string, string> = {
+    prisma: "Prisma schema",
+    drizzle: "Drizzle schema files",
+    mongoose: "Mongoose models",
+  };
+  const schemaPath = schemaPaths[orm] ?? schemaPaths.prisma;
   try {
-    await fs.access(path.join(dir, "prisma", "schema.prisma"));
+    await fs.access(schemaPath);
     return {
-      name: "Prisma schema",
+      name: labels[orm] ?? "Schema",
       passed: true,
       message: "",
     };
   } catch {
     return {
-      name: "Prisma schema",
+      name: labels[orm] ?? "Schema",
       passed: false,
-      message: "prisma/schema.prisma not found",
+      message: `${schemaPath} not found`,
       fix: "Run BackGen init to generate project",
     };
   }

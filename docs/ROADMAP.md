@@ -42,7 +42,7 @@ Production-ready multi-tenant backend in under 5 minutes.
 | File mutation API (append/prepend/replace) | Done |
 | Checkpoint/resume system | Done |
 | Domain presets (5) | Done |
-| E2E test suite (59 tests) | Done |
+| E2E test suite (121 tests) | Done |
 | npm published (`@ibrahimkhaled19/backgen`) | Done |
 
 ### Commands
@@ -64,6 +64,9 @@ Production-ready multi-tenant backend in under 5 minutes.
 | Clerk | auth | Done (conflicts: jwt) |
 | Stripe | payment | Done |
 | S3 | storage | Done |
+| Rate Limit | production | Done (opt-in via `backgen add ratelimit`) |
+| Hardening | production | Deprecated in V4.6.1 (features now default, plugin hidden from picker) |
+| Sanitize | production | Deprecated in V4.6.1 (features now default, plugin hidden from picker) |
 
 ### Domain Presets
 
@@ -86,6 +89,8 @@ Production-ready multi-tenant backend in under 5 minutes.
 - Winston logging
 - ESLint + Vitest
 - `.backgenrc.json` manifest
+- **Hardened by default:** helmet, env-driven CORS, xss + mongo-sanitize, request ID, request timeout, graceful shutdown, health checks, error envelope, body size limit
+- **Middleware in subfolders:** `core/` (errors, logger, validate), `security/` (cors-strict, sanitize), `observability/` (request-id, request-timeout, health)
 
 No auth by default. User chooses: `backgen add jwt` or `backgen add clerk`.
 
@@ -167,13 +172,43 @@ SaaS Core ships a usable shell. V4.6 hardens it. V9 layers billing/audit. No rew
 ### Plugins Added
 
 ```bash
-backgen add ratelimit         # rate limit + Redis option
-backgen add sanitize          # XSS + NoSQL injection guard
-backgen add softdelete        # base model + helpers
-backgen add health            # /health, /ready, /metrics
+backgen add ratelimit         # rate limit + Redis option (opt-in: different APIs need different limits)
 ```
 
-Or all-in-one: `backgen init --hardened` flag on init.
+Soft delete available per-resource: `backgen generate resource <name> --softDelete`.
+
+### V4.6.1: Harden-by-default + Middleware Restructure
+
+**Goal:** Close V4.6's gap — hardening shouldn't be opt-in. Every generated project ships production-ready out of the box.
+
+**What changed:**
+
+| Before (V4.6 opt-in) | After (V4.6.1 default) |
+|----------------------|------------------------|
+| `backgen add sanitize` | xss + mongo-sanitize in `app.ts` by default |
+| `backgen add health` | `/health` + `/ready` in `app.ts` by default |
+| `backgen add ratelimit` | Still opt-in (auth=5/min ≠ API=100/min) |
+| `--hardened` flag | Removed — all new projects are hardened |
+| Flat `src/middleware/*.ts` | Organized into `core/`, `security/`, `observability/` subfolders |
+
+**New default middleware order:**
+```
+helmet() → corsStrict → requestId → requestTimeout →
+express.json({ limit }) → sanitizeNoSql → sanitizeBody → requestLogger
+```
+
+**Plugin deprecation:**
+- `hardening` & `sanitize` plugins: `available: false` (hidden from picker, `listPlugins()` still resolves for manifest compat)
+- `ratelimit` plugin: stays `available: true`, writes to `security/` subfolder
+- Deprecated plugins have no-op `install()` — safe for existing manifests
+
+**Auto-migration:**
+`backgen sync --yes` detects V4.6.0 flat middleware files, moves to subfolders, rewrites `app.ts` imports, normalizes `../` → `../../` paths. Dry-run by default; `--yes` skips confirm.
+
+**New env vars:**
+`BODY_SIZE_LIMIT`, `REQUEST_TIMEOUT_MS`, `CORS_ALLOWED_ORIGINS`, `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX`, `REDIS_URL`
+
+**Test suite:** 48 new V4.6.1-specific tests across 3 suites (base hardening, migration, plugin deprecation). Full suite: 121 tests.
 
 ### Verification
 
@@ -704,22 +739,22 @@ BackGen has schema context. Use it. Don't try to be a general AI coding assistan
 
 ## Production Gaps Tracking
 
-Production hardening items from V4 audit, mapped to V4.6:
+Production hardening items from V4 audit, mapped to V4.6 → V4.6.1:
 
-| Gap | V4.6 Feature |
-|-----|--------------|
-| No rate limiting | `backgen add ratelimit` |
-| No request ID | middleware + logger integration |
-| No graceful shutdown | SIGTERM handler + Prisma disconnect |
-| No input sanitization | `backgen add sanitize` |
-| No soft delete | `backgen add softdelete` |
-| No transaction wrapper | `prisma.$transaction` helper |
-| No health check | `/health`, `/ready` |
-| Generic CORS | Strict origin allowlist |
-| No timeout | Request timeout middleware |
-| No body size limit | `express.json({ limit })` |
+| Gap | V4.6 Feature | V4.6.1 Status |
+|-----|--------------|---------------|
+| No rate limiting | `backgen add ratelimit` | Opt-in (unchanged) |
+| No request ID | middleware + logger integration | **Default** |
+| No graceful shutdown | SIGTERM handler + Prisma disconnect | **Default** |
+| No input sanitization | `backgen add sanitize` | **Default** (xss + mongo-sanitize in app.ts) |
+| No soft delete | `backgen add softdelete` | Per-resource `--softDelete` flag (unchanged) |
+| No transaction wrapper | `prisma.$transaction` helper | Built-in Prisma (unchanged) |
+| No health check | `/health`, `/ready` | **Default** |
+| Generic CORS | Strict origin allowlist | **Default** (env-driven, empty=allow all) |
+| No timeout | Request timeout middleware | **Default** |
+| No body size limit | `express.json({ limit })` | **Default** |
 
-All addressed in V4.6. None deferred to V6+.
+**V4.6.1 delta:** 8/10 gaps now default. Only rate limiting + soft delete remain opt-in.
 
 ---
 
@@ -731,8 +766,9 @@ All addressed in V4.6. None deferred to V6+.
 | V2 | Plugin System | Plugins, manifest, add/remove/sync | Scaffolder |
 | V3 | Resource Generator | Relations, --fields, migrations, seeds | Accelerator |
 | V4 | Domain Presets | healthcare, saas, ecommerce, crm, lms | Accelerator |
-| **V4.5** | **SaaS Core** | **Multi-tenant, orgs, teams, RBAC (no billing)** | **Accelerator** |
-| **V4.6** | **Production Hardening** | **Rate limit, request ID, graceful shutdown, soft delete** | **Accelerator** |
+| **V4.5** | **SaaS Core** | **Multi-tenant, orgs, teams, RBAC (no billing)** | **Accelerator ✅** |
+| **V4.6** | **Production Hardening** | **Rate limit, request ID, graceful shutdown, soft delete** | **Accelerator ✅** |
+| **V4.6.1** | **Harden-by-default** | **8/10 gaps default, middleware subfolders, plugin deprecation, auto-migration** | **Accelerator ✅** |
 | V5 | Multi-ORM | Prisma, Drizzle, Mongoose generators | Accelerator |
 | V6 | DevOps | CI/CD, logging, monitoring, jobs, webhooks | Accelerator |
 | V7 | DX (slim) | upgrade, doctor --fix | Accelerator |
@@ -751,7 +787,7 @@ All addressed in V4.6. None deferred to V6+.
 3. **Plugin-first** — Everything is a plugin, including auth
 4. **Manifest is truth** — `.backgenrc.json` tracks everything
 5. **Fail safe** — Checkpoint/resume, non-fatal npm install
-6. **Test everything** — 59 E2E tests + integration per resource
+6. **Test everything** — 121 E2E tests + integration per resource
 7. **Developer owns code** — No BackGen artifacts in generated projects
 8. **Domain over tools** — `backgen init saas-core` beats `backgen explain code` for adoption
 9. **Harden before scale** — V4.6 ships before V6+ because deploys fail without it

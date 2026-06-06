@@ -2,6 +2,7 @@ import chalk from "chalk";
 import ora from "ora";
 import * as fs from "fs/promises";
 import * as path from "path";
+import { readManifest } from "../core/manifest.js";
 
 export async function seedCommand(resource: string, count: number): Promise<void> {
   console.log(chalk.blue.bold(`\n🌱 BackGen - Generate Seed: ${resource} (${count} records)\n`));
@@ -20,6 +21,15 @@ export async function seedCommand(resource: string, count: number): Promise<void
     process.exit(1);
   }
 
+  // Read ORM from manifest
+  let orm = "prisma";
+  try {
+    const manifest = await readManifest(projectDir);
+    orm = manifest?.project?.orm ?? "prisma";
+  } catch {
+    // default to prisma
+  }
+
   // Parse fields from types file
   const fields = parseFieldsFromTypes(typesContent);
 
@@ -27,19 +37,31 @@ export async function seedCommand(resource: string, count: number): Promise<void
   const spinner = ora("Generating seed file...").start();
 
   try {
-    const seedsDir = path.join(projectDir, "prisma", "seeds");
-    await fs.mkdir(seedsDir, { recursive: true });
+  // Determine seed dir per ORM
+  const seedDirs: Record<string, string> = {
+    prisma: path.join(projectDir, "prisma", "seeds"),
+    drizzle: path.join(projectDir, "src", "db", "seeds"),
+    mongoose: path.join(projectDir, "src", "seeds"),
+  };
+  const seedsDir = seedDirs[orm] ?? seedDirs.prisma;
+  await fs.mkdir(seedsDir, { recursive: true });
 
-    const seedContent = generateSeedContent(resourceName, moduleName, fields, count);
-    const seedPath = path.join(seedsDir, `${moduleName}.ts`);
-    await fs.writeFile(seedPath, seedContent, "utf-8");
+  const seedContent = generateSeedContent(resourceName, moduleName, fields, count, orm);
+  const seedPath = path.join(seedsDir, `${moduleName}.ts`);
+  await fs.writeFile(seedPath, seedContent, "utf-8");
 
-    spinner.succeed("Seed file generated!");
+  spinner.succeed("Seed file generated!");
 
-    console.log(chalk.green(`\n✨ Seed file created!\n`));
-    console.log(`  prisma/seeds/${moduleName}.ts`);
-    console.log("\nRun with:");
+  console.log(chalk.green(`\n✨ Seed file created!\n`));
+  console.log(`  ${path.relative(projectDir, seedPath)}`);
+  console.log("\nRun with:");
+  if (orm === "prisma") {
     console.log(chalk.cyan("  npx tsx prisma/seeds/" + moduleName + ".ts\n"));
+  } else if (orm === "drizzle") {
+    console.log(chalk.cyan("  npx tsx src/db/seeds/" + moduleName + ".ts\n"));
+  } else {
+    console.log(chalk.cyan("  npx tsx src/seeds/" + moduleName + ".ts\n"));
+  }
   } catch (error) {
     spinner.fail("Seed generation failed");
     throw error;
@@ -77,7 +99,8 @@ function generateSeedContent(
   resourceName: string,
   moduleName: string,
   fields: Array<{ name: string; type: string }>,
-  count: number
+  count: number,
+  orm: string = "prisma"
 ): string {
   const fieldDefaults = fields
     .map((f) => {
@@ -96,6 +119,46 @@ function generateSeedContent(
     })
     .join(",\n");
 
+  if (orm === "drizzle") {
+    return `import { db } from "../config/database.js";
+import { ${moduleName} } from "../db/schema/${moduleName}.js";
+
+async function main() {
+  console.log("Seeding ${moduleName}...");
+
+  for (let i = 1; i <= ${count}; i++) {
+    await db.insert(${moduleName}).values({
+${fieldDefaults}
+    });
+  }
+
+  console.log("Seeded ${count} ${resourceName} records.");
+}
+
+main().catch(console.error);
+`;
+  }
+
+  if (orm === "mongoose") {
+    return `import { ${resourceName} } from "../models/${moduleName}.model.js";
+
+async function main() {
+  console.log("Seeding ${moduleName}...");
+
+  for (let i = 1; i <= ${count}; i++) {
+    await ${resourceName}.create({
+${fieldDefaults}
+    });
+  }
+
+  console.log("Seeded ${count} ${resourceName} records.");
+}
+
+main().catch(console.error);
+`;
+  }
+
+  // Prisma (default)
   return `import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();

@@ -1,5 +1,13 @@
 import { Request, Response } from "express";
+{{#if (eq orm "prisma")}}
 import { prisma } from "../../config/database.js";
+{{/if}}
+{{#if (eq orm "drizzle")}}
+import { pool } from "../../config/database.js";
+{{/if}}
+{{#if (eq orm "mongoose")}}
+import { mongoose } from "../../config/database.js";
+{{/if}}
 
 export function healthCheck(_req: Request, res: Response): void {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
@@ -7,7 +15,16 @@ export function healthCheck(_req: Request, res: Response): void {
 
 export async function readyCheck(_req: Request, res: Response): Promise<void> {
   try {
+    {{#if (eq orm "prisma")}}
     await prisma.$queryRaw`SELECT 1`;
+    {{/if}}
+    {{#if (eq orm "drizzle")}}
+    await pool.query("SELECT 1");
+    {{/if}}
+    {{#if (eq orm "mongoose")}}
+    const state = mongoose.connection.readyState;
+    if (state !== 1) throw new Error("Mongoose not connected");
+    {{/if}}
     res.json({ status: "ready", timestamp: new Date().toISOString() });
   } catch (err) {
     res.status(503).json({

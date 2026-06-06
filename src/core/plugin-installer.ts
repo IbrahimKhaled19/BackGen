@@ -9,9 +9,16 @@ import type { BackGenPlugin, FileMutation, InstallContext } from "./plugin.js";
 
 export class PluginInstaller {
   private engine: TemplateEngine;
+  private orm: string;
 
-  constructor(templatesDir: string) {
-    this.engine = new TemplateEngine(templatesDir);
+  constructor(templatesDir: string, orm: string = "prisma") {
+    this.orm = orm;
+    const ormTemplatesDir = path.resolve(
+      templatesDir,
+      "..",
+      `express.${orm}`
+    );
+    this.engine = new TemplateEngine(templatesDir, ormTemplatesDir);
   }
 
   async install(projectDir: string, plugin: BackGenPlugin): Promise<void> {
@@ -38,6 +45,7 @@ export class PluginInstaller {
     const ctx: InstallContext = {
       projectDir,
       projectName,
+      orm: this.orm,
       engine: this.engine,
       mutate: (mutations: FileMutation[]) => this.applyMutations(projectDir, mutations),
     };
@@ -67,6 +75,7 @@ export class PluginInstaller {
       const ctx: InstallContext = {
         projectDir,
         projectName,
+        orm: this.orm,
         engine: this.engine,
         mutate: (mutations: FileMutation[]) => this.applyMutations(projectDir, mutations),
       };

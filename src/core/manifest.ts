@@ -20,7 +20,12 @@ export async function readManifest(projectDir: string): Promise<ProjectManifest 
   try {
     const filePath = path.join(projectDir, MANIFEST_FILE);
     const content = await fs.readFile(filePath, "utf-8");
-    return JSON.parse(content) as ProjectManifest;
+    const manifest = JSON.parse(content) as ProjectManifest;
+    // Backward compat: pre-V5 manifests have no orm field
+    if (!manifest.project.orm) {
+      manifest.project.orm = "prisma";
+    }
+    return manifest;
   } catch {
     return null;
   }
@@ -31,14 +36,14 @@ export async function writeManifest(projectDir: string, manifest: ProjectManifes
   await fs.writeFile(filePath, JSON.stringify(manifest, null, 2) + "\n", "utf-8");
 }
 
-export function createManifest(projectName: string, preset?: string): ProjectManifest {
+export function createManifest(projectName: string, orm: string = "prisma", preset?: string): ProjectManifest {
   return {
-    version: "1.1.0",
+    version: "1.2.0",
     project: {
       name: projectName,
       framework: "express",
       database: "postgresql",
-      orm: "prisma",
+      orm,
       ...(preset ? { preset } : {}),
     },
     plugins: {},

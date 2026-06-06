@@ -9,6 +9,7 @@ export interface CheckpointStep {
 
 export interface CheckpointData {
   projectName: string;
+  orm: string;
   steps: Record<string, CheckpointStep>;
   createdAt: string;
   updatedAt: string;
@@ -35,7 +36,8 @@ export async function saveCheckpoint(projectDir: string, data: CheckpointData): 
 export async function createCheckpoint(
   projectDir: string,
   projectName: string,
-  steps: string[]
+  steps: string[],
+  orm: string = "prisma"
 ): Promise<CheckpointData> {
   const stepsMap: Record<string, CheckpointStep> = {};
   for (const step of steps) {
@@ -44,6 +46,7 @@ export async function createCheckpoint(
 
   const data: CheckpointData = {
     projectName,
+    orm,
     steps: stepsMap,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

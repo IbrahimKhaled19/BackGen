@@ -11,7 +11,7 @@ import {
   checkConflicts,
   checkRequirements,
 } from "../core/plugin-registry.js";
-import { getInstalledPlugins } from "../core/manifest.js";
+import { getInstalledPlugins, readManifest } from "../core/manifest.js";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -129,7 +129,9 @@ async function installPlugin(
   const spinner = ora(`Installing ${pluginName}...`).start();
 
   try {
-    const installer = new PluginInstaller(TEMPLATES_DIR);
+    const manifest = await readManifest(projectDir);
+    const orm = manifest?.project?.orm ?? "prisma";
+    const installer = new PluginInstaller(TEMPLATES_DIR, orm);
     await installer.install(projectDir, plugin);
     spinner.succeed(`${pluginName} installed!`);
 

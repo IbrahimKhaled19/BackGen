@@ -31,15 +31,9 @@ async function readFile(p: string): Promise<string> {
 }
 
 describe("V4.5 SaaS Core preset", () => {
-  beforeAll(() => {
-    return fs.rm(TEST_DIR, { recursive: true, force: true }).then(() =>
-      fs.mkdir(TEST_DIR, { recursive: true })
-    );
-  });
+  beforeAll(() => fs.mkdir(TEST_DIR, { recursive: true }));
 
-  afterAll(() => {
-    return fs.rm(TEST_DIR, { recursive: true, force: true });
-  });
+  afterAll(() => Promise.resolve());
 
   it("creates Organization, Team models with saas-core preset", async () => {
     cli("init my-saas --preset saas-core --defaults --skip-install");
@@ -107,7 +101,7 @@ describe("V4.5 SaaS Core preset", () => {
       await readFile(path.join(projectDir, ".backgenrc.json"))
     );
 
-    expect(manifest.version).toBe("1.1.0");
+    expect(manifest.version).toBe("1.2.0");
     expect(manifest.project.preset).toBe("saas-core");
   });
 
@@ -140,15 +134,9 @@ describe("V4.5 SaaS Core preset", () => {
 });
 
 describe("V4.5 --soft-delete flag on resource generator", () => {
-  beforeAll(() => {
-    return fs.rm(TEST_DIR, { recursive: true, force: true }).then(() =>
-      fs.mkdir(TEST_DIR, { recursive: true })
-    );
-  });
+  beforeAll(() => fs.mkdir(TEST_DIR, { recursive: true }));
 
-  afterAll(() => {
-    return fs.rm(TEST_DIR, { recursive: true, force: true });
-  });
+  afterAll(() => Promise.resolve());
 
   it("adds deletedAt field when --soft-delete is used", async () => {
     cli("init sd-test --defaults --skip-install");
@@ -176,5 +164,206 @@ describe("V4.5 --soft-delete flag on resource generator", () => {
     const schema = await readFile(path.join(projectDir, "prisma", "schema.prisma"));
     expect(schema).toMatch(/model Note\b/);
     expect(schema).not.toMatch(/model Note[\s\S]*deletedAt/);
+  });
+});
+
+describe("V1.8 Drizzle ORM schema generation", () => {
+  const DRIZZLE_DIR = path.resolve(__dirname, "../../.test-output-drizzle");
+
+  beforeAll(() => {
+    return fs.mkdir(DRIZZLE_DIR, { recursive: true }).catch(() => {});
+  });
+
+  afterAll(() => Promise.resolve());
+
+  it("init --orm drizzle creates schema barrel and config", async () => {
+    cli("init drizzle-base --orm drizzle --defaults --skip-install", DRIZZLE_DIR);
+
+    const projectDir = path.join(DRIZZLE_DIR, "drizzle-base");
+
+    // drizzle.config.ts
+    const config = await readFile(path.join(projectDir, "drizzle.config.ts"));
+    expect(config).toMatch(/defineConfig/);
+    expect(config).toMatch(/schema.*\.\/src\/db\/schema\/index\.ts/);
+    expect(config).toMatch(/dialect.*postgresql/);
+
+    // Barrel should exist (even if empty — template registered in generateTemplates)
+    const barrel = await readFile(path.join(projectDir, "src", "db", "schema", "index.ts"));
+    expect(barrel).toMatch(/Barrel export for Drizzle ORM/);
+  });
+
+  it("init --orm drizzle --preset saas-core creates Drizzle schema files", async () => {
+    cli("init drizzle-saas --orm drizzle --preset saas-core --defaults --skip-install", DRIZZLE_DIR);
+
+    const projectDir = path.join(DRIZZLE_DIR, "drizzle-saas");
+
+    // Schema files exist
+    const schemaFiles = await fs.readdir(path.join(projectDir, "src", "db", "schema"));
+    expect(schemaFiles).toContain("index.ts");
+    expect(schemaFiles.some((f) => f.startsWith("organization"))).toBe(true);
+    expect(schemaFiles.some((f) => f.startsWith("team"))).toBe(true);
+
+    // Barrel exports
+    const barrel = await readFile(path.join(projectDir, "src", "db", "schema", "index.ts"));
+    expect(barrel).toMatch(/export.*Organization.*organization/);
+    expect(barrel).toMatch(/export.*Team.*team/);
+
+    // Schema file has pgTable and columns
+    const orgSchema = await readFile(
+      path.join(projectDir, "src", "db", "schema", "organization.ts")
+    );
+    expect(orgSchema).toMatch(/pgTable/);
+    expect(orgSchema).toMatch(/name.*text/);
+    expect(orgSchema).toMatch(/slug.*text/);
+    expect(orgSchema).toMatch(/deletedAt.*timestamp/);
+  });
+
+  it("tenant middleware uses Drizzle imports for --orm drizzle", async () => {
+    const projectDir = path.join(DRIZZLE_DIR, "drizzle-saas");
+
+    const tenant = await readFile(path.join(projectDir, "src", "middleware", "tenant.ts"));
+    // Debug: check ORM in manifest
+    const manifest = JSON.parse(
+      await readFile(path.join(projectDir, ".backgenrc.json"))
+    );
+    expect(manifest.project.orm).toBe("drizzle");
+    expect(tenant).toMatch(/import.*db.*config\/database/);
+    expect(tenant).toMatch(/import.*Organization.*db\/schema/);
+    expect(tenant).toMatch(/import.*eq.*and.*isNull.*from.*drizzle-orm/);
+    expect(tenant).toMatch(/db\s*\.select/);
+    expect(tenant).not.toMatch(/prisma/);
+  });
+
+  it("rbac middleware uses Drizzle imports for --orm drizzle", async () => {
+    const projectDir = path.join(DRIZZLE_DIR, "drizzle-saas");
+
+    const rbac = await readFile(path.join(projectDir, "src", "middleware", "rbac.ts"));
+    const manifest = JSON.parse(
+      await readFile(path.join(projectDir, ".backgenrc.json"))
+    );
+    expect(manifest.project.orm).toBe("drizzle");
+    expect(rbac).toMatch(/import.*db.*config\/database/);
+    expect(rbac).toMatch(/import.*Membership.*db\/schema/);
+    expect(rbac).toMatch(/import.*eq.*and.*isNull.*from.*drizzle-orm/);
+    expect(rbac).toMatch(/db\s*\.select/);
+    expect(rbac).not.toMatch(/prisma/);
+  });
+
+  it("generate resource adds Drizzle schema file and updates barrel", async () => {
+    cli("init drizzle-gen --orm drizzle --defaults --skip-install", DRIZZLE_DIR);
+
+    const projectDir = path.join(DRIZZLE_DIR, "drizzle-gen");
+    cli("generate resource Post title:string body:string --soft-delete", projectDir);
+
+    // Schema file created
+    const postSchema = await readFile(
+      path.join(projectDir, "src", "db", "schema", "post.ts")
+    );
+    expect(postSchema).toMatch(/pgTable\("post"/);
+    expect(postSchema).toMatch(/title.*text/);
+    expect(postSchema).toMatch(/body.*text/);
+    expect(postSchema).toMatch(/deletedAt.*timestamp/);
+
+    // Barrel updated
+    const barrel = await readFile(path.join(projectDir, "src", "db", "schema", "index.ts"));
+    expect(barrel).toMatch(/export.*Post.*post/);
+  });
+});
+
+describe("V1.8 Mongoose ORM schema generation", () => {
+  const MONGOOSE_DIR = path.resolve(__dirname, "../../.test-output-mongoose");
+
+  beforeAll(() => {
+    return fs.mkdir(MONGOOSE_DIR, { recursive: true }).catch(() => {});
+  });
+
+  afterAll(() => Promise.resolve());
+
+  it("init --orm mongoose creates models barrel", async () => {
+    cli("init mongoose-base --orm mongoose --defaults --skip-install", MONGOOSE_DIR);
+
+    const projectDir = path.join(MONGOOSE_DIR, "mongoose-base");
+
+    // Barrel should exist (template registered in generateTemplates)
+    const barrel = await readFile(path.join(projectDir, "src", "models", "index.ts"));
+    expect(barrel).toMatch(/Barrel export for Mongoose models/);
+
+    // Database config uses mongoose
+    const dbConfig = await readFile(path.join(projectDir, "src", "config", "database.ts"));
+    expect(dbConfig).toMatch(/import mongoose from "mongoose"/);
+    expect(dbConfig).toMatch(/connectDatabase/);
+  });
+
+  it("init --orm mongoose --preset saas-core creates Mongoose model files", async () => {
+    cli("init mongoose-saas --orm mongoose --preset saas-core --defaults --skip-install", MONGOOSE_DIR);
+
+    const projectDir = path.join(MONGOOSE_DIR, "mongoose-saas");
+
+    // Model files exist
+    const modelFiles = await fs.readdir(path.join(projectDir, "src", "models"));
+    expect(modelFiles).toContain("index.ts");
+    expect(modelFiles.some((f) => f.startsWith("Organization"))).toBe(true);
+    expect(modelFiles.some((f) => f.startsWith("Team"))).toBe(true);
+
+    // Barrel exports
+    const barrel = await readFile(path.join(projectDir, "src", "models", "index.ts"));
+    expect(barrel).toMatch(/export.*Organization.*Organization/);
+    expect(barrel).toMatch(/export.*Team.*Team/);
+
+    // Model file has mongoose.model and Schema
+    const orgModel = await readFile(
+      path.join(projectDir, "src", "models", "Organization.model.ts")
+    );
+    expect(orgModel).toMatch(/mongoose\.model/);
+    expect(orgModel).toMatch(/new Schema/);
+    expect(orgModel).toMatch(/name.*String/);
+    expect(orgModel).toMatch(/slug.*String/);
+    expect(orgModel).toMatch(/deletedAt.*Date/);
+  });
+
+  it("tenant middleware uses Mongoose imports for --orm mongoose", async () => {
+    const projectDir = path.join(MONGOOSE_DIR, "mongoose-saas");
+
+    const tenant = await readFile(path.join(projectDir, "src", "middleware", "tenant.ts"));
+    const manifest = JSON.parse(
+      await readFile(path.join(projectDir, ".backgenrc.json"))
+    );
+    expect(manifest.project.orm).toBe("mongoose");
+    expect(tenant).toMatch(/import.*Organization.*models\/index/);
+    expect(tenant).not.toMatch(/prisma/);
+    expect(tenant).not.toMatch(/drizzle/);
+  });
+
+  it("rbac middleware uses Mongoose imports for --orm mongoose", async () => {
+    const projectDir = path.join(MONGOOSE_DIR, "mongoose-saas");
+
+    const rbac = await readFile(path.join(projectDir, "src", "middleware", "rbac.ts"));
+    const manifest = JSON.parse(
+      await readFile(path.join(projectDir, ".backgenrc.json"))
+    );
+    expect(manifest.project.orm).toBe("mongoose");
+    expect(rbac).toMatch(/import.*Membership.*models\/index/);
+    expect(rbac).not.toMatch(/prisma/);
+    expect(rbac).not.toMatch(/drizzle/);
+  });
+
+  it("generate resource adds Mongoose model file and updates barrel", async () => {
+    cli("init mongoose-gen --orm mongoose --defaults --skip-install", MONGOOSE_DIR);
+
+    const projectDir = path.join(MONGOOSE_DIR, "mongoose-gen");
+    cli("generate resource Post title:string body:string --soft-delete", projectDir);
+
+    // Model file created
+    const postModel = await readFile(
+      path.join(projectDir, "src", "models", "Post.model.ts")
+    );
+    expect(postModel).toMatch(/mongoose\.model.*Post/);
+    expect(postModel).toMatch(/title.*String/);
+    expect(postModel).toMatch(/body.*String/);
+    expect(postModel).toMatch(/deletedAt.*Date/);
+
+    // Barrel updated
+    const barrel = await readFile(path.join(projectDir, "src", "models", "index.ts"));
+    expect(barrel).toMatch(/export.*\{ Post \}.*Post\.model/);
   });
 });

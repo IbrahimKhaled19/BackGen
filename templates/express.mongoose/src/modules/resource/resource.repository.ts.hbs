@@ -1,0 +1,60 @@
+import { {{ResourceName}} as {{ResourceName}}Model, I{{ResourceName}} } from "../../models/{{resourceName}}.model.js";
+import type { Create{{ResourceName}}Input, Update{{ResourceName}}Input, {{ResourceName}}Query } from "./{{resourceName}}.types.js";
+
+export class {{ResourceName}}Repository {
+  async create(data: Create{{ResourceName}}Input) {
+    return {{ResourceName}}Model.create(data);
+  }
+
+  async findById(id: string) {
+    return {{ResourceName}}Model.findById(id).lean();
+  }
+
+  async findAll(query: {{ResourceName}}Query) {
+    const { page = 1, limit = 10, search } = query;
+    const skip = (page - 1) * limit;
+
+    const filter: Record<string, unknown> = {};
+    {{#if softDelete}}
+    filter.deletedAt = null;
+    {{/if}}
+    if (search) {
+      filter.$or = [
+        {{#each fields}}
+        {{#if (eq this.type "string")}}
+        { {{this.name}}: { $regex: search, $options: "i" } },
+        {{/if}}
+        {{/each}}
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      {{ResourceName}}Model.find(filter)
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 })
+        .lean(),
+      {{ResourceName}}Model.countDocuments(filter),
+    ]);
+
+    return { items, total };
+  }
+
+  async update(id: string, data: Update{{ResourceName}}Input) {
+    return {{ResourceName}}Model.findByIdAndUpdate(id, data, { new: true }).lean();
+  }
+
+  async delete(id: string) {
+    {{#if softDelete}}
+    return {{ResourceName}}Model.findByIdAndUpdate(id, { deletedAt: new Date() }, { new: true }).lean();
+    {{else}}
+    return {{ResourceName}}Model.findByIdAndDelete(id).lean();
+    {{/if}}
+  }
+
+  {{#if softDelete}}
+  async restore(id: string) {
+    return {{ResourceName}}Model.findByIdAndUpdate(id, { deletedAt: null }, { new: true }).lean();
+  }
+  {{/if}}
+}

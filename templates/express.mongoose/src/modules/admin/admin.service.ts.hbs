@@ -1,0 +1,47 @@
+import { User } from "../../models/user.model.js";
+import { ApiError } from "../../utils/api-error.js";
+
+export class AdminService {
+  async getUsers() {
+    return User.find({}).select("id email role createdAt updatedAt").lean();
+  }
+
+  async getUserById(id: string) {
+    const user = await User.findById(id).select("id email role createdAt updatedAt").lean();
+
+    if (!user) {
+      throw ApiError.notFound("User not found");
+    }
+
+    return user;
+  }
+
+  async updateUserRole(id: string, role: string) {
+    const user = await User.findById(id);
+
+    if (!user) {
+      throw ApiError.notFound("User not found");
+    }
+
+    user.role = role as "ADMIN" | "USER";
+    await user.save();
+
+    return {
+      id: user._id.toString(),
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+  }
+
+  async deleteUser(id: string) {
+    const user = await User.findById(id);
+
+    if (!user) {
+      throw ApiError.notFound("User not found");
+    }
+
+    await User.findByIdAndDelete(id);
+  }
+}

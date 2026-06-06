@@ -6,19 +6,24 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "prisma generate && tsc",
+    "build": "{{#if (eq orm "prisma")}}prisma generate && {{/if}}{{#if (eq orm "drizzle")}}drizzle-kit generate && {{/if}}tsc",
     "start": "npm run build && node dist/server.js",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    {{#if (eq orm "prisma")}}
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "db:generate": "prisma generate"
+    "db:generate": "prisma generate",
+    {{/if}}
+    {{#if (eq orm "drizzle")}}
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:generate": "drizzle-kit generate",
+    {{/if}}
+    "postinstall": ""
   },
   "dependencies": {
-    "@prisma/client": "^7.0.0",
-    "@prisma/adapter-pg": "^7.0.0",
-    "pg": "^8.13.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -32,12 +37,24 @@
     "winston": "^3.17.0",
     "xss": "^1.0.15",
     "zod": "^3.24.0"
+    {{#if (or (eq orm "prisma") (eq orm "drizzle"))}}
+    ,"pg": "^8.13.0"
+    {{/if}}
+    {{#if (eq orm "prisma")}}
+    ,"@prisma/client": "^7.0.0"
+    ,"@prisma/adapter-pg": "^7.0.0"
+    {{/if}}
+    {{#if (eq orm "drizzle")}}
+    ,"drizzle-orm": "^0.45.2"
+    {{/if}}
+    {{#if (eq orm "mongoose")}}
+    ,"mongoose": "^8.9.0"
+    {{/if}}
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
-    "@types/pg": "^8.11.10",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.15.0",
@@ -45,16 +62,27 @@
     "@types/swagger-ui-express": "^4.1.7",
     "@types/express-mongo-sanitize": "^2.0.4",
     "eslint": "^9.0.0",
-    "prisma": "^7.0.0",
     "supertest": "^7.1.0",
     "@types/supertest": "^6.0.3",
     "tsx": "^4.19.0",
     "typescript": "^5.8.0",
     "typescript-eslint": "^8.0.0",
     "vitest": "^4.1.8"
+    {{#if (or (eq orm "prisma") (eq orm "drizzle"))}}
+    ,"@types/pg": "^8.11.10"
+    {{/if}}
+    {{#if (eq orm "prisma")}}
+    ,"prisma": "^7.0.0"
+    {{/if}}
+    {{#if (eq orm "drizzle")}}
+    ,"drizzle-kit": "^0.31.10"
+    {{/if}}
   },
   "overrides": {
     "glob": "^13.0.6"
+    {{#if (eq orm "drizzle")}}
+    ,"esbuild": "^0.25.0"
+    {{/if}}
   },
   "engines": {
     "node": ">=18.0.0"

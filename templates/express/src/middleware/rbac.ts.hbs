@@ -1,5 +1,15 @@
 import type { Request, Response, NextFunction } from "express";
+{{#if (eq orm "prisma")}}
 import { prisma } from "../config/database.js";
+{{/if}}
+{{#if (eq orm "mongoose")}}
+import { Membership } from "../models/index.js";
+{{/if}}
+{{#if (eq orm "drizzle")}}
+import { db } from "../config/database.js";
+import { Membership } from "../db/schema/index.js";
+import { eq, and, isNull } from "drizzle-orm";
+{{/if}}
 import { ApiError } from "../utils/api-error.js";
 
 /**
@@ -34,6 +44,7 @@ export function requireRole(minimum: Role) {
         throw new ApiError(400, "Organization context required (apply tenantMiddleware first)");
       }
 
+{{#if (eq orm "prisma")}}
       const membership = await prisma.membership.findFirst({
         where: {
           userId,
@@ -49,6 +60,42 @@ export function requireRole(minimum: Role) {
       }
 
       const userRole = membership.role as Role;
+{{/if}}
+{{#if (eq orm "mongoose")}}
+      const membershipDoc = await Membership.findOne({
+        user: userId,
+        organization: orgId,
+        deletedAt: null,
+        status: "ACTIVE",
+      }).select("role").lean();
+
+      if (!membershipDoc) {
+        throw new ApiError(403, "Not a member of this organization");
+      }
+
+      const userRole = membershipDoc.role as Role;
+{{/if}}
+{{#if (eq orm "drizzle")}}
+      const [membership] = await db
+        .select({ role: Membership.role })
+        .from(Membership)
+        .where(
+          and(
+            eq(Membership.userId, userId),
+            eq(Membership.organizationId, orgId),
+            isNull(Membership.deletedAt),
+            eq(Membership.status, "ACTIVE")
+          )
+        )
+        .limit(1);
+
+      if (!membership) {
+        throw new ApiError(403, "Not a member of this organization");
+      }
+
+      const userRole = membership.role as Role;
+{{/if}}
+
       if (ROLE_RANK[userRole] < ROLE_RANK[minimum]) {
         throw new ApiError(403, `Requires ${minimum} role`);
       }

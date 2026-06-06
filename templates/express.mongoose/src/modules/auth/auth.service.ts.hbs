@@ -1,0 +1,123 @@
+import bcrypt from "bcryptjs";
+import jwt, { type SignOptions } from "jsonwebtoken";
+import { User } from "../../models/user.model.js";
+import { RefreshToken } from "../../models/refresh-token.model.js";
+import { env } from "../../config/env.js";
+import { ApiError } from "../../utils/api-error.js";
+import type { RegisterInput, LoginInput, AuthResponse, TokenPair } from "./auth.types.js";
+
+export class AuthService {
+  async register(input: RegisterInput): Promise<AuthResponse> {
+    const existingUser = await User.findOne({ email: input.email });
+
+    if (existingUser) {
+      throw ApiError.conflict("Email already exists");
+    }
+
+    const hashedPassword = await bcrypt.hash(input.password, 10);
+
+    const user = await User.create({
+      email: input.email,
+      password: hashedPassword,
+    });
+
+    const tokens = this.generateTokens({
+      userId: user._id.toString(),
+      email: user.email,
+      role: user.role,
+    });
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+    await RefreshToken.create({
+      token: tokens.refreshToken,
+      userId: user._id,
+      expiresAt,
+    });
+
+    return {
+      user: {
+        id: user._id.toString(),
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+      },
+      ...tokens,
+    };
+  }
+
+  async login(input: LoginInput): Promise<AuthResponse> {
+    const user = await User.findOne({ email: input.email });
+
+    if (!user) {
+      throw ApiError.unauthorized("Invalid credentials");
+    }
+
+    const validPassword = await bcrypt.compare(input.password, user.password);
+
+    if (!validPassword) {
+      throw ApiError.unauthorized("Invalid credentials");
+    }
+
+    const tokens = this.generateTokens({
+      userId: user._id.toString(),
+      email: user.email,
+      role: user.role,
+    });
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+    await RefreshToken.create({
+      token: tokens.refreshToken,
+      userId: user._id,
+      expiresAt,
+    });
+
+    return {
+      user: {
+        id: user._id.toString(),
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+      },
+      ...tokens,
+    };
+  }
+
+  async refresh(refreshTokenStr: string): Promise<{ accessToken: string }> {
+    const token = await RefreshToken.findOne({ token: refreshTokenStr }).populate("userId");
+
+    if (!token) {
+      throw ApiError.unauthorized("Invalid refresh token");
+    }
+
+    if (token.expiresAt < new Date()) {
+      await RefreshToken.findByIdAndDelete(token._id);
+      throw ApiError.unauthorized("Refresh token expired");
+    }
+
+    const accessToken = jwt.sign(
+      { userId: (token.userId as any)._id || token.userId, email: "", role: "" },
+      env.JWT_SECRET,
+      { expiresIn: env.JWT_EXPIRES_IN } as SignOptions
+    );
+
+    return { accessToken };
+  }
+
+  async logout(refreshTokenStr: string): Promise<void> {
+    await RefreshToken.deleteOne({ token: refreshTokenStr });
+  }
+
+  private generateTokens(payload: { userId: string; email: string; role: string }): TokenPair {
+    const accessToken = jwt.sign(payload, env.JWT_SECRET, {
+      expiresIn: env.JWT_EXPIRES_IN,
+    } as SignOptions);
+
+    const refreshTokenStr = jwt.sign(payload, env.JWT_REFRESH_SECRET, {
+      expiresIn: env.JWT_REFRESH_EXPIRES_IN,
+    } as SignOptions);
+
+    return { accessToken, refreshToken: refreshTokenStr };
+  }
+}

@@ -206,7 +206,8 @@ export async function syncCommand(options: SyncOptions = {}): Promise<void> {
   // checks for src/middleware/<plugin>.ts (old path) and would reinstall old files.
   await migrateV460Middleware(projectDir, { yes: options.yes });
 
-  const installer = new PluginInstaller(TEMPLATES_DIR);
+  const orm = manifest.project.orm ?? "prisma";
+  const installer = new PluginInstaller(TEMPLATES_DIR, orm);
   let synced = 0;
   let skipped = 0;
 
@@ -288,13 +289,21 @@ export async function syncCommand(options: SyncOptions = {}): Promise<void> {
       }
       if (added > 0) {
         console.log(chalk.green(`Preset "${manifest.project.preset}": ${added} resource(s) synced.`));
-        // Re-run prisma generate to pick up new models
+        // Re-run codegen to pick up new models
         const { spawn } = await import("child_process");
-        await new Promise<void>((resolve) => {
-          const child = spawn("npx", ["prisma", "generate"], { cwd: projectDir, stdio: "inherit", shell: true });
-          child.on("close", () => resolve());
-          child.on("error", () => resolve());
-        });
+        if (orm === "drizzle") {
+          await new Promise<void>((resolve) => {
+            const child = spawn("npx", ["drizzle-kit", "generate"], { cwd: projectDir, stdio: "inherit", shell: true });
+            child.on("close", () => resolve());
+            child.on("error", () => resolve());
+          });
+        } else if (orm === "prisma") {
+          await new Promise<void>((resolve) => {
+            const child = spawn("npx", ["prisma", "generate"], { cwd: projectDir, stdio: "inherit", shell: true });
+            child.on("close", () => resolve());
+            child.on("error", () => resolve());
+          });
+        }
       }
     }
   }
