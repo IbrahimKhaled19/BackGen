@@ -289,13 +289,15 @@ backgen generate resource Product --orm prisma
 
 **Goal:** CI/CD, logging, monitoring, background jobs. Tools developers use daily.
 
-**Why move earlier:** `backgen add ci github` and `backgen add monitoring` are first-day needs, not enterprise needs.
+**Why move earlier:** `backgen add ci-github` and `backgen add monitoring` are first-day needs, not enterprise needs.
 
-### CI/CD
+### CI/CD (In Progress)
+
+`backgen add ci-github` available. GitLab CI planned.
 
 ```bash
-backgen add ci github
-backgen add ci gitlab
+backgen add ci-github
+backgen add ci-gitlab
 ```
 
 Generates `.github/workflows/ci.yml` (or `.gitlab-ci.yml`):

@@ -117,6 +117,7 @@ backgen add ratelimit       # Per-IP / per-user rate limiting
 | `stripe` | payment | Stripe checkout, webhooks, customers |
 | `s3` | storage | AWS S3 upload, download, presigned URLs |
 | `ratelimit` | production | Per-IP rate limiting with Redis-ready store |
+| `ci-github` | devops | GitHub Actions CI pipeline (lint, typecheck, test, build, optional deploy) |
 
 **Conflict detection:** `jwt` and `clerk` cannot be installed together.
 
@@ -478,7 +479,7 @@ npm run lint
 | V4.6 | Production Hardening | Done |
 | V4.6.1 | Base Hardening Default-On | Done |
 | V5 | Multi-ORM (Prisma, Drizzle, Mongoose) | Done |
-| V6 | DevOps & Infrastructure | Planned |
+| V6 | DevOps & Infrastructure | In Progress |
 | V7 | Developer Experience | Planned |
 | V8 | Schema-First Development | Planned |
 | V9 | Enterprise Features | Planned |
