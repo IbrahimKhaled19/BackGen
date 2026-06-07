@@ -1,5 +1,7 @@
 import type { BackGenPlugin } from "./plugin.js";
 import { ciGithubPlugin } from "../plugins/ci-github/index.js";
+import { codeqlPlugin } from "../plugins/codeql/index.js";
+import { dependabotPlugin } from "../plugins/dependabot/index.js";
 import { jwtPlugin } from "../plugins/jwt/index.js";
 import { stripePlugin } from "../plugins/stripe/index.js";
 import { s3Plugin } from "../plugins/s3/index.js";
@@ -7,9 +9,15 @@ import { clerkPlugin } from "../plugins/clerk/index.js";
 import { hardeningPlugin } from "../plugins/hardening/index.js";
 import { ratelimitPlugin } from "../plugins/ratelimit/index.js";
 import { sanitizePlugin } from "../plugins/sanitize/index.js";
+import { dockerRegistryPlugin } from "../plugins/docker-registry/index.js";
+import { releasePlugin } from "../plugins/release/index.js";
 
 const PLUGINS: Record<string, BackGenPlugin> = {
   "ci-github": ciGithubPlugin,
+  codeql: codeqlPlugin,
+  "dependabot": dependabotPlugin,
+  "docker-registry": dockerRegistryPlugin,
+  release: releasePlugin,
   jwt: jwtPlugin,
   stripe: stripePlugin,
   s3: s3Plugin,

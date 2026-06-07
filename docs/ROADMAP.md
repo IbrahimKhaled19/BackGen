@@ -67,6 +67,7 @@ Production-ready multi-tenant backend in under 5 minutes.
 | Rate Limit | production | Done (opt-in via `backgen add ratelimit`) |
 | Hardening | production | Deprecated in V4.6.1 (features now default, plugin hidden from picker) |
 | Sanitize | production | Deprecated in V4.6.1 (features now default, plugin hidden from picker) |
+| CI/GitHub | devops | Done (ci-github, dependabot, codeql, docker-registry, release) |
 
 ### Domain Presets
 
@@ -291,21 +292,17 @@ backgen generate resource Product --orm prisma
 
 **Why move earlier:** `backgen add ci-github` and `backgen add monitoring` are first-day needs, not enterprise needs.
 
-### CI/CD (In Progress)
+### CI/CD (Done)
 
-`backgen add ci-github` available. GitLab CI planned.
+5 plugins shipped — full CI/CD pipeline:
 
 ```bash
-backgen add ci-github
-backgen add ci-gitlab
+backgen add ci-github       # CI: lint, typecheck, test, build
+backgen add dependabot      # Dependency updates
+backgen add codeql          # Security analysis
+backgen add docker-registry # Docker build + GHCR publish
+backgen add release         # npm publish + GitHub releases
 ```
-
-Generates `.github/workflows/ci.yml` (or `.gitlab-ci.yml`):
-- Lint (ESLint)
-- Typecheck (tsc --noEmit)
-- Test (vitest run)
-- Build (tsc)
-- Optional deploy step (configurable)
 
 ### Logging
 

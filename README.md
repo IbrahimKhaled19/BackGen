@@ -118,6 +118,10 @@ backgen add ratelimit       # Per-IP / per-user rate limiting
 | `s3` | storage | AWS S3 upload, download, presigned URLs |
 | `ratelimit` | production | Per-IP rate limiting with Redis-ready store |
 | `ci-github` | devops | GitHub Actions CI pipeline (lint, typecheck, test, build, optional deploy) |
+| `dependabot` | devops | Automated dependency updates via Dependabot |
+| `codeql` | devops | CodeQL security analysis on push and schedule |
+| `docker-registry` | devops | Docker image build and publish to GHCR |
+| `release` | devops | Semantic release with npm publish and GitHub releases |
 
 **Conflict detection:** `jwt` and `clerk` cannot be installed together.
 

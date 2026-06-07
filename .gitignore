@@ -15,4 +15,5 @@ coverage/
 test-gen/
 demo/
 .claude/
+.claude-flow/
 specs/
