@@ -153,15 +153,31 @@ describe("codeql plugin", () => {
       expect(content).toContain("0 0 * * 0");
     });
 
-    it("renders security-events permission", async () => {
+    it("renders security-events write permission", async () => {
       const content = await read(workflowPath);
       expect(content).toContain("security-events: write");
     });
 
-    it("renders concurrency group", async () => {
+    it("renders actions read permission", async () => {
+      const content = await read(workflowPath);
+      expect(content).toContain("actions: read");
+    });
+
+    it("renders contents read permission", async () => {
+      const content = await read(workflowPath);
+      expect(content).toContain("contents: read");
+    });
+
+    it("renders concurrency group with github.ref", async () => {
       const content = await read(workflowPath);
       expect(content).toContain("concurrency");
+      expect(content).toContain("group: codeql-${{ github.ref }}");
       expect(content).toContain("cancel-in-progress: true");
+    });
+
+    it("renders matrix language as ${{ matrix.language }}", async () => {
+      const content = await read(workflowPath);
+      expect(content).toContain("languages: ${{ matrix.language }}");
     });
   });
 });

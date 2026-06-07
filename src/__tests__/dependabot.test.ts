@@ -133,6 +133,13 @@ describe("dependabot plugin", () => {
       expect(content).toContain("open-pull-requests-limit: 10");
     });
 
+    it("renders npm dependency group for batch updates", async () => {
+      const content = await read(configPath);
+      expect(content).toContain("groups:");
+      expect(content).toContain("npm:");
+      expect(content).toContain("- \"*\"");
+    });
+
     it("renders dependencies label", async () => {
       const content = await read(configPath);
       expect(content).toContain("- \"dependencies\"");

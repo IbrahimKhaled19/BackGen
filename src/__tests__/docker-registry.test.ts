@@ -138,6 +138,33 @@ describe("docker-registry plugin", () => {
       expect(content).toContain("ghcr.io");
     });
 
+    it("renders github actor as ${{ github.actor }}", async () => {
+      const content = await read(workflowPath);
+      expect(content).toContain("username: ${{ github.actor }}");
+    });
+
+    it("renders GITHUB_TOKEN secret reference", async () => {
+      const content = await read(workflowPath);
+      expect(content).toContain("password: ${{ secrets.GITHUB_TOKEN }}");
+    });
+
+    it("renders ghcr.io tag with repository and sha", async () => {
+      const content = await read(workflowPath);
+      expect(content).toContain("ghcr.io/${{ github.repository }}:${{ github.sha }}");
+    });
+
+    it("renders tag-only trigger (no branch push)", async () => {
+      const content = await read(workflowPath);
+      expect(content).toContain("tags:");
+      expect(content).toContain("- \"v*\"");
+      expect(content).not.toContain("branches:");
+    });
+
+    it("renders concurrency group with docker prefix", async () => {
+      const content = await read(workflowPath);
+      expect(content).toContain("group: docker-${{ github.ref }}");
+    });
+
     it("renders actions/checkout@v4", async () => {
       const content = await read(workflowPath);
       expect(content).toContain("actions/checkout@v4");

@@ -150,7 +150,12 @@ describe("release plugin", () => {
 
     it("renders NODE_AUTH_TOKEN secret reference", async () => {
       const content = await read(workflowPath);
-      expect(content).toContain("NODE_AUTH_TOKEN");
+      expect(content).toContain("NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}");
+    });
+
+    it("renders packages write permission", async () => {
+      const content = await read(workflowPath);
+      expect(content).toContain("packages: write");
     });
 
     it("renders softprops/action-gh-release@v2", async () => {
