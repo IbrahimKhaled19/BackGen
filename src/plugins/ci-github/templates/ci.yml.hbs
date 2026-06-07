@@ -6,13 +6,17 @@ on:
   pull_request:
     branches: [main, master]
 
+concurrency:
+  group: ci-$\{{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  ci:
+  test:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: [18, 20]
+        node-version: [18, 20, 22]
 
     steps:
       - uses: actions/checkout@v4.2.2
@@ -33,14 +37,25 @@ jobs:
         run: npm run typecheck
 
       - name: Test
-        run: npm test
+        run: npm run test -- --coverage
 
       - name: Build
         run: npm run build
 
-      {{#if deploy}}
-      - name: Deploy
-        run: npm run deploy
-        env:
-          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
-        {{/if}}
+      {{#if (eq orm "prisma")}}
+      - name: Prisma Validate
+        run: npx prisma validate
+      {{/if}}
+
+      - name: Audit
+        run: npm audit --audit-level=high
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - name: Build Docker image
+        run: docker build -t app .

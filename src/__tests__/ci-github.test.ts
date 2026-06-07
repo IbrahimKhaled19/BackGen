@@ -128,9 +128,9 @@ describe("ci-github plugin", () => {
       expect(content).toContain("npm run lint");
     });
 
-    it("renders npm test", async () => {
+    it("renders npm test with coverage", async () => {
       const content = await read(workflowPath);
-      expect(content).toContain("npm test");
+      expect(content).toContain("npm run test -- --coverage");
     });
 
     it("renders npm run build", async () => {
@@ -146,6 +146,72 @@ describe("ci-github plugin", () => {
     it("renders npm run typecheck", async () => {
       const content = await read(workflowPath);
       expect(content).toContain("npm run typecheck");
+    });
+
+    it("renders concurrency group with cancel-in-progress", async () => {
+      const content = await read(workflowPath);
+      expect(content).toContain("concurrency:");
+      expect(content).toContain("cancel-in-progress: true");
+    });
+
+    it("renders Node 22 in matrix", async () => {
+      const content = await read(workflowPath);
+      expect(content).toContain("node-version: [18, 20, 22]");
+    });
+
+    it("renders npm audit step", async () => {
+      const content = await read(workflowPath);
+      expect(content).toContain("npm audit --audit-level=high");
+    });
+
+    it("renders Prisma validate step when orm=prisma", async () => {
+      const content = await read(workflowPath);
+      expect(content).toContain("npx prisma validate");
+    });
+
+    it("renders Docker build job", async () => {
+      const content = await read(workflowPath);
+      expect(content).toContain("Build Docker image");
+      expect(content).toContain("docker build -t app .");
+    });
+
+    it("renamed job from ci to test", async () => {
+      const content = await read(workflowPath);
+      expect(content).toContain("jobs:\n  test:");
+    });
+  });
+
+  describe("install() with drizzle ORM skips Prisma validate", () => {
+    const projectDir = path.join(TEST_DIR, "demo-drizzle");
+    const workflowPath = path.join(projectDir, ".github", "workflows", "ci.yml");
+
+    beforeAll(async () => {
+      await fs.rm(TEST_DIR, { recursive: true, force: true });
+      await fs.mkdir(projectDir, { recursive: true });
+
+      const engine = new TemplateEngine(".");
+
+      await ciGithubPlugin.install({
+        projectDir,
+        projectName: "demo-drizzle",
+        orm: "drizzle",
+        engine,
+        mutate: async () => {},
+      });
+    });
+
+    afterAll(async () => {
+      await fs.rm(TEST_DIR, { recursive: true, force: true });
+    });
+
+    it("does NOT render Prisma validate when orm=drizzle", async () => {
+      const content = await read(workflowPath);
+      expect(content).not.toContain("npx prisma validate");
+    });
+
+    it("still renders Docker build job for non-prisma ORM", async () => {
+      const content = await read(workflowPath);
+      expect(content).toContain("Build Docker image");
     });
   });
 });

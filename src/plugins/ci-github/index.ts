@@ -33,7 +33,7 @@ export const ciGithubPlugin: BackGenPlugin = {
 
     await ctx.engine.renderAbsolute(
       path.join(TEMPLATE_DIR, "ci.yml.hbs"),
-      { projectName: ctx.projectName, deploy: false },
+      { projectName: ctx.projectName, orm: ctx.orm, deploy: false },
       path.join(workflowDir, "ci.yml")
     );
   },
