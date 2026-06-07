@@ -13,7 +13,7 @@ export const clerkPlugin: BackGenPlugin = {
   version: "1.0.0",
   available: true,
 
-  dependencies: ["@clerk/express"],
+  dependencies: ["@clerk/express", "svix"],
   devDependencies: [],
   conflicts: ["jwt"],
 
@@ -62,6 +62,13 @@ export const clerkPlugin: BackGenPlugin = {
         operation: "replace",
         marker: "// {{REGISTER_ROUTES}}",
         content: `import clerkRoutes from "./modules/clerk/clerk.routes.js";\napp.use("/api/auth", clerkRoutes);\n// {{REGISTER_ROUTES}}`,
+      },
+      // Add Clerk env vars to validation
+      {
+        file: "src/config/env.ts",
+        operation: "replace",
+        marker: "REDIS_URL: z.string().optional(),",
+        content: `REDIS_URL: z.string().optional(),\n  CLERK_SECRET_KEY: z.string(),\n  CLERK_PUBLISHABLE_KEY: z.string(),\n  CLERK_WEBHOOK_SECRET: z.string(),`,
       },
     ]);
   },

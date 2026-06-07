@@ -6,8 +6,10 @@ export class {{ResourceName}}Repository {
     return {{ResourceName}}Model.create(data);
   }
 
-  async findById(id: string) {
-    return {{ResourceName}}Model.findById(id).lean();
+  async findById(id: string, userId?: string) {
+    const filter: Record<string, unknown> = { _id: id };
+    if (userId) filter.userId = userId;
+    return {{ResourceName}}Model.findOne(filter).lean();
   }
 
   async findAll(query: {{ResourceName}}Query) {
@@ -22,7 +24,7 @@ export class {{ResourceName}}Repository {
       filter.$or = [
         {{#each fields}}
         {{#if (eq this.type "string")}}
-        { {{this.name}}: { $regex: search, $options: "i" } },
+        { {{this.name}}: { $regex: search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } },
         {{/if}}
         {{/each}}
       ];

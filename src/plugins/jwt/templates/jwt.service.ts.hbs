@@ -5,6 +5,11 @@ import { env } from "../../config/env.js";
 import { ApiError } from "../../utils/api-error.js";
 import type { RegisterInput, LoginInput, AuthResponse, TokenPair } from "./auth.types.js";
 
+// Security: warn if JWT secret is weak or default
+if (!env.JWT_SECRET || env.JWT_SECRET.length < 32 || env.JWT_SECRET.includes("your-jwt-secret")) {
+  console.warn("[auth] JWT_SECRET is weak or using default value. Generate a strong random secret (32+ chars) for production.");
+}
+
 export class AuthService {
   async register(input: RegisterInput): Promise<AuthResponse> {
     const existingUser = await prisma.user.findUnique({

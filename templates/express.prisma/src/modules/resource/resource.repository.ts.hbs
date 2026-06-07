@@ -17,12 +17,15 @@ export class {{ResourceName}}Repository {
     });
   }
 
-  async findById(id: string) {
-    return prisma.{{resourceName}}.findUnique({
-      where: { id },
+  async findById(id: string, userId?: string) {
+    const where: Record<string, unknown> = { id };
+    if (userId) {
+      where.userId = userId;
+    }
+    return prisma.{{resourceName}}.findFirst({
+      where,
       {{#if softDelete}}
       // soft-delete: exclude tombstoned records
-      // (use findFirst fallback if Prisma complains about findUnique + deletedAt)
       {{/if}}
       {{#if hasRelations}}
       include: {

@@ -1,8 +1,11 @@
 import { Router } from "express";
 import { getAuth, clerkClient } from "@clerk/express";
+import { Webhook } from "svix";
+import { env } from "../../config/env.js";
 import { clerkAuthMiddleware } from "./clerk.middleware.js";
 import { successResponse } from "../../utils/response.js";
 import { asyncHandler } from "../../utils/async-handler.js";
+import { ApiError } from "../../utils/api-error.js";
 
 const router = Router();
 
@@ -52,7 +55,22 @@ router.get(
 router.post(
   "/webhook",
   asyncHandler(async (req, res) => {
-    const { type, data } = req.body;
+    const wh = new Webhook(env.CLERK_WEBHOOK_SECRET);
+    const payload = JSON.stringify(req.body);
+    const headers = req.headers;
+
+    let evt: { type: string; data: Record<string, unknown> };
+    try {
+      evt = wh.verify(payload, {
+        "svix-id": headers["svix-id"] as string,
+        "svix-timestamp": headers["svix-timestamp"] as string,
+        "svix-signature": headers["svix-signature"] as string,
+      }) as { type: string; data: Record<string, unknown> };
+    } catch {
+      throw ApiError.unauthorized("Invalid webhook signature");
+    }
+
+    const { type, data } = evt;
 
     switch (type) {
       case "user.created":

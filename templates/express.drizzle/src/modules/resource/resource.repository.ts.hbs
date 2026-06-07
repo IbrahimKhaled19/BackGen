@@ -12,11 +12,15 @@ export class {{ResourceName}}Repository {
     return item;
   }
 
-  async findById(id: string) {
+  async findById(id: string, userId?: string) {
+    const filters = [eq({{resourceName}}.id, id)];
+    if (userId) {
+      filters.push(eq({{resourceName}}.userId, userId));
+    }
     const [item] = await db
       .select()
       .from({{resourceName}})
-      .where(eq({{resourceName}}.id, id));
+      .where(and(...filters));
     return item ?? null;
   }
 

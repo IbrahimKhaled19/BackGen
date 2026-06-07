@@ -1,5 +1,6 @@
 import * as path from "path";
 import * as fs from "fs/promises";
+import { randomBytes } from "crypto";
 import { fileURLToPath } from "url";
 import type { BackGenPlugin, FileMutation, InstallContext } from "../../core/plugin.js";
 import {
@@ -42,6 +43,21 @@ export const jwtPlugin: BackGenPlugin = {
   ],
 
   async install(ctx: InstallContext) {
+    // Generate random secrets for new projects
+    const jwtSecret = randomBytes(32).toString("hex");
+    const refreshSecret = randomBytes(32).toString("hex");
+
+    // Write real secrets to .env (gitignored), not .env.example
+    const envPath = path.join(ctx.projectDir, ".env");
+    try {
+      const existing = await fs.readFile(envPath, "utf-8");
+      if (!existing.includes("JWT_SECRET=")) {
+        await fs.appendFile(envPath, `\n# jwt plugin\nJWT_SECRET=${jwtSecret}\nJWT_REFRESH_SECRET=${refreshSecret}\n`, "utf-8");
+      }
+    } catch {
+      await fs.writeFile(envPath, `# jwt plugin\nJWT_SECRET=${jwtSecret}\nJWT_REFRESH_SECRET=${refreshSecret}\n`, "utf-8");
+    }
+
     // Install auth module
     const moduleDir = path.join(ctx.projectDir, "src", "modules", "auth");
     const middlewareDir = path.join(ctx.projectDir, "src", "middleware");

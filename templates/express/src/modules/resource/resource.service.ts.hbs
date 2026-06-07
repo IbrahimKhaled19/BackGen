@@ -9,8 +9,8 @@ export class {{ResourceName}}Service {
     return repository.create(input);
   }
 
-  async getById(id: string) {
-    const {{resourceName}} = await repository.findById(id);
+  async getById(id: string, userId?: string) {
+    const {{resourceName}} = await repository.findById(id, userId);
     if (!{{resourceName}}) {
       throw ApiError.notFound("{{ResourceName}} not found");
     }
@@ -21,16 +21,16 @@ export class {{ResourceName}}Service {
     return repository.findAll(query);
   }
 
-  async update(id: string, input: Update{{ResourceName}}Input) {
-    const {{resourceName}} = await repository.findById(id);
+  async update(id: string, input: Update{{ResourceName}}Input, userId?: string) {
+    const {{resourceName}} = await repository.findById(id, userId);
     if (!{{resourceName}}) {
       throw ApiError.notFound("{{ResourceName}} not found");
     }
     return repository.update(id, input);
   }
 
-  async delete(id: string) {
-    const {{resourceName}} = await repository.findById(id);
+  async delete(id: string, userId?: string) {
+    const {{resourceName}} = await repository.findById(id, userId);
     if (!{{resourceName}}) {
       throw ApiError.notFound("{{ResourceName}} not found");
     }
@@ -38,8 +38,8 @@ export class {{ResourceName}}Service {
   }
   {{#if softDelete}}
 
-  async restore(id: string) {
-    return repository.restore(id);
+  async restore(id: string, userId?: string) {
+    return repository.restore(id, userId);
   }
   {{/if}}
 }
