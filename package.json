@@ -1,6 +1,6 @@
 {
   "name": "@ibrahimkhaled19/backgen",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "type": "module",
   "description": "Generate production-ready backend projects in minutes",
   "main": "dist/index.js",
@@ -28,7 +28,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/IbrahimKhaled19/BackGen.git"
+    "url": "git+https://github.com/IbrahimKhaled19/BackGen.git"
   },
   "homepage": "https://github.com/IbrahimKhaled19/BackGen#readme",
   "bugs": {

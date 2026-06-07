@@ -7,29 +7,31 @@
 <img width="1600" height="900" alt="showcase" src="https://github.com/user-attachments/assets/cd3888d3-fa9d-4e4e-a595-4f10ae039871" />
 > Generate production-ready backend foundations so developers can focus on business logic, not boilerplate.
 
-BackGen is a CLI tool that generates complete Express.js backend projects with authentication, database, API documentation, Docker, and testing — all working out of the box.
+BackGen is a CLI tool that generates complete Express.js backend projects on **Prisma, Drizzle, or Mongoose** — with authentication, multi-tenant infrastructure, production hardening, Docker, and testing — all working out of the box.
 
 ```bash
-npx backgen init my-api
+npx @ibrahimkhaled19/backgen init my-api --orm drizzle
 cd my-api
 npm run dev
 ```
 
-Swagger docs at `http://localhost:3000/docs` in under 60 seconds.
+Swagger docs at `http://localhost:3000/docs` in under 60 seconds. Pick your ORM, keep everything else.
 
 ---
 
 ## Features
 
-- **Express + TypeScript** — strict mode, ESLint, Vitest
-- **Prisma + PostgreSQL** — schema, migrations, Prisma Studio
-- **Plugin System** — auth, payments, storage via `backgen add`
+- **Express + TypeScript** — strict mode, ESLint 9 (flat config), Vitest
+- **Multi-ORM** — Prisma, Drizzle, or Mongoose. Pick at `init` time, switch later via the manifest
+- **SaaS-ready** — `saas-core` preset ships Organizations, Memberships, Invitations, RBAC, tenant-scoped queries
+- **Hardened by default** — helmet, strict CORS, request ID, request timeout, xss + mongo-sanitize, graceful shutdown, `/health` + `/ready`, error envelope
+- **Plugin System** — JWT, Clerk, Stripe, S3, ratelimit via `backgen add`
 - **Resource Generator** — CRUD modules with relations, validation, Swagger
-- **Domain Presets** — healthcare, SaaS, ecommerce, CRM, LMS — full domain in one command
+- **Domain Presets** — saas-core, healthcare, SaaS, ecommerce, CRM, LMS — full domain in one command
 - **Seed & Factory Generators** — development data and test factories
 - **Docker** — multi-stage Dockerfile + docker-compose
 - **Swagger/OpenAPI** — auto-generated API documentation
-- **Manifest** — `.backgenrc.json` tracks everything for sync/upgrade
+- **Manifest** — `.backgenrc.json` tracks ORM, plugins, and versions for sync/upgrade
 
 ---
 
@@ -39,17 +41,20 @@ Swagger docs at `http://localhost:3000/docs` in under 60 seconds.
 # Install globally
 npm install -g @ibrahimkhaled19/backgen
 
-# Create a project
-backgen init my-api
+# Create a project (pick your ORM)
+backgen init my-api --orm prisma
+backgen init my-api --orm drizzle
+backgen init my-api --orm mongoose
 
-# Create a full domain from a preset
-backgen init healthcare-api --preset healthcare
+# Create a full multi-tenant domain
+backgen init my-saas --preset saas-core --defaults
 
 # Add authentication
 backgen add jwt
+backgen add clerk
 
-# Add payments
-backgen add stripe
+# Add production hardening
+backgen add ratelimit
 
 # Generate a resource
 backgen generate resource Product name:string price:number stock:number
@@ -68,21 +73,23 @@ npm run dev
 Generate a new backend project.
 
 ```bash
-backgen init my-api
-backgen init my-api --defaults               # non-interactive
-backgen init my-api --skip-install           # skip npm install
-backgen init my-api --preset healthcare      # generate full domain
-backgen init my-api --preset saas --defaults  # domain + non-interactive
+backgen init my-api                              # interactive ORM picker
+backgen init my-api --orm prisma                 # explicit ORM
+backgen init my-api --orm drizzle --defaults     # Drizzle, non-interactive
+backgen init my-api --orm mongoose --skip-install
+backgen init my-api --preset saas-core --defaults   # full multi-tenant domain
+backgen init my-api --preset healthcare            # healthcare domain
 ```
 
 **Output:**
 - Express app with TypeScript strict mode
-- Prisma schema (PostgreSQL)
+- ORM-specific data layer (Prisma / Drizzle / Mongoose)
 - Environment validation (Zod)
 - Swagger/OpenAPI documentation
 - Docker + docker-compose
-- ESLint + Vitest
-- `.backgenrc.json` manifest
+- Hardened by default: helmet, CORS, request ID, timeout, xss + mongo-sanitize, graceful shutdown, health checks
+- ESLint 9 + Vitest
+- `.backgenrc.json` manifest (records `project.orm` + plugins)
 
 No auth by default — choose your auth provider with `backgen add`.
 
@@ -98,6 +105,7 @@ backgen add jwt             # JWT authentication
 backgen add clerk           # Clerk auth-as-a-service
 backgen add stripe          # Stripe payments
 backgen add s3              # AWS S3 storage
+backgen add ratelimit       # Per-IP / per-user rate limiting
 ```
 
 **Available Plugins:**
@@ -108,6 +116,7 @@ backgen add s3              # AWS S3 storage
 | `clerk` | auth | Clerk auth-as-a-service (conflicts with jwt) |
 | `stripe` | payment | Stripe checkout, webhooks, customers |
 | `s3` | storage | AWS S3 upload, download, presigned URLs |
+| `ratelimit` | production | Per-IP rate limiting with Redis-ready store |
 
 **Conflict detection:** `jwt` and `clerk` cannot be installed together.
 
@@ -200,7 +209,7 @@ Generate seed data for development.
 backgen generate seed Product --count 10
 ```
 
-Output: `prisma/seeds/product.ts`
+Output: `prisma/seeds/product.ts` (Prisma), `db/seeds/product.ts` (Drizzle), or `seeds/product.ts` (Mongoose)
 
 ---
 
@@ -224,10 +233,10 @@ const product = await createProduct({ name: "Widget" });
 
 ### `backgen generate migration [name]`
 
-Generate a Prisma migration.
+Generate a database migration (ORM-aware).
 
 ```bash
-backgen generate migration add-product-table
+backgen generate migration add-product-table   # runs prisma migrate dev / drizzle-kit generate / no-op for Mongoose
 ```
 
 ---
@@ -239,6 +248,21 @@ Reconcile `.backgenrc.json` with the project. Regenerates missing plugin files.
 ```bash
 backgen sync
 ```
+
+---
+
+### `backgen health`
+
+Show system health information.
+
+```bash
+backgen health
+```
+
+**Displays:**
+- Node.js version
+- Platform and architecture
+- BackGen version
 
 ---
 
@@ -255,8 +279,9 @@ backgen doctor
 - npm availability
 - .env file
 - DATABASE_URL
-- Prisma schema
+- Prisma schema / Drizzle config / Mongoose connection
 - Dependencies
+- Package manager version
 
 ---
 
@@ -289,7 +314,7 @@ Plugins can:
 - Inject environment variables
 - Register routes in app.ts
 - Replace existing middleware
-- Add Prisma models
+- Add database models (Prisma / Drizzle / Mongoose)
 
 ---
 
@@ -327,34 +352,40 @@ Plugins can:
 
 ```
 my-api/
-├── prisma/
-│   ├── schema.prisma          # Database schema
-│   └── seeds/                 # Seed data
+├── prisma/                       # Prisma ORM only
+│   ├── schema.prisma
+│   └── seeds/
+├── src/db/                       # Drizzle ORM only
+│   ├── schema/
+│   │   └── index.ts
+│   └── seeds/
+├── src/models/                   # Mongoose ORM only
+│   └── seeds/
 ├── src/
-│   ├── app.ts                 # Express app setup
-│   ├── server.ts              # Server entry point
+│   ├── app.ts                    # Express app setup
+│   ├── server.ts                 # Server entry point
 │   ├── config/
-│   │   ├── env.ts             # Zod env validation
-│   │   ├── database.ts        # Prisma client
-│   │   └── swagger.ts         # Swagger config
+│   │   ├── env.ts                # Zod env validation
+│   │   ├── database.ts           # Prisma client / Drizzle db / Mongoose connection
+│   │   └── swagger.ts            # Swagger config
 │   ├── middleware/
-│   │   ├── auth.ts            # JWT/Clerk auth
-│   │   ├── validate.ts        # Zod validation
-│   │   ├── error.ts           # Global error handler
-│   │   └── logger.ts          # Request logging
+│   │   ├── auth.ts               # JWT/Clerk auth
+│   │   ├── validate.ts           # Zod validation
+│   │   ├── error.ts              # Global error handler
+│   │   └── logger.ts             # Request logging
 │   ├── modules/
-│   │   ├── auth/              # Auth module (if jwt installed)
-│   │   ├── stripe/            # Stripe module (if installed)
-│   │   └── <resource>/        # Generated resources
+│   │   ├── auth/                 # Auth module (if jwt installed)
+│   │   ├── stripe/               # Stripe module (if installed)
+│   │   └── <resource>/           # Generated resources
 │   ├── services/
-│   │   └── logger.service.ts  # Winston logger
+│   │   └── logger.service.ts     # Winston logger
 │   ├── utils/
-│   │   ├── api-error.ts       # Error class
-│   │   ├── async-handler.ts   # Async wrapper
-│   │   └── response.ts        # Response formatters
-│   └── factories/             # Test factories
+│   │   ├── api-error.ts          # Error class
+│   │   ├── async-handler.ts      # Async wrapper
+│   │   └── response.ts           # Response formatters
+│   └── factories/                # Test factories
 ├── .env.example
-├── .backgenrc.json            # Manifest
+├── .backgenrc.json               # Manifest
 ├── Dockerfile
 ├── docker-compose.yml
 ├── package.json
@@ -385,14 +416,17 @@ npm run lint
 
 ### Test Suite
 
-59 tests covering:
+87+ tests covering:
 - CLI help and version
-- Init: project structure, configs, manifest
+- Init: project structure, configs, manifest (all 3 ORMs)
 - Init with domain presets: preset-specific resources and relations
-- Add plugin: files, routes, env vars, manifest
-- Generate resource: module files, Prisma model, routes, validation
-- Generate with relations: foreign keys, Prisma includes
-- Seed and factory generators
+- Init with saas-core preset: multi-tenant organizations, memberships, RBAC
+- Add plugin: files, routes, env vars, manifest (V4.6 plugin suite)
+- Generate resource: module files, ORM model, routes, validation
+- Generate with relations: foreign keys, ORM includes
+- Seed and factory generators (all 3 ORMs)
+- Drizzle: schema generation, client setup, codegen
+- Mongoose: model generation, schema definition, connection
 - Remove plugin: manifest cleanup
 - Sync: file restoration
 - Doctor: health checks
@@ -420,7 +454,7 @@ npm run lint
 | Framework | Express.js |
 | Language | TypeScript (strict) |
 | Database | PostgreSQL |
-| ORM | Prisma |
+| ORM | Prisma / Drizzle / Mongoose |
 | Validation | Zod |
 | Auth | JWT or Clerk |
 | Payments | Stripe |
@@ -440,15 +474,17 @@ npm run lint
 | V2 | Plugin System | Done |
 | V3 | Resource Generator | Done |
 | V4 | Domain Presets | Done |
-| V4.5 | SaaS Essentials | Next |
-| V5 | Multi-ORM | Planned |
+| V4.5 | SaaS Essentials | Done |
+| V4.6 | Production Hardening | Done |
+| V4.6.1 | Base Hardening Default-On | Done |
+| V5 | Multi-ORM (Prisma, Drizzle, Mongoose) | Done |
 | V6 | DevOps & Infrastructure | Planned |
 | V7 | Developer Experience | Planned |
 | V8 | Schema-First Development | Planned |
 | V9 | Enterprise Features | Planned |
-| V10 | AI Features | Planned |
-| V11 | Kubernetes | Planned |
-| V12 | Marketplace | Planned |
+| V10 | Plugin Authoring SDK | Planned |
+| V11 | Marketplace | Planned |
+| V12 | AI Context Layer | Planned |
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for details.
 

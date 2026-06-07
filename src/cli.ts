@@ -45,7 +45,7 @@ generate
 
 generate
   .command("migration [name]")
-  .description("Generate a Prisma migration")
+  .description("Generate a database migration (ORM-aware)")
   .action(async (name: string | undefined) => {
     const { migrateCommand } = await import("./commands/migrate.js");
     await migrateCommand(name);
@@ -91,6 +91,14 @@ program
   .action(async (options: { yes?: boolean }) => {
     const { syncCommand } = await import("./commands/sync.js");
     await syncCommand({ yes: options.yes ?? false });
+  });
+
+program
+  .command("health")
+  .description("Show system health information")
+  .action(async () => {
+    const { healthCommand } = await import("./health.js");
+    healthCommand();
   });
 
 program
