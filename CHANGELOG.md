@@ -1,5 +1,10 @@
 # Changelog
 
+## [v1.8.4] - 2026-06-07
+
+### Bug Fixes
+- fix(publish): exclude .claude/ from npm pack — added to .gitignore and .npmignore
+
 ## [v1.8.2] - 2026-06-07
 
 ### Security
