@@ -8,9 +8,9 @@ const allowed = env.CORS_ALLOWED_ORIGINS
   : [];
 
 if (allowed.length === 0) {
-  console.warn("[cors] CORS_ALLOWED_ORIGINS not set — allowing all origins. Set it in production.");
+  console.warn("[cors] CORS_ALLOWED_ORIGINS not set — defaulting to same-origin. Set it in production to allow specific origins.");
 }
 
 export const corsStrict = allowed.length > 0
   ? cors({ origin: allowed, credentials: true })
-  : cors();
+  : cors({ origin: false });

@@ -29,7 +29,7 @@ Production-ready multi-tenant backend in under 5 minutes.
 
 ---
 
-## Current State (V4 Complete)
+## Current State (V6.4 Complete)
 
 ### Architecture
 
@@ -37,13 +37,15 @@ Production-ready multi-tenant backend in under 5 minutes.
 |-----------|--------|
 | CLI (Commander.js, subcommands) | Done |
 | Plugin system (interfaces, registry, installer) | Done |
-| Manifest (.backgenrc.json, versions, source) | Done |
+| Manifest (.backgenrc.json, versions, source, file ownership) | Done |
 | Template engine (Handlebars + eq helper) | Done |
 | File mutation API (append/prepend/replace) | Done |
 | Checkpoint/resume system | Done |
 | Domain presets (5) | Done |
-| E2E test suite (121 tests) | Done |
+| E2E test suite (277+ tests) | Done |
 | npm published (`@ibrahimkhaled19/backgen`) | Done |
+| V6 DevOps plugins (5 CI/CD) | Done |
+| V6 Upgrade engine (ownership, migrations, backups, rollback, plugin migrations) | Done |
 
 ### Commands
 
@@ -53,7 +55,9 @@ Production-ready multi-tenant backend in under 5 minutes.
 | `backgen add [plugin...]` | Install plugins, multi-select, conflict-check | Done |
 | `backgen remove [plugin...]` | Uninstall plugins, multi-select | Done |
 | `backgen sync` | Reconcile manifest with project | Done |
-| `backgen doctor` | Health check | Done |
+| `backgen doctor [--fix]` | Health check + ownership integrity, --fix auto-repairs | Done |
+| `backgen upgrade [--yes]` | Run pending migrations with pre-backup | Done |
+| `backgen rollback [--yes]` | Restore most recent pre-upgrade backup | Done |
 | `backgen generate resource\|migration\|seed\|factory <name>` | CRUD scaffolding | Done |
 
 ### Plugins
@@ -286,15 +290,13 @@ backgen generate resource Product --orm prisma
 
 ---
 
-## V6: DevOps & Infrastructure
+## V6: DevOps & Infrastructure (Done)
 
-**Goal:** CI/CD, logging, monitoring, background jobs. Tools developers use daily.
+**Goal:** CI/CD pipelines, upgrade engine, backup/rollback, ownership tracking.
 
-**Why move earlier:** `backgen add ci-github` and `backgen add monitoring` are first-day needs, not enterprise needs.
+**Why move earlier:** DevOps is a first-day need. Upgrade engine required ownership tracking to exist first.
 
-### CI/CD (Done)
-
-5 plugins shipped — full CI/CD pipeline:
+### CI/CD — 5 Plugins
 
 ```bash
 backgen add ci-github       # CI: lint, typecheck, test, build
@@ -304,96 +306,57 @@ backgen add docker-registry # Docker build + GHCR publish
 backgen add release         # npm publish + GitHub releases
 ```
 
-### Logging
+`backgen add devops` shorthand installs all 5 at once. `backgen remove devops` removes all.
 
-```bash
-backgen add logging pino
-backgen add logging winston   # default
-```
+### Upgrade Engine (V6.1–V6.4)
 
-Pino faster, JSON native. Winston flexible, more transports.
+| Component | Status | Description |
+|-----------|--------|-------------|
+| Ownership tracking | Done | Manifest registers every generated file with owner + version |
+| `backgen doctor` | Done | Health check + ownership integrity audit |
+| `backgen doctor --fix` | Done | Reconcile manifest with disk |
+| `backgen upgrade` | Done | Migration engine — applies core + plugin migrations sequentially |
+| `backgen upgrade --yes` | Done | Non-interactive upgrade |
+| `backgen rollback` | Done | Restore from pre-upgrade backup |
+| Plugin migrations | Done | Plugins carry versioned migration scripts |
+| Template diffing | V7 | Compare current vs latest template output |
 
-### Monitoring
+### Deferred to V8+
 
-```bash
-backgen add monitoring
-```
-
-Options:
-- Prometheus metrics endpoint
-- OpenTelemetry tracing
-- Sentry error tracking
-
-### Infrastructure Plugins
-
-```bash
-backgen add jobs bullmq           # Background jobs (Redis)
-backgen add ratelimit redis       # Rate limiting with shared store
-backgen add webhook               # Webhook delivery + signing
-backgen add versioning            # API versioning (v1, v2 namespaces)
-backgen add email resend          # Transactional email
-backgen add email sendgrid
-backgen add email postmark
-backgen add cache redis           # Cache layer
-backgen add search meilisearch    # Full-text search
-backgen add search algolia
-backgen add queue sqs             # AWS SQS
-backgen add storage gcs           # Google Cloud Storage
-```
-
-### Observability Defaults
-
-`backgen init` includes:
-- `/health` (liveness)
-- `/ready` (DB + Redis ping)
-- `/metrics` (Prometheus)
-- Structured logs with `requestId`
-- Error tracking hook (no-op if Sentry not configured)
+Features scoped out of V6, moved to later versions:
+- Logging plugins (pino/winston) — V8+
+- Monitoring (Prometheus/Sentry/OpenTelemetry) — V8+
+- Infrastructure plugins (bullmq, email, search, cache) — V9+
+- Observability defaults beyond `/health` + `/ready` — V8+
 
 ---
 
-## V7: Developer Experience (Slim)
+## V7: Upgrade Polish & Diffing (In Progress)
 
-**Goal:** Lifecycle commands that keep developers in the BackGen ecosystem.
+**Goal:** Diffing, dry-run, and safety polish for the upgrade engine.
 
-**Why slimmed:** Earlier roadmap had `graph`, `codemod`, `upgrade`. First two were speculative. Cut. Focus on commands with clear ROI.
+**Why after V6:** V6 shipped the upgrade engine — V7 polishes it with visibility and safety tooling.
 
 ### Commands
 
 | Command | Status | Purpose |
 |---------|--------|---------|
-| `backgen doctor` | Done | Health check |
+| `backgen doctor` | Done | Health check + ownership audit |
 | `backgen sync` | Done | Reconcile manifest |
-| `backgen upgrade` | Planned | Upgrade templates + deps safely |
-| `backgen doctor --fix` | Planned | Auto-fix common issues |
+| `backgen upgrade` | Done | Apply pending migrations |
+| `backgen upgrade --yes` | Done | Non-interactive upgrade |
+| `backgen doctor --fix` | Done | Reconcile manifest with disk |
+| `backgen rollback` | Done | Restore most recent backup |
 
-### Upgrade System
+### V7 Scope
 
-```bash
-backgen upgrade
-backgen upgrade --patch
-backgen upgrade --plugin stripe
-```
-
-- Compare installed plugin versions with latest bundled
-- Show diff before applying
-- Dry-run by default
-- Rollback via `backgen upgrade --rollback`
-- Backward-compatible manifest migrations
-
-### Doctor Enhancements
-
-```bash
-backgen doctor           # health report
-backgen doctor --fix     # auto-fix: missing .env keys, prisma generate, etc.
-backgen doctor --strict  # exit 1 on warnings
-```
-
-Checks expand to:
-- Plugin health (env vars present, deps installed)
-- Schema drift (manifest vs project state)
-- Security (secrets in env, no hardcoded keys)
-- Performance (bundle size, dep count)
+| Feature | Status |
+|---------|--------|
+| `backgen diff` — preview changes before upgrade | Planned |
+| Dry-run mode — no-op migration pass | Planned |
+| Selective plugin upgrade (`--plugin stripe`) | Planned |
+| Selective rollback (per-plugin) | Planned |
+| Template diff display in terminal | Planned |
 
 ### Cut From Roadmap
 

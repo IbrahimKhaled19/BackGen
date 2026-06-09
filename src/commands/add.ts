@@ -18,6 +18,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const TEMPLATES_DIR = path.resolve(__dirname, "../../templates/express");
 
+/**
+ * Install one or more plugins into the project.
+ * If pluginName is omitted, shows an interactive multi-select picker.
+ * Supports "devops" shorthand to install all devops-category plugins at once.
+ */
 export async function addCommand(pluginName: string | undefined): Promise<void> {
   console.log(chalk.blue.bold("\n🔌 BackGen - Add Plugin\n"));
 
@@ -76,6 +81,28 @@ export async function addCommand(pluginName: string | undefined): Promise<void> 
     // Install each selected plugin
     for (const name of selected) {
       await installPlugin(projectDir, name, installed);
+    }
+    return;
+  }
+
+  // "devops" shorthand — install all devops plugins at once
+  if (pluginName === "devops") {
+    const devopsPlugins = getPluginsByCategory("devops");
+    const toInstall = devopsPlugins.filter((p) => !installed[p.name]);
+
+    if (toInstall.length === 0) {
+      console.log(chalk.yellow("All devops plugins are already installed."));
+      return;
+    }
+
+    console.log(chalk.cyan(`Installing ${toInstall.length} devops plugins:\n`));
+    for (const p of toInstall) {
+      console.log(chalk.cyan(`  • ${p.name} — ${p.description}`));
+    }
+    console.log();
+
+    for (const p of toInstall) {
+      await installPlugin(projectDir, p.name, installed);
     }
     return;
   }

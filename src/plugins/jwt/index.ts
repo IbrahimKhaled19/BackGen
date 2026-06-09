@@ -22,6 +22,7 @@ export const jwtPlugin: BackGenPlugin = {
 
   dependencies: ["bcryptjs", "jsonwebtoken"],
   devDependencies: ["@types/jsonwebtoken"],
+  requires: ["prisma"],
   conflicts: ["clerk"],
 
   env: {
@@ -126,16 +127,12 @@ export const jwtPlugin: BackGenPlugin = {
       const userPath = getPluginModelPath(ctx.orm, "User");
       const tokenPath = getPluginModelPath(ctx.orm, "RefreshToken");
       await fs.mkdir(path.join(ctx.projectDir, userPath.dir), { recursive: true });
-      await fs.writeFile(
-        path.join(ctx.projectDir, userPath.file),
-        getUserModelSnippet(ctx.orm),
-        "utf-8"
-      );
-      await fs.writeFile(
-        path.join(ctx.projectDir, tokenPath.file),
-        getRefreshTokenModelSnippet(ctx.orm),
-        "utf-8"
-      );
+      const userModelPath = path.join(ctx.projectDir, userPath.file);
+      const tokenModelPath = path.join(ctx.projectDir, tokenPath.file);
+      ctx.trackFile?.(userModelPath);
+      ctx.trackFile?.(tokenModelPath);
+      await fs.writeFile(userModelPath, getUserModelSnippet(ctx.orm), "utf-8");
+      await fs.writeFile(tokenModelPath, getRefreshTokenModelSnippet(ctx.orm), "utf-8");
     }
   },
 };

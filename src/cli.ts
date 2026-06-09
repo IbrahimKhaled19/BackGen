@@ -104,7 +104,26 @@ program
 program
   .command("doctor")
   .description("Check project health")
-  .action(async () => {
+  .option("-f, --fix", "Auto-fix ownership integrity issues")
+  .action(async (options: { fix?: boolean }) => {
     const { doctorCommand } = await import("./commands/doctor.js");
-    await doctorCommand();
+    await doctorCommand({ fix: options.fix ?? false });
+  });
+
+program
+  .command("upgrade")
+  .description("Upgrade project to latest template version")
+  .option("-y, --yes", "Skip confirmation prompt")
+  .action(async (options: { yes?: boolean }) => {
+    const { upgradeCommand } = await import("./commands/upgrade.js");
+    await upgradeCommand({ yes: options.yes ?? false });
+  });
+
+program
+  .command("rollback")
+  .description("Roll back to the most recent backup")
+  .option("-y, --yes", "Skip confirmation prompt")
+  .action(async (options: { yes?: boolean }) => {
+    const { rollbackCommand } = await import("./commands/rollback.js");
+    await rollbackCommand({ yes: options.yes ?? false });
   });

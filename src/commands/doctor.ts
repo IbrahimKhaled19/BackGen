@@ -2,7 +2,9 @@ import chalk from "chalk";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { execSync } from "child_process";
-import { readManifest } from "../core/manifest.js";
+import { readManifest, writeManifest } from "../core/manifest.js";
+import type { FileOwner } from "../core/manifest.js";
+import type { ProjectManifest } from "../core/manifest.js";
 
 interface CheckResult {
   name: string;
@@ -11,7 +13,11 @@ interface CheckResult {
   fix?: string;
 }
 
-export async function doctorCommand(): Promise<void> {
+interface DoctorOptions {
+  fix?: boolean;
+}
+
+export async function doctorCommand(options: DoctorOptions = {}): Promise<void> {
   console.log(chalk.blue.bold("\n🩺 BackGen - Project Health Check\n"));
 
   const projectDir = process.cwd();
@@ -27,6 +33,23 @@ export async function doctorCommand(): Promise<void> {
   const orm = manifest?.project?.orm ?? "prisma";
   checks.push(await checkSchemaFile(projectDir, orm));
   checks.push(await checkDependencies(projectDir));
+
+  // V6.1: Ownership integrity checks
+  if (manifest) {
+    checks.push(await checkFileIntegrity(projectDir, manifest.files));
+    checks.push(await checkOwnershipIntegrity(projectDir, manifest.files));
+  } else {
+    checks.push({
+      name: "File integrity",
+      passed: true,
+      message: "No manifest — skipping file integrity check",
+    });
+    checks.push({
+      name: "Ownership integrity",
+      passed: true,
+      message: "No manifest — skipping ownership check",
+    });
+  }
 
   // Print results
   let passed = 0;
@@ -52,6 +75,12 @@ export async function doctorCommand(): Promise<void> {
   } else {
     console.log(chalk.red.bold(`${failed} of ${passed + failed} check(s) failed.`));
   }
+
+  // V6.5: --fix flag — reconcile manifest vs disk
+  if (options.fix && manifest) {
+    await applyOwnershipFix(projectDir, manifest);
+  }
+
   console.log("");
 }
 
@@ -185,5 +214,222 @@ async function checkDependencies(dir: string): Promise<CheckResult> {
       message: "node_modules not found",
       fix: "Run npm install",
     };
+  }
+}
+
+// ── Ownership integrity (V6.1) ─────────────────────────────────
+
+/** Known generated files with their ownership classification */
+const KNOWN_FILES: Record<string, FileOwner> = {
+  // App & Server
+  "src/app.ts": "shared",
+  "src/server.ts": "framework",
+  // Config
+  "src/config/env.ts": "framework-editable",
+  "src/config/database.ts": "framework-editable",
+  "src/config/swagger.ts": "framework-editable",
+  // Utils
+  "src/utils/api-error.ts": "framework",
+  "src/utils/async-handler.ts": "framework",
+  "src/utils/response.ts": "framework",
+  // Middleware (core)
+  "src/middleware/core/errors.ts": "framework",
+  "src/middleware/core/logger.ts": "framework",
+  "src/middleware/core/validate.ts": "framework",
+  // Middleware (security)
+  "src/middleware/security/cors-strict.ts": "framework",
+  "src/middleware/security/sanitize.ts": "framework",
+  // Middleware (observability)
+  "src/middleware/observability/request-id.ts": "framework",
+  "src/middleware/observability/request-timeout.ts": "framework",
+  "src/middleware/observability/health.ts": "framework",
+  // Middleware (root)
+  "src/middleware/graceful-shutdown.ts": "framework",
+  // Services
+  "src/services/logger.service.ts": "framework",
+  // Config files
+  "package.json": "shared",
+  "tsconfig.json": "framework-editable",
+  ".env.example": "shared",
+  ".gitignore": "shared",
+  "README.md": "shared",
+  "vitest.config.ts": "framework-editable",
+  "eslint.config.js": "framework-editable",
+  // Docker
+  "Dockerfile": "shared",
+  "docker-compose.yml": "shared",
+  // ORM
+  "prisma/schema.prisma": "user",
+  "prisma.config.ts": "framework-editable",
+  "drizzle.config.ts": "framework-editable",
+  "src/db/schema/index.ts": "user",
+  "src/models/index.ts": "user",
+};
+
+/** Check that files registered in manifest actually exist on disk */
+async function checkFileIntegrity(
+  dir: string,
+  files: Record<string, { owner: FileOwner; version?: string }>
+): Promise<CheckResult> {
+  const trackedCount = Object.keys(files).length;
+  if (trackedCount === 0) {
+    return {
+      name: "File integrity",
+      passed: true,
+      message: "No files tracked in manifest",
+    };
+  }
+
+  const missing: string[] = [];
+
+  for (const [filePath, meta] of Object.entries(files)) {
+    try {
+      await fs.access(path.join(dir, filePath));
+    } catch {
+      missing.push(`${filePath} (${meta.owner})`);
+    }
+  }
+
+  if (missing.length === 0) {
+    return {
+      name: "File integrity",
+      passed: true,
+      message: `${trackedCount} files tracked, all present on disk`,
+    };
+  }
+
+  return {
+    name: "File integrity",
+    passed: false,
+    message: `${missing.length} of ${trackedCount} tracked file(s) missing:\n  ${missing.join("\n  ")}`,
+    fix: "Run `backgen upgrade` to regenerate missing files",
+  };
+}
+
+/** Check that generated files on disk are properly registered in the manifest */
+async function checkOwnershipIntegrity(
+  dir: string,
+  files: Record<string, { owner: FileOwner; version?: string }>
+): Promise<CheckResult> {
+  const untracked: string[] = [];
+
+  for (const relPath of Object.keys(KNOWN_FILES)) {
+    const absPath = path.join(dir, relPath);
+    try {
+      await fs.access(absPath);
+      // File exists — check it's in manifest
+      if (!files[relPath]) {
+        untracked.push(relPath);
+      }
+    } catch {
+      // File doesn't exist on disk — skip
+    }
+  }
+
+  // Also check for ORM-specific paths that match a directory pattern
+  const ormPatterns = ["prisma/seeds/", "src/db/schema/", "src/models/"];
+  for (const pattern of ormPatterns) {
+    const patternDir = path.join(dir, pattern);
+    try {
+      const entries = await fs.readdir(patternDir);
+      for (const entry of entries) {
+        const relPath = pattern + entry;
+        if (!files[relPath]) {
+          untracked.push(relPath);
+        }
+      }
+    } catch {
+      // Directory doesn't exist — skip
+    }
+  }
+
+  if (untracked.length === 0) {
+    return {
+      name: "Ownership integrity",
+      passed: true,
+      message: "All generated files tracked in manifest",
+    };
+  }
+
+  return {
+    name: "Ownership integrity",
+    passed: false,
+    message: `${untracked.length} untracked generated file(s) found:\n  ${untracked.join("\n  ")}`,
+    fix: "Run `backgen sync` to register untracked files",
+  };
+}
+
+// ── V6.5: Ownership Fix ────────────────────────────────────────
+
+/**
+ * Reconcile manifest vs disk:
+ *   - Add entries for known generated files found on disk but not in manifest
+ *   - Remove stale entries for files in manifest that no longer exist on disk
+ *   - Only skips user-owned files for stale removal
+ */
+async function applyOwnershipFix(
+  projectDir: string,
+  manifest: ProjectManifest
+): Promise<void> {
+  console.log(chalk.cyan("\n  Applying ownership fixes..."));
+
+  let added = 0;
+  let removed = 0;
+  const files = manifest.files;
+
+  // 1. Register known files found on disk but missing from manifest
+  for (const [relPath, owner] of Object.entries(KNOWN_FILES)) {
+    try {
+      await fs.access(path.join(projectDir, relPath));
+      if (!files[relPath]) {
+        files[relPath] = {
+          owner,
+          version: owner !== "user" ? manifest.generatedVersion : undefined,
+        };
+        added++;
+      }
+    } catch {
+      // Not on disk — skip
+    }
+  }
+
+  // 2. Scan ORM-specific directories for untracked user files
+  const ormDirs = ["prisma/seeds", "src/db/schema", "src/models"];
+  for (const dir of ormDirs) {
+    try {
+      const entries = await fs.readdir(path.join(projectDir, dir));
+      for (const entry of entries) {
+        const relPath = dir + "/" + entry;
+        if (!files[relPath]) {
+          files[relPath] = { owner: "user" };
+          added++;
+        }
+      }
+    } catch {
+      // Directory doesn't exist — skip
+    }
+  }
+
+  // 3. Remove stale entries (files in manifest but gone from disk)
+  for (const [relPath, meta] of Object.entries(files)) {
+    if (meta.owner === "user") continue; // never remove user entries
+    try {
+      await fs.access(path.join(projectDir, relPath));
+    } catch {
+      delete files[relPath];
+      removed++;
+    }
+  }
+
+  if (added === 0 && removed === 0) {
+    console.log(chalk.gray("  Nothing to fix."));
+    return;
+  }
+
+  await writeManifest(projectDir, manifest);
+
+  console.log(chalk.green(`  ✓ Registered ${added} untracked file(s)`));
+  if (removed > 0) {
+    console.log(chalk.yellow(`  ~ Removed ${removed} stale entry(ies)`));
   }
 }

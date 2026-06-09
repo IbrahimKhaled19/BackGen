@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { getAuth } from "@clerk/express";
+import { getAuth, clerkClient } from "@clerk/express";
 import { ApiError } from "../../utils/api-error.js";
 
 declare global {
@@ -48,7 +48,6 @@ export function requireClerkRole(...roles: string[]) {
     // Role checking via Clerk public metadata
     // Set roles in Clerk Dashboard > Users > user > Public metadata
     // Example: { "role": "admin" }
-    const { clerkClient } = await import("@clerk/express");
     const user = await clerkClient.users.getUser(req.userId);
     const userRole = (user.publicMetadata?.role as string) ?? "user";
 

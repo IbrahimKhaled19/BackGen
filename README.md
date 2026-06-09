@@ -31,7 +31,7 @@ Swagger docs at `http://localhost:3000/docs` in under 60 seconds. Pick your ORM,
 - **Seed & Factory Generators** — development data and test factories
 - **Docker** — multi-stage Dockerfile + docker-compose
 - **Swagger/OpenAPI** — auto-generated API documentation
-- **Manifest** — `.backgenrc.json` tracks ORM, plugins, and versions for sync/upgrade
+- **Manifest** — `.backgenrc.json` tracks ORM, plugins, versions, and ownership for **upgrade/rollback**
 
 ---
 
@@ -106,6 +106,7 @@ backgen add clerk           # Clerk auth-as-a-service
 backgen add stripe          # Stripe payments
 backgen add s3              # AWS S3 storage
 backgen add ratelimit       # Per-IP / per-user rate limiting
+backgen add devops          # Install all devops plugins at once
 ```
 
 **Available Plugins:**
@@ -160,11 +161,12 @@ Course, Lesson, Enrollment, Progress, Certificate — courses with lessons, stud
 
 ### `backgen remove [plugin]`
 
-Remove a plugin. Interactive multi-select if no argument.
+Remove a plugin. Interactive multi-select if no argument. Supports `devops` shorthand to remove all devops plugins.
 
 ```bash
 backgen remove              # interactive multi-select
 backgen remove stripe       # remove specific plugin
+backgen remove devops       # remove all devops plugins
 ```
 
 ---
@@ -273,10 +275,11 @@ backgen health
 
 ### `backgen doctor`
 
-Check project health.
+Check project health with ownership integrity diagnostics.
 
 ```bash
-backgen doctor
+backgen doctor              # health check + ownership audit
+backgen doctor --fix        # auto-fix missing manifest entries
 ```
 
 **Checks:**
@@ -287,6 +290,42 @@ backgen doctor
 - Prisma schema / Drizzle config / Mongoose connection
 - Dependencies
 - Package manager version
+- **File integrity** — all manifest-tracked files exist on disk
+- **Ownership integrity** — framework vs user file classification
+
+---
+
+### `backgen upgrade`
+
+Upgrade a generated project to the latest template version. Creates a backup, then applies pending migrations sequentially.
+
+```bash
+backgen upgrade              # show pending migrations, prompt before applying
+backgen upgrade --yes        # skip confirmation, apply all pending
+```
+
+**What happens:**
+- Reads current `generatedVersion` from `.backgenrc.json`
+- Loads pending core + plugin migrations
+- Creates backup in `.backgen/backups/pre-<version>/`
+- Applies migrations in order (semver-sorted)
+- Updates ownership register + `generatedVersion` in manifest
+
+---
+
+### `backgen rollback`
+
+Restore a project to its pre-upgrade state from the most recent backup.
+
+```bash
+backgen rollback              # show latest backup, prompt before restoring
+backgen rollback --yes        # skip confirmation
+```
+
+**What happens:**
+- Lists available backups in `.backgen/backups/`
+- Restores the most recent backup (all tracked files + manifest)
+- Project returns to exact pre-upgrade state
 
 ---
 
@@ -308,6 +347,7 @@ interface BackGenPlugin {
 
   env?: Record<string, string>;
   templates: string[];
+  migrations?: PluginMigration[];   // versioned plugin migration scripts
 
   install(ctx: InstallContext): Promise<void>;
   uninstall?(ctx: InstallContext): Promise<void>;
@@ -320,36 +360,50 @@ Plugins can:
 - Register routes in app.ts
 - Replace existing middleware
 - Add database models (Prisma / Drizzle / Mongoose)
+- Carry versioned migrations for own upgrades
 
 ---
 
 ## Project Manifest
 
-`.backgenrc.json` tracks installed plugins:
+`.backgenrc.json` tracks plugins, versions, generated version, and file ownership:
 
 ```json
 {
   "version": "1.0.0",
+  "generatedVersion": "1.9.0",
   "project": {
     "name": "my-api",
     "framework": "express",
     "database": "postgresql",
-    "orm": "prisma"
+    "orm": "prisma",
+    "preset": "saas-core"
   },
   "plugins": {
     "jwt": {
       "version": "1.0.0",
       "installedAt": "2026-06-01",
       "source": "core"
-    },
-    "stripe": {
-      "version": "1.0.0",
-      "installedAt": "2026-06-01",
-      "source": "core"
     }
+  },
+  "files": {
+    "src/app.ts": { "owner": "shared", "version": "1.9.0" },
+    "src/server.ts": { "owner": "framework", "version": "1.9.0" },
+    "src/config/env.ts": { "owner": "framework-editable", "version": "1.9.0" },
+    "prisma/schema.prisma": { "owner": "user" },
+    "src/modules/user/user.service.ts": { "owner": "user" },
+    "docker-compose.yml": { "owner": "shared", "version": "1.9.0" }
   }
 }
 ```
+
+**Ownership levels:**
+| Level | Description | Upgrade behavior |
+|-------|-------------|-----------------|
+| `framework` | BackGen owns fully | Safe to overwrite |
+| `framework-editable` | Generated but user may customize | Smart merge via migration |
+| `shared` | Generated skeleton, user extends (e.g. docker-compose) | Migration-aware update |
+| `user` | User owns entirely | Never touched |
 
 ---
 
@@ -421,7 +475,7 @@ npm run lint
 
 ### Test Suite
 
-87+ tests covering:
+277+ tests covering:
 - CLI help and version
 - Init: project structure, configs, manifest (all 3 ORMs)
 - Init with domain presets: preset-specific resources and relations
@@ -432,9 +486,11 @@ npm run lint
 - Seed and factory generators (all 3 ORMs)
 - Drizzle: schema generation, client setup, codegen
 - Mongoose: model generation, schema definition, connection
-- Remove plugin: manifest cleanup
+- Remove plugin: file + dependency + manifest cleanup
 - Sync: file restoration
-- Doctor: health checks
+- Doctor: health checks, ownership integrity
+- Upgrade: migration engine, pending detection, backup creation
+- Rollback: backup listing, file restoration, manifest recovery
 - Error handling: unknown plugin, non-empty directory
 
 ---
@@ -483,8 +539,12 @@ npm run lint
 | V4.6 | Production Hardening | Done |
 | V4.6.1 | Base Hardening Default-On | Done |
 | V5 | Multi-ORM (Prisma, Drizzle, Mongoose) | Done |
-| V6 | DevOps & Infrastructure | In Progress |
-| V7 | Developer Experience | Planned |
+| V6 | DevOps & Infrastructure | Done |
+| V6.1 | Ownership Tracking & Doctor --fix | Done |
+| V6.2 | Upgrade Engine & Migration Runner | Done |
+| V6.3 | Backups & Rollback | Done |
+| V6.4 | Plugin Migrations | Done |
+| V7 | Upgrade Polish & Diffing | In Progress |
 | V8 | Schema-First Development | Planned |
 | V9 | Enterprise Features | Planned |
 | V10 | Plugin Authoring SDK | Planned |

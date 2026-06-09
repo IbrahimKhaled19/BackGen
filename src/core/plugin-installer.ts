@@ -2,9 +2,8 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { spawn } from "child_process";
 import { TemplateEngine } from "./template-engine.js";
-import { addPluginToManifest, removePluginFromManifest } from "./manifest.js";
+import { addPluginToManifest, readManifest, removePluginFromManifest, getInstalledPlugins } from "./manifest.js";
 import { checkConflicts, checkRequirements } from "./plugin-registry.js";
-import { getInstalledPlugins } from "./manifest.js";
 import type { BackGenPlugin, FileMutation, InstallContext } from "./plugin.js";
 
 export class PluginInstaller {
@@ -41,13 +40,53 @@ export class PluginInstaller {
       );
     }
 
-    // Build install context
+    // Set up file tracking for clean uninstall
+    const trackedFiles: string[] = [];
+    const fileSnapshots: Record<string, string> = {};
+
+    // Proxy engine to intercept renderAbsolute calls
+    const trackingEngine = new Proxy<TemplateEngine>(this.engine, {
+      get(target, prop) {
+        if (prop === "renderAbsolute") {
+          return async (
+            templatePath: string,
+            context: Record<string, unknown>,
+            outputPath: string
+          ) => {
+            trackedFiles.push(outputPath);
+            return target.renderAbsolute(templatePath, context, outputPath);
+          };
+        }
+        const val = Reflect.get(target, prop);
+        return typeof val === "function" ? val.bind(target) : val;
+      },
+    });
+
+    // Wrapper mutate that snapshots original content before mutation
+    const trackingMutate = async (mutations: FileMutation[]) => {
+      for (const mutation of mutations) {
+        const absPath = path.join(projectDir, mutation.file);
+        if (!fileSnapshots[absPath]) {
+          try {
+            fileSnapshots[absPath] = await fs.readFile(absPath, "utf-8");
+          } catch {
+            // File doesn't exist yet — nothing to snapshot
+          }
+        }
+      }
+      await this.applyMutations(projectDir, mutations);
+    };
+
+    // Build install context with tracking engine + mutate + trackFile
     const ctx: InstallContext = {
       projectDir,
       projectName,
       orm: this.orm,
-      engine: this.engine,
-      mutate: (mutations: FileMutation[]) => this.applyMutations(projectDir, mutations),
+      engine: trackingEngine,
+      mutate: trackingMutate,
+      trackFile: (file: string) => {
+        trackedFiles.push(file);
+      },
     };
 
     // Run plugin install lifecycle
@@ -63,12 +102,46 @@ export class PluginInstaller {
       await this.installDependencies(projectDir, plugin);
     }
 
-    // Update manifest
-    await addPluginToManifest(projectDir, plugin.name, plugin.version, "core");
+    // Update manifest with tracking data
+    await addPluginToManifest(
+      projectDir,
+      plugin.name,
+      plugin.version,
+      "core",
+      trackedFiles,
+      fileSnapshots
+    );
   }
 
   async uninstall(projectDir: string, plugin: BackGenPlugin): Promise<void> {
     const projectName = path.basename(projectDir);
+
+    // Read tracking data from manifest
+    const manifest = await readManifest(projectDir);
+    const pluginMeta = manifest?.plugins?.[plugin.name];
+    const trackedFiles = pluginMeta?.files ?? [];
+    const fileSnapshots = pluginMeta?.fileSnapshots ?? {};
+
+    // Delete tracked files created during install
+    for (const filePath of trackedFiles) {
+      try {
+        await fs.unlink(filePath);
+      } catch {
+        // File may already be deleted or never existed
+      }
+    }
+
+    // Restore original content for mutated files
+    for (const [filePath, originalContent] of Object.entries(fileSnapshots)) {
+      try {
+        await fs.writeFile(filePath, originalContent, "utf-8");
+      } catch {
+        // Parent directory may have been removed
+      }
+    }
+
+    // Remove npm dependencies added by plugin
+    await this.removeDependencies(projectDir, plugin);
 
     // Run plugin uninstall lifecycle
     if (plugin.uninstall) {
@@ -147,18 +220,22 @@ export class PluginInstaller {
   }
 
   private async removeEnvVars(projectDir: string, pluginName: string): Promise<void> {
-    const envExamplePath = path.join(projectDir, ".env.example");
+    const marker = `# ${pluginName} plugin`;
+    await this.removeEnvSection(path.join(projectDir, ".env.example"), marker);
+    await this.removeEnvSection(path.join(projectDir, ".env"), marker);
+  }
 
+  /** Remove a marker-delimited section from an env file */
+  private async removeEnvSection(filePath: string, marker: string): Promise<void> {
     try {
-      let content = await fs.readFile(envExamplePath, "utf-8");
-      const marker = `# ${pluginName} plugin`;
+      let content = await fs.readFile(filePath, "utf-8");
       const startIdx = content.indexOf(marker);
       if (startIdx === -1) return;
 
       content = content.slice(0, startIdx).trimEnd() + "\n";
-      await fs.writeFile(envExamplePath, content, "utf-8");
+      await fs.writeFile(filePath, content, "utf-8");
     } catch {
-      // .env.example doesn't exist
+      // File doesn't exist
     }
   }
 
@@ -211,6 +288,42 @@ export class PluginInstaller {
       });
     } catch {
       // npm install failed — plugin templates and manifest still updated
+    }
+  }
+
+  private async removeDependencies(projectDir: string, plugin: BackGenPlugin): Promise<void> {
+    const deps = plugin.dependencies ?? [];
+    const devDeps = plugin.devDependencies ?? [];
+
+    if (deps.length === 0 && devDeps.length === 0) return;
+
+    const pkgPath = path.join(projectDir, "package.json");
+    let pkg: { dependencies?: Record<string, string>; devDependencies?: Record<string, string> };
+    try {
+      pkg = JSON.parse(await fs.readFile(pkgPath, "utf-8"));
+    } catch {
+      // package.json not found — nothing to clean up
+      return;
+    }
+
+    let changed = false;
+    for (const dep of deps) {
+      if (pkg.dependencies?.[dep]) {
+        delete pkg.dependencies[dep];
+        changed = true;
+      }
+    }
+    for (const dep of devDeps) {
+      if (pkg.devDependencies?.[dep]) {
+        delete pkg.devDependencies[dep];
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      if (pkg.dependencies && Object.keys(pkg.dependencies).length === 0) delete pkg.dependencies;
+      if (pkg.devDependencies && Object.keys(pkg.devDependencies).length === 0) delete pkg.devDependencies;
+      await fs.writeFile(pkgPath, JSON.stringify(pkg, null, 2) + "\n", "utf-8");
     }
   }
 }

@@ -3,7 +3,7 @@ import chalk from "chalk";
 import ora from "ora";
 import * as path from "path";
 import { PluginInstaller } from "../core/plugin-installer.js";
-import { getPlugin } from "../core/plugin-registry.js";
+import { getPlugin, getPluginsByCategory } from "../core/plugin-registry.js";
 import { getInstalledPlugins, readManifest } from "../core/manifest.js";
 import { fileURLToPath } from "url";
 
@@ -11,6 +11,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const TEMPLATES_DIR = path.resolve(__dirname, "../../templates/express");
 
+/**
+ * Remove one or more plugins from the project.
+ * If pluginName is omitted, shows an interactive multi-select picker.
+ * Supports "devops" shorthand to remove all devops-category plugins at once.
+ */
 export async function removeCommand(pluginName: string | undefined): Promise<void> {
   console.log(chalk.blue.bold("\n🔌 BackGen - Remove Plugin\n"));
 
@@ -46,6 +51,28 @@ export async function removeCommand(pluginName: string | undefined): Promise<voi
 
     for (const name of answer.plugins) {
       await removePlugin(projectDir, name, installed);
+    }
+    return;
+  }
+
+  // "devops" shorthand — remove all devops plugins
+  if (pluginName === "devops") {
+    const devopsPlugins = getPluginsByCategory("devops");
+    const toRemove = devopsPlugins.filter((p) => installed[p.name]);
+
+    if (toRemove.length === 0) {
+      console.log(chalk.yellow("No devops plugins are installed."));
+      return;
+    }
+
+    console.log(chalk.cyan(`Removing ${toRemove.length} devops plugins:\n`));
+    for (const p of toRemove) {
+      console.log(chalk.cyan(`  • ${p.name}`));
+    }
+    console.log();
+
+    for (const p of toRemove) {
+      await removePlugin(projectDir, p.name, installed);
     }
     return;
   }

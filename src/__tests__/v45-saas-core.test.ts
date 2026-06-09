@@ -101,7 +101,7 @@ describe("V4.5 SaaS Core preset", () => {
       await readFile(path.join(projectDir, ".backgenrc.json"))
     );
 
-    expect(manifest.version).toBe("1.2.0");
+    expect(manifest.version).toBe("1.3.0");
     expect(manifest.project.preset).toBe("saas-core");
   });
 

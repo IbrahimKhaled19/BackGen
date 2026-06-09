@@ -2,9 +2,11 @@ import inquirer from "inquirer";
 import chalk from "chalk";
 import ora from "ora";
 import * as fs from "fs/promises";
+import { readFileSync } from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { TemplateEngine } from "../core/template-engine.js";
+import type { FileEntry } from "../core/manifest.js";
 import {
   createCheckpoint,
   loadCheckpoint,
@@ -42,6 +44,9 @@ const STEPS = [
 ];
 
 const TEMPLATES_DIR = path.resolve(__dirname, "../../templates/express");
+const BACKGEN_VERSION = JSON.parse(
+  readFileSync(path.resolve(__dirname, "../../package.json"), "utf-8")
+).version as string;
 
 export async function initCommand(
   projectName: string | undefined,
@@ -93,15 +98,22 @@ export async function initCommand(
   // Create checkpoint
   const checkpoint = await createCheckpoint(targetDir, projectName!, STEPS, config.orm);
 
+  // File ownership register — populated by generateTemplates, consumed by generateManifest
+  const filesRecord: Record<string, FileEntry> = {};
+
   // Execute generation steps
   try {
     await executeStep(targetDir, config, checkpoint, "scaffold", generateScaffold);
-    await executeStep(targetDir, config, checkpoint, "templates", generateTemplates);
+    await executeStep(targetDir, config, checkpoint, "templates", (dir, cfg) =>
+      generateTemplates(dir, cfg, filesRecord)
+    );
     if (!options.skipInstall) {
       await executeStep(targetDir, config, checkpoint, "dependencies", installDependencies);
       await executeStep(targetDir, config, checkpoint, "codegen", runCodegen);
     }
-    await executeStep(targetDir, config, checkpoint, "manifest", generateManifest);
+    await executeStep(targetDir, config, checkpoint, "manifest", (dir, cfg) =>
+      generateManifest(dir, cfg, filesRecord)
+    );
 
     // Apply preset if specified
     if (config.preset) {
@@ -235,7 +247,54 @@ async function generateScaffold(dir: string, config: ProjectConfig): Promise<voi
   }
 }
 
-async function generateTemplates(dir: string, config: ProjectConfig): Promise<void> {
+const OWNERSHIP: Record<string, FileEntry["owner"]> = {
+  // App & Server
+  "src/app.ts": "shared",
+  "src/server.ts": "framework",
+  // Config
+  "src/config/env.ts": "framework-editable",
+  "src/config/database.ts": "framework-editable",
+  "src/config/swagger.ts": "framework-editable",
+  // Utils
+  "src/utils/api-error.ts": "framework",
+  "src/utils/async-handler.ts": "framework",
+  "src/utils/response.ts": "framework",
+  // Middleware (core)
+  "src/middleware/core/errors.ts": "framework",
+  "src/middleware/core/logger.ts": "framework",
+  "src/middleware/core/validate.ts": "framework",
+  // Middleware (security)
+  "src/middleware/security/cors-strict.ts": "framework",
+  "src/middleware/security/sanitize.ts": "framework",
+  // Middleware (observability)
+  "src/middleware/observability/request-id.ts": "framework",
+  "src/middleware/observability/request-timeout.ts": "framework",
+  "src/middleware/observability/health.ts": "framework",
+  // Middleware (root)
+  "src/middleware/graceful-shutdown.ts": "framework",
+  // Services
+  "src/services/logger.service.ts": "framework",
+  // Config files
+  "package.json": "shared",
+  "tsconfig.json": "framework-editable",
+  ".env.example": "shared",
+  ".gitignore": "shared",
+  "README.md": "shared",
+  "vitest.config.ts": "framework-editable",
+  "eslint.config.js": "framework-editable",
+  // ORM
+  "prisma/schema.prisma": "user",
+  "prisma.config.ts": "framework-editable",
+  "drizzle.config.ts": "framework-editable",
+  "src/db/schema/index.ts": "user",
+  "src/models/index.ts": "user",
+};
+
+async function generateTemplates(
+  dir: string,
+  config: ProjectConfig,
+  filesRecord: Record<string, FileEntry>
+): Promise<void> {
   const ormTemplatesDir = path.resolve(
     TEMPLATES_DIR,
     "..",
@@ -301,11 +360,19 @@ async function generateTemplates(dir: string, config: ProjectConfig): Promise<vo
 
   for (const { template, output } of templates) {
     await engine.renderToFile(template, context, path.join(dir, output));
+    if (OWNERSHIP[output]) {
+      filesRecord[output] = {
+        owner: OWNERSHIP[output],
+        version: OWNERSHIP[output] !== "user" ? BACKGEN_VERSION : undefined,
+      };
+    }
   }
 
   if (config.enableDocker) {
     await engine.renderToFile("Dockerfile.hbs", context, path.join(dir, "Dockerfile"));
+    filesRecord["Dockerfile"] = { owner: "shared", version: BACKGEN_VERSION };
     await engine.renderToFile("docker-compose.yml.hbs", context, path.join(dir, "docker-compose.yml"));
+    filesRecord["docker-compose.yml"] = { owner: "shared", version: BACKGEN_VERSION };
   }
 }
 
@@ -368,9 +435,15 @@ async function runCodegen(dir: string, config: ProjectConfig): Promise<void> {
   console.log(chalk.gray("  Mongoose does not require a code generation step.\n"));
 }
 
-async function generateManifest(dir: string, config: ProjectConfig): Promise<void> {
-  const { writeManifest, createManifest } = await import("../core/manifest.js");
-  const manifest = createManifest(config.projectName, config.orm, config.preset);
+async function generateManifest(
+  dir: string,
+  config: ProjectConfig,
+  filesRecord: Record<string, FileEntry>
+): Promise<void> {
+  const { writeManifest, createManifest, readManifest } = await import("../core/manifest.js");
+  const existing = await readManifest(dir);
+  const mergedFiles = { ...existing?.files, ...filesRecord };
+  const manifest = createManifest(config.projectName, config.orm, config.preset, BACKGEN_VERSION, mergedFiles);
   await writeManifest(dir, manifest);
 }
 
@@ -455,7 +528,7 @@ async function applyPreset(projectDir: string, presetName: string): Promise<void
 async function injectTenantMiddleware(projectDir: string): Promise<void> {
   const { PluginInstaller } = await import("../core/plugin-installer.js");
   const { TemplateEngine } = await import("../core/template-engine.js");
-  const { readManifest } = await import("../core/manifest.js");
+  const { readManifest, updateFileOwnership } = await import("../core/manifest.js");
   const TEMPLATES_DIR = path.resolve(__dirname, "../../templates/express");
   const manifest = await readManifest(projectDir);
   const orm = manifest?.project?.orm ?? "prisma";
@@ -469,11 +542,13 @@ async function injectTenantMiddleware(projectDir: string): Promise<void> {
     { orm },
     path.join(projectDir, "src/middleware/tenant.ts")
   );
+  await updateFileOwnership(projectDir, "src/middleware/tenant.ts", "framework", BACKGEN_VERSION);
   await engine.renderToFile(
     "src/middleware/rbac.ts.hbs",
     { orm },
     path.join(projectDir, "src/middleware/rbac.ts")
   );
+  await updateFileOwnership(projectDir, "src/middleware/rbac.ts", "framework", BACKGEN_VERSION);
 
   await installer.applyMutations(projectDir, [
     {
@@ -495,6 +570,7 @@ async function injectTenantMiddleware(projectDir: string): Promise<void> {
 
 async function resumeGeneration(): Promise<void> {
   const dir = process.cwd();
+  const { readManifest } = await import("../core/manifest.js");
   const checkpoint = await loadCheckpoint(dir);
 
   if (!checkpoint) {
@@ -523,17 +599,29 @@ async function resumeGeneration(): Promise<void> {
     orm: checkpoint.orm || "prisma",
   };
 
+  // Build filesRecord from existing manifest + init pipeline
+  const existingManifest = await readManifest(dir);
+  const filesRecord: Record<string, FileEntry> = {
+    ...(existingManifest?.files ?? {}),
+  };
+
   const stepFns: Record<string, (dir: string, config: ProjectConfig) => Promise<void>> = {
     scaffold: generateScaffold,
-    templates: generateTemplates,
+    templates: (d, c) => generateTemplates(d, c, filesRecord),
     dependencies: installDependencies,
   };
 
   for (const step of STEPS) {
+    if (step === "manifest") continue; // handled after loop with filesRecord
     if (checkpoint.steps[step].status === "pending" || checkpoint.steps[step].status === "failed") {
       await executeStep(dir, config, checkpoint, step, stepFns[step]);
     }
   }
+
+  // Always regenerate manifest last with full filesRecord
+  await executeStep(dir, config, checkpoint, "manifest", (d, c) =>
+    generateManifest(d, c, filesRecord)
+  );
 
   await clearCheckpoint(dir);
   printSuccess(checkpoint.projectName, checkpoint.orm || "prisma");

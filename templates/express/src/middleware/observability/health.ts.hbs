@@ -30,7 +30,7 @@ export async function readyCheck(_req: Request, res: Response): Promise<void> {
     res.status(503).json({
       status: "not_ready",
       message: "Database unreachable",
-      error: err instanceof Error ? err.message : String(err),
+      error: "Database unreachable",
     });
   }
 }
