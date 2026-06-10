@@ -6,6 +6,8 @@ import { readFileSync } from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { TemplateEngine } from "../core/template-engine.js";
+import { PluginInstaller } from "../core/plugin-installer.js";
+import { selectPluginsInteractive } from "../core/plugin-selector.js";
 import type { FileEntry } from "../core/manifest.js";
 import {
   createCheckpoint,
@@ -92,6 +94,9 @@ export async function initCommand(
   // Collect configuration
   const config = await collectConfig(projectName!, options.defaults, options.preset, options.orm);
 
+  // Collect plugin selections (skip in --defaults mode)
+  const selectedPlugins = options.defaults ? [] : await selectPluginsInteractive(config.orm, []);
+
   // Create project directory
   await fs.mkdir(targetDir, { recursive: true });
 
@@ -118,6 +123,19 @@ export async function initCommand(
     // Apply preset if specified
     if (config.preset) {
       await applyPreset(targetDir, config.preset);
+    }
+
+    // Install user-selected plugins post-scaffold
+    if (selectedPlugins.length > 0) {
+      console.log(chalk.cyan(`\nInstalling ${selectedPlugins.length} plugin(s)...`));
+      const installer = new PluginInstaller(TEMPLATES_DIR, config.orm);
+      const { succeeded, failed } = await installer.installBulk(targetDir, selectedPlugins);
+      if (succeeded.length > 0) {
+        console.log(chalk.green(`  \u2714 ${succeeded.length} plugin(s) installed.`));
+      }
+      if (failed.length > 0) {
+        console.log(chalk.yellow(`  \u26A0 ${failed.length} plugin(s) failed: ${failed.join(", ")}`));
+      }
     }
 
     // Clear checkpoint on success
