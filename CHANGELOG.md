@@ -1,5 +1,10 @@
 # Changelog
 
+## [v1.10.1] - 2026-06-10
+
+### Bug Fixes
+- fix: JWT requires:prisma now respects ORM field — no explicit prisma plugin needed (#39de6a0)
+
 ## [v1.10.0] - 2026-06-10
 
 ### Features

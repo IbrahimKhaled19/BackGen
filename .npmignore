@@ -12,4 +12,6 @@ docs/
 .openclaude/
 PLAN.md
 specs/
+graphify-out/
+tmp/
 demo/

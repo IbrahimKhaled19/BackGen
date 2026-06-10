@@ -1,6 +1,6 @@
 {
   "name": "@ibrahimkhaled19/backgen",
-  "version": "1.10.0",
+  "version": "1.10.1",
   "type": "module",
   "description": "Generate production-ready backend projects in minutes",
   "main": "dist/index.js",

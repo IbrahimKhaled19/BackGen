@@ -6,11 +6,8 @@ import { PluginInstaller } from "../core/plugin-installer.js";
 import {
   getPlugin,
   listAvailablePlugins,
-  getPluginsByCategory,
-  getCategories,
-  checkConflicts,
-  checkRequirements,
 } from "../core/plugin-registry.js";
+import { selectPluginsInteractive } from "../core/plugin-selector.js";
 import { getInstalledPlugins, readManifest } from "../core/manifest.js";
 import { fileURLToPath } from "url";
 

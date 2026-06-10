@@ -164,6 +164,31 @@ export class PluginInstaller {
     await removePluginFromManifest(projectDir, plugin.name);
   }
 
+  async installBulk(projectDir: string, pluginNames: string[]): Promise<{ succeeded: string[]; failed: string[] }> {
+    const succeeded: string[] = [];
+    const failed: string[] = [];
+
+    for (const name of pluginNames) {
+      const { getPlugin } = await import("./plugin-registry.js");
+      const plugin = getPlugin(name);
+      if (!plugin) {
+        console.warn(`  ⚠ Unknown plugin "${name}" — skipping`);
+        failed.push(name);
+        continue;
+      }
+
+      try {
+        await this.install(projectDir, plugin);
+        succeeded.push(name);
+      } catch (err) {
+        console.warn(`  ⚠ ${name} failed: ${(err as Error).message}`);
+        failed.push(name);
+      }
+    }
+
+    return { succeeded, failed };
+  }
+
   async applyMutations(projectDir: string, mutations: FileMutation[]): Promise<void> {
     for (const mutation of mutations) {
       const filePath = path.join(projectDir, mutation.file);
