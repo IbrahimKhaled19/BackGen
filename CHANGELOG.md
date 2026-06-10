@@ -1,5 +1,14 @@
 # Changelog
 
+## [v1.10.0] - 2026-06-10
+
+### Features
+- feat(v6): upgrade engine — sequential migration engine, backup system, rollback command, plugin versioned migrations, manifest ownership register
+- feat(v6): security hardening — info leak fix (err.message → generic), permissive CORS fix (same-origin default), rate limiting on auth routes, JWT Prisma-only enforcement, Clerk static import
+
+### Documentation
+- docs: update README + ROADMAP for V6 upgrade engine
+
 ## [v1.9.0] - 2026-06-07
 
 ### Features
