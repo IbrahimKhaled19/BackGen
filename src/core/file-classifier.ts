@@ -6,7 +6,7 @@ import type { FileOwner } from "./manifest.js";
  * Determines which files BackGen can overwrite during upgrade
  * vs. which belong to the user and must never be touched.
  */
-export function classifyFile(outputPath: string, orm: string): FileOwner {
+export function classifyFile(outputPath: string, _orm: string): FileOwner {
   const normalized = outputPath.replace(/\\/g, "/");
 
   // ── User-owned (never touch) ──────────────────────────────────

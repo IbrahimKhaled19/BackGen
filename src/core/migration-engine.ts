@@ -1,4 +1,3 @@
-import { readFileSync } from "fs";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
