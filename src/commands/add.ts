@@ -145,7 +145,9 @@ async function installPlugin(
   }
 
   // Check requirements
-  const missing = checkRequirements(pluginName, Object.keys(installed));
+  const manifest = await readManifest(projectDir);
+  const orm = manifest?.project?.orm;
+  const missing = checkRequirements(pluginName, Object.keys(installed), orm);
   if (missing.length > 0) {
     console.error(chalk.red(`Error: Plugin "${pluginName}" requires: ${missing.join(", ")}`));
     console.log(chalk.yellow(`Install them first: ${missing.map((r) => `backgen add ${r}`).join(", ")}`));
@@ -156,7 +158,6 @@ async function installPlugin(
   const spinner = ora(`Installing ${pluginName}...`).start();
 
   try {
-    const manifest = await readManifest(projectDir);
     const orm = manifest?.project?.orm ?? "prisma";
     const installer = new PluginInstaller(TEMPLATES_DIR, orm);
     await installer.install(projectDir, plugin);

@@ -58,8 +58,8 @@ export function checkConflicts(pluginName: string, installed: string[]): string[
   return plugin.conflicts.filter((c) => installed.includes(c));
 }
 
-export function checkRequirements(pluginName: string, installed: string[]): string[] {
+export function checkRequirements(pluginName: string, installed: string[], orm?: string): string[] {
   const plugin = PLUGINS[pluginName];
   if (!plugin?.requires) return [];
-  return plugin.requires.filter((r) => !installed.includes(r));
+  return plugin.requires.filter((r) => !installed.includes(r) && r !== orm);
 }

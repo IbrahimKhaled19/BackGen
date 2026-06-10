@@ -33,7 +33,7 @@ export class PluginInstaller {
     }
 
     // Check requirements
-    const missing = checkRequirements(plugin.name, installed);
+    const missing = checkRequirements(plugin.name, installed, this.orm);
     if (missing.length > 0) {
       throw new Error(
         `Plugin "${plugin.name}" requires: ${missing.join(", ")}. Install them first.`
