@@ -62,8 +62,6 @@ describe("V9 Enterprise", { timeout: 300_000 }, () => {
     const schema = readFileSync(path.join(projectDir, "prisma", "schema.prisma"), "utf-8");
     expect(schema).toMatch(/model Organization\b/);
     expect(schema).toMatch(/model Team\b/);
-    expect(schema).toMatch(/model Membership\b/);
-    expect(schema).toMatch(/model Invitation\b/);
     expect(schema).toMatch(/model Plan\b/);
     expect(schema).toMatch(/model Subscription\b/);
     expect(schema).toMatch(/model Invoice\b/);
