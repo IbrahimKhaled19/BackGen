@@ -62,17 +62,12 @@ export const permissionsPlugin: BackGenPlugin = {
     "permission.service.ts.hbs",
     "permission.controller.ts.hbs",
     "permission.routes.ts.hbs",
+    "permission.middleware.ts.hbs",
     "role.types.ts.hbs",
     "role.validation.ts.hbs",
     "role.service.ts.hbs",
     "role.controller.ts.hbs",
     "role.routes.ts.hbs",
-    "user-role.types.ts.hbs",
-    "user-role.validation.ts.hbs",
-    "user-role.service.ts.hbs",
-    "user-role.controller.ts.hbs",
-    "user-role.routes.ts.hbs",
-    "require-permission.middleware.ts.hbs",
   ],
 
   async install(ctx: InstallContext) {
@@ -92,7 +87,7 @@ export const permissionsPlugin: BackGenPlugin = {
         file: "src/app.ts",
         operation: "replace",
         marker: "// {{REGISTER_ROUTES}}",
-        content: `import permissionRoutes from "./modules/permissions/permission.routes.js";\nimport roleRoutes from "./modules/permissions/role.routes.js";\nimport userRoleRoutes from "./modules/permissions/user-role.routes.js";\napp.use("/api/permissions", permissionRoutes);\napp.use("/api/roles", roleRoutes);\napp.use("/api/user-roles", userRoleRoutes);\n  // {{REGISTER_ROUTES}}`,
+        content: `import permissionRoutes from "./modules/permissions/permission.routes.js";\nimport roleRoutes from "./modules/permissions/role.routes.js";\napp.use("/api/permissions", permissionRoutes);\napp.use("/api/roles", roleRoutes);\n  // {{REGISTER_ROUTES}}`,
       },
     ];
 

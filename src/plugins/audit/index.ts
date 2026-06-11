@@ -94,11 +94,11 @@ export const auditPlugin: BackGenPlugin = {
   env: {},
 
   templates: [
-    "audit-log.types.ts.hbs",
-    "audit-log.validation.ts.hbs",
-    "audit-log.service.ts.hbs",
-    "audit-log.controller.ts.hbs",
-    "audit-log.routes.ts.hbs",
+    "audit.types.ts.hbs",
+    "audit.validation.ts.hbs",
+    "audit.service.ts.hbs",
+    "audit.controller.ts.hbs",
+    "audit.routes.ts.hbs",
   ],
 
   async install(ctx: InstallContext) {
@@ -120,7 +120,7 @@ export const auditPlugin: BackGenPlugin = {
         file: "src/app.ts",
         operation: "replace",
         marker: "// {{REGISTER_ROUTES}}",
-        content: `import auditRoutes from "./modules/audit/audit-log.routes.js";\napp.use("/api/audit-logs", auditRoutes);\n  // {{REGISTER_ROUTES}}`,
+        content: `import auditRoutes from "./modules/audit/audit.routes.js";\napp.use("/api/audit-logs", auditRoutes);\n  // {{REGISTER_ROUTES}}`,
       },
     ];
 

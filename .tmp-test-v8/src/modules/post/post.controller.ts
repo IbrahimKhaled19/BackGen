@@ -1,0 +1,35 @@
+import { Request, Response } from "express";
+import { PostService } from "./post.service.js";
+import type { PostQuery } from "./post.types.js";
+import { successResponse, createdResponse, messageResponse, paginatedResponse } from "../../utils/response.js";
+
+const service = new PostService();
+
+export class PostController {
+  async create(req: Request, res: Response): Promise<void> {
+    const post = await service.create(req.body);
+    createdResponse(res, post);
+  }
+
+  async getById(req: Request, res: Response): Promise<void> {
+    const post = await service.getById(req.params.id as string, req.user?.userId);
+    successResponse(res, post);
+  }
+
+  async list(req: Request, res: Response): Promise<void> {
+    const { items, total } = await service.list(req.query as unknown as PostQuery);
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    paginatedResponse(res, items, total, page, limit);
+  }
+
+  async update(req: Request, res: Response): Promise<void> {
+    const post = await service.update(req.params.id as string, req.body, req.user?.userId);
+    successResponse(res, post);
+  }
+
+  async delete(req: Request, res: Response): Promise<void> {
+    await service.delete(req.params.id as string, req.user?.userId);
+    messageResponse(res, "Post deleted successfully");
+  }
+}
