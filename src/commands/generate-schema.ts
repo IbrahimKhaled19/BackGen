@@ -1,8 +1,8 @@
 import chalk from "chalk";
 import * as path from "path";
-import { parseAndValidateYaml, parseSchemaObject, fieldsToFieldStrings, relationsToRelationDefs, } from "../core/yaml-schema.js";
+import { parseAndValidateYaml, fieldsToFieldStrings, relationsToRelationDefs, } from "../core/yaml-schema.js";
 import type { ParsedSchema } from "../core/yaml-schema.js";
-import { getPlugin, listAvailablePlugins } from "../core/plugin-registry.js";
+import { listAvailablePlugins } from "../core/plugin-registry.js";
 import { PluginInstaller } from "../core/plugin-installer.js";
 import { fileURLToPath } from "url";
 
@@ -96,8 +96,8 @@ export async function generateProjectFromSchema(schema: ParsedSchema, projectDir
           softDelete: resource.softDelete,
         });
         console.log(chalk.green(`  ✓ ${name}`));
-      } catch (err: any) {
-        // Model may already exist from a plugin (e.g. jwt creates User)
+      } catch {
+        // Model already exists from plugin — CRUD files already written
         if (err?.message?.includes?.("already exists in schema")) {
           console.log(chalk.yellow(`  ⚠ ${name} (model exists — CRUD files generated)`));
         } else {

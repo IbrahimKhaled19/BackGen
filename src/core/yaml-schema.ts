@@ -94,7 +94,7 @@ export async function parseAndValidateYaml(filePath: string): Promise<ParsedSche
   }
 
   // ── resources ────────────────────────────────────────────────
-  let resources: Record<string, ParsedResource> = {};
+  const resources: Record<string, ParsedResource> = {};
   if (doc.resources !== undefined) {
     assert(isRecord(doc.resources), '"resources" must be an object');
     const rawResources = doc.resources as Record<string, unknown>;
@@ -172,7 +172,7 @@ export function parseSchemaObject(obj: unknown): ParsedSchema {
     plugins = (doc.plugins as unknown[]).filter((p): p is string => typeof p === "string");
   }
 
-  let resources: Record<string, ParsedResource> = {};
+  const resources: Record<string, ParsedResource> = {};
   if (doc.resources !== undefined) {
     assert(isRecord(doc.resources), '"resources" must be an object');
     const rawResources = doc.resources as Record<string, unknown>;

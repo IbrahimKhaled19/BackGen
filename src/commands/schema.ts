@@ -38,7 +38,7 @@ export async function schemaCommand(
 
   // Parse schema
   const spinner = (await import("ora")).default;
-  let parseSpinner = spinner("Parsing schema file...").start();
+  const parseSpinner = spinner("Parsing schema file...").start();
   let schema: Awaited<ReturnType<typeof parseAndValidateYaml>>;
   try {
     schema = await parseAndValidateYaml(schemaFile);

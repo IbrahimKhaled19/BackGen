@@ -93,7 +93,7 @@ describe("Schema generation (integration)", { timeout: 300_000 }, () => {
     const tmpDir = path.resolve(__dirname, "../../.tmp-test-v8");
     const schemaPath = path.join(FIXTURES, "backgen-valid.yaml");
 
-    try { rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+    try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* cleanup */ }
 
     const result = execSync(
       `node "${path.resolve(__dirname, "../../dist/index.js")}" generate schema "${schemaPath}" --out "${tmpDir}"`,
@@ -107,7 +107,7 @@ describe("Schema generation (integration)", { timeout: 300_000 }, () => {
     expect(existsSync(path.join(tmpDir, "src"))).toBe(true);
     expect(existsSync(path.join(tmpDir, ".backgenrc.json"))).toBe(true);
 
-    try { rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+    try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* cleanup */ }
   });
 
   it("generates project from deps schema with relations", async () => {
@@ -116,7 +116,7 @@ describe("Schema generation (integration)", { timeout: 300_000 }, () => {
     const tmpDir = path.resolve(__dirname, "../../.tmp-test-v8-deps");
     const schemaPath = path.join(FIXTURES, "backgen-deps.yaml");
 
-    try { rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+    try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* cleanup */ }
 
     const result = execSync(
       `node "${path.resolve(__dirname, "../../dist/index.js")}" generate schema "${schemaPath}" --out "${tmpDir}"`,
@@ -128,6 +128,6 @@ describe("Schema generation (integration)", { timeout: 300_000 }, () => {
     const { existsSync } = await import("fs");
     expect(existsSync(path.join(tmpDir, "package.json"))).toBe(true);
 
-    try { rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+    try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* cleanup */ }
   });
 });
