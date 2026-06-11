@@ -1,0 +1,11 @@
+import { Router } from "express";
+import { listAuditLogs, getAuditLog } from "./audit.controller.js";
+import { requirePermission } from "../permissions/permission.middleware.js";
+
+const router = Router();
+
+// All audit endpoints require admin-level permission
+router.get("/", requirePermission("audit-log", "read"), listAuditLogs);
+router.get("/:id", requirePermission("audit-log", "read"), getAuditLog);
+
+export default router;

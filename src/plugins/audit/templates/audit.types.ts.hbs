@@ -1,0 +1,22 @@
+export interface AuditEntry {
+  id: string;
+  actorId: string;
+  action: "CREATE" | "UPDATE" | "DELETE" | "READ";
+  resourceType: string;
+  resourceId: string;
+  ip: string;
+  userAgent: string;
+  metadata: Record<string, unknown>;
+  createdAt: Date;
+}
+
+export interface AuditLogResponse {
+  success: boolean;
+  data: AuditEntry[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}

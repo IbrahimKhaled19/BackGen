@@ -1,0 +1,65 @@
+import { Router } from "express";
+import { AuditLogController } from "./audit-log.controller.js";
+import { authMiddleware } from "../../middleware/auth.js";
+import { roleMiddleware } from "../../middleware/role.js";
+import { validate } from "../../middleware/core/validate.js";
+import { auditLogQuerySchema } from "./audit-log.validation.js";
+import { asyncHandler } from "../../utils/async-handler.js";
+
+const router = Router();
+const controller = new AuditLogController();
+
+/**
+ * @swagger
+ * /api/audit-logs:
+ *   get:
+ *     summary: List audit logs (admin only)
+ *     tags: [Audit]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: actorId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: resourceType
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: resourceId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: action
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Paginated audit logs
+ */
+router.get(
+  "/",
+  authMiddleware,
+  roleMiddleware(["ADMIN"]),
+  validate(auditLogQuerySchema),
+  asyncHandler(controller.list.bind(controller))
+);
+
+export default router;

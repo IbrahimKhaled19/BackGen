@@ -1,0 +1,59 @@
+import type { Request, Response, NextFunction } from "express";
+import { auditService } from "./audit.service.js";
+
+declare global {
+  namespace Express {
+    interface Request {
+      auditLog?: (action: string, resourceType: string, resourceId: string, metadata?: Record<string, unknown>) => Promise<void>;
+    }
+  }
+}
+
+function getActionFromMethod(method: string): string {
+  switch (method.toUpperCase()) {
+    case "POST": return "CREATE";
+    case "PUT":
+    case "PATCH": return "UPDATE";
+    case "DELETE": return "DELETE";
+    default: return "READ";
+  }
+}
+
+export async function auditMiddleware(req: Request, _res: Response, next: NextFunction): Promise<void> {
+  const actorId = (req as any).user?.id || "anonymous";
+  const ip = req.ip || req.socket.remoteAddress || "unknown";
+  const userAgent = req.headers["user-agent"] || "unknown";
+
+  req.auditLog = async (action, resourceType, resourceId, metadata) => {
+    await auditService.record({
+      actorId,
+      action,
+      resourceType,
+      resourceId,
+      ip,
+      userAgent,
+      metadata: metadata || {},
+    });
+  };
+
+  // Auto-log mutations if req captures a resource
+  const originalJson = res.json.bind(res);
+  res.json = function (body: any) {
+    if (res.statusCode >= 200 && res.statusCode < 300 && body?.data?.id) {
+      const action = getActionFromMethod(req.method);
+      const resourceType = req.path.split("/").filter(Boolean)[0] || "resource";
+      auditService.record({
+        actorId,
+        action,
+        resourceType,
+        resourceId: String(body.data.id),
+        ip,
+        userAgent,
+        metadata: { path: req.path, statusCode: res.statusCode },
+      }).catch(() => {});
+    }
+    return originalJson.call(this, body);
+  };
+
+  next();
+}

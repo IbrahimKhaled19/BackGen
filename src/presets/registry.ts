@@ -18,6 +18,7 @@ import { saasCorePreset } from "./saas-core.js";
 import { ecommercePreset } from "./ecommerce.js";
 import { crmPreset } from "./crm.js";
 import { lmsPreset } from "./lms.js";
+import { saasEnterprisePreset } from "./saas-enterprise.js";
 
 const PRESETS: Record<string, DomainPreset> = {
   healthcare: healthcarePreset,
@@ -26,6 +27,7 @@ const PRESETS: Record<string, DomainPreset> = {
   ecommerce: ecommercePreset,
   crm: crmPreset,
   lms: lmsPreset,
+  "saas-enterprise": saasEnterprisePreset,
 };
 
 export function getPreset(name: string): DomainPreset | undefined {

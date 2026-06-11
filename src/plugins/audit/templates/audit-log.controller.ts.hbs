@@ -1,0 +1,13 @@
+import { Request, Response } from "express";
+import { AuditLogService } from "./audit-log.service.js";
+import { prisma } from "../../config/prisma.js";
+import { successResponse } from "../../utils/response.js";
+
+const auditLogService = new AuditLogService(prisma);
+
+export class AuditLogController {
+  async list(req: Request, res: Response): Promise<void> {
+    const result = await auditLogService.list(req.query as never);
+    successResponse(res, result);
+  }
+}

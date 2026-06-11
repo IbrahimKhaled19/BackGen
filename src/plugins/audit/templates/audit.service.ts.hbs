@@ -1,0 +1,72 @@
+import { AuditEntry } from "./audit.types.js";
+
+// Prisma model assumed to be generated — adapt for Drizzle/Mongoose per ORM
+let prisma: any;
+
+async function getPrisma() {
+  if (!prisma) {
+    const { default: p } = await import("../../config/prisma.js");
+    prisma = p;
+  }
+  return prisma;
+}
+
+async function getModel() {
+  const p = await getPrisma();
+  return p.auditLog;
+}
+
+export const auditService = {
+  async record(entry: Omit<AuditEntry, "id" | "createdAt">): Promise<AuditEntry> {
+    const model = await getModel();
+    return model.create({
+      data: {
+        actorId: entry.actorId,
+        action: entry.action,
+        resourceType: entry.resourceType,
+        resourceId: entry.resourceId,
+        ip: entry.ip,
+        userAgent: entry.userAgent,
+        metadata: entry.metadata || {},
+      },
+    });
+  },
+
+  async list(params: {
+    page?: number;
+    limit?: number;
+    actorId?: string;
+    resourceType?: string;
+    action?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<{ data: AuditEntry[]; total: number; page: number; limit: number; totalPages: number }> {
+    const model = await getModel();
+    const page = params.page || 1;
+    const limit = Math.min(params.limit || 50, 100);
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (params.actorId) where.actorId = params.actorId;
+    if (params.resourceType) where.resourceType = params.resourceType;
+    if (params.action) where.action = params.action;
+    if (params.startDate || params.endDate) {
+      where.createdAt = {};
+      if (params.startDate) where.createdAt.gte = new Date(params.startDate);
+      if (params.endDate) where.createdAt.lte = new Date(params.endDate);
+    }
+
+    const [data, total] = await Promise.all([
+      model.findMany({ where, orderBy: { createdAt: "desc" }, skip, take: limit }),
+      model.count({ where }),
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  },
+};

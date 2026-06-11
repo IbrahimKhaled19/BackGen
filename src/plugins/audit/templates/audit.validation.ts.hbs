@@ -1,0 +1,15 @@
+import { z } from "zod";
+
+export const auditLogQuerySchema = z.object({
+  page: z.coerce.number().int().positive().optional().default(1),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(50),
+  actorId: z.string().optional(),
+  resourceType: z.string().optional(),
+  action: z.enum(["CREATE", "UPDATE", "DELETE", "READ"]).optional(),
+  startDate: z.string().datetime({ offset: true }).optional(),
+  endDate: z.string().datetime({ offset: true }).optional(),
+});
+
+export const auditLogParamsSchema = z.object({
+  id: z.string().min(1),
+});
