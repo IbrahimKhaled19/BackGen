@@ -1,0 +1,36 @@
+version: 1
+project:
+  name: blog-api
+  framework: express
+  database: postgresql
+  orm: prisma
+
+plugins:
+  - jwt
+
+resources:
+  User:
+    fields:
+      email: string
+      name: string
+      age: number
+    softDelete: true
+
+  Post:
+    fields:
+      title: string
+      body: string
+      published:
+        type: boolean
+        default: false
+    relations:
+      author: User
+    softDelete: false
+
+  Comment:
+    fields:
+      content: string
+    relations:
+      post: Post
+      author: User
+    softDelete: false

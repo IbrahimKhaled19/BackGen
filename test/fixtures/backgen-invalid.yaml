@@ -1,0 +1,12 @@
+version: 1
+project:
+  name: bad-project
+  framework: express
+  database: postgresql
+  orm: invalid-orm
+
+plugins: not-an-array
+
+resources:
+  Bad:
+    fields: not-an-object

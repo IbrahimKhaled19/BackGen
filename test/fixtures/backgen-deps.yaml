@@ -1,0 +1,28 @@
+version: 1
+project:
+  name: deps-test
+  framework: express
+  database: postgresql
+  orm: prisma
+
+plugins: []
+
+resources:
+  User:
+    fields:
+      email: string
+    softDelete: false
+
+  Profile:
+    fields:
+      bio: string
+    relations:
+      user: User
+    softDelete: false
+
+  Post:
+    fields:
+      title: string
+    relations:
+      author: User
+    softDelete: false

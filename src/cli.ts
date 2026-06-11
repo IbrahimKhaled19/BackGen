@@ -44,6 +44,15 @@ generate
   });
 
 generate
+  .command("schema <file>")
+  .description("Generate full project from backgen.yaml schema definition (V8 Schema-First)")
+  .option("--out <dir>", "Output directory (default: project.name from YAML)")
+  .action(async (file: string, options: { out?: string }) => {
+    const { generateSchemaCommand } = await import("./commands/generate-schema.js");
+    await generateSchemaCommand(file, options);
+  });
+
+generate
   .command("migration [name]")
   .description("Generate a database migration (ORM-aware)")
   .action(async (name: string | undefined) => {
@@ -66,6 +75,20 @@ generate
   .action(async (resource: string) => {
     const { factoryCommand } = await import("./commands/factory.js");
     await factoryCommand(resource);
+  });
+
+// Import command — convert existing API specs to backgen.yaml
+const importCmd = program
+  .command("import")
+  .description("Import existing API specs into backgen.yaml schema");
+
+importCmd
+  .command("openapi <file>")
+  .description("Convert OpenAPI/Swagger spec to backgen.yaml")
+  .option("-o, --output <file>", "Output file path (default: backgen.yaml)")
+  .action(async (file: string, options: { output?: string }) => {
+    const { importOpenApiCommand } = await import("./commands/import-openapi.js");
+    await importOpenApiCommand(file, options);
   });
 
 program
