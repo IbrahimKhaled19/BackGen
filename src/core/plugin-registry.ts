@@ -12,6 +12,7 @@ import { sanitizePlugin } from "../plugins/sanitize/index.js";
 import { dockerRegistryPlugin } from "../plugins/docker-registry/index.js";
 import { releasePlugin } from "../plugins/release/index.js";
 import { auditPlugin } from "../plugins/audit/index.js";
+import { permissionsPlugin } from "../plugins/permissions/index.js";
 
 const PLUGINS: Record<string, BackGenPlugin> = {
   "ci-github": ciGithubPlugin,
@@ -27,6 +28,7 @@ const PLUGINS: Record<string, BackGenPlugin> = {
   ratelimit: ratelimitPlugin,
   sanitize: sanitizePlugin,
   audit: auditPlugin,
+  permissions: permissionsPlugin,
 };
 
 export function getPlugin(name: string): BackGenPlugin | undefined {

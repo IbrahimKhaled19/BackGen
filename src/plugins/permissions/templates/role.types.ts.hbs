@@ -1,0 +1,18 @@
+export interface Role {
+  id: string;
+  name: string;
+  description: string;
+  permissions: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface RoleResponse {
+  success: boolean;
+  data: Role;
+}
+
+export interface RoleListResponse {
+  success: boolean;
+  data: Role[];
+}

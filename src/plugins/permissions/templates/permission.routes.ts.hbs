@@ -1,0 +1,12 @@
+import { Router } from "express";
+import { createPermission, listPermissions, getPermission, deletePermission } from "./permission.controller.js";
+import { requirePermission } from "./permission.middleware.js";
+
+const router = Router();
+
+router.post("/", requirePermission("permission", "create"), createPermission);
+router.get("/", requirePermission("permission", "read"), listPermissions);
+router.get("/:id", requirePermission("permission", "read"), getPermission);
+router.delete("/:id", requirePermission("permission", "delete"), deletePermission);
+
+export default router;

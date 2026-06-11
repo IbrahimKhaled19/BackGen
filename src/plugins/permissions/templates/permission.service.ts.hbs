@@ -1,0 +1,44 @@
+import type { Permission } from "./permission.types.js";
+
+let prisma: any;
+async function getDb() {
+  if (!prisma) prisma = (await import("../../config/prisma.js")).default;
+  return prisma;
+}
+
+export const permissionService = {
+  async create(data: { resource: string; action: string; description?: string }): Promise<Permission> {
+    const db = await getDb();
+    return db.permission.create({ data });
+  },
+
+  async findAll(): Promise<Permission[]> {
+    const db = await getDb();
+    return db.permission.findMany({ orderBy: [{ resource: "asc" }, { action: "asc" }] });
+  },
+
+  async findById(id: string): Promise<Permission | null> {
+    const db = await getDb();
+    return db.permission.findUnique({ where: { id } });
+  },
+
+  async remove(id: string): Promise<void> {
+    const db = await getDb();
+    await db.permission.delete({ where: { id } });
+  },
+
+  async getUserPermissions(userId: string): Promise<string[]> {
+    const db = await getDb();
+    const userRoles = await db.userRole.findMany({
+      where: { userId },
+      include: { role: { include: { permissions: true } } },
+    });
+    const perms = new Set<string>();
+    for (const ur of userRoles) {
+      for (const p of ur.role.permissions) {
+        perms.add(`${p.resource}:${p.action}`);
+      }
+    }
+    return Array.from(perms);
+  },
+};

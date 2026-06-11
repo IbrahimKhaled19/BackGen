@@ -1,0 +1,42 @@
+import type { Request, Response, NextFunction } from "express";
+import { permissionService } from "./permission.service.js";
+
+export async function createPermission(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const permission = await permissionService.create(req.body);
+    res.status(201).json({ success: true, data: permission });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function listPermissions(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const permissions = await permissionService.findAll();
+    res.json({ success: true, data: permissions });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getPermission(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const permission = await permissionService.findById(req.params.id);
+    if (!permission) {
+      res.status(404).json({ success: false, error: { message: "Permission not found" } });
+      return;
+    }
+    res.json({ success: true, data: permission });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function deletePermission(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    await permissionService.remove(req.params.id);
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+}
