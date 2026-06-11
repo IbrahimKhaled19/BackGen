@@ -99,6 +99,7 @@ export const auditPlugin: BackGenPlugin = {
     "audit.service.ts.hbs",
     "audit.controller.ts.hbs",
     "audit.routes.ts.hbs",
+    "audit.middleware.ts.hbs",
   ],
 
   async install(ctx: InstallContext) {

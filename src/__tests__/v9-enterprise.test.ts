@@ -17,6 +17,18 @@ function exists(p: string): boolean {
   try { accessSync(p); return true; } catch { return false; }
 }
 
+function safeRmDir(dir: string): void {
+  for (let i = 0; i < 5; i++) {
+    try {
+      rmSync(dir, { recursive: true, force: true });
+      return;
+    } catch {
+      if (i < 4) new Promise(r => setTimeout(r, 200));
+      else throw new Error(`Cannot remove ${dir} after 5 attempts`);
+    }
+  }
+}
+
 describe("V9 Enterprise", { timeout: 300_000 }, () => {
   beforeAll(() => {
     mkdirSync(TEST_DIR, { recursive: true });
@@ -24,7 +36,7 @@ describe("V9 Enterprise", { timeout: 300_000 }, () => {
 
   it("audit plugin installs and adds AuditLog model", () => {
     const projectDir = path.join(TEST_DIR, "audit-test");
-    rmSync(projectDir, { recursive: true, force: true });
+    safeRmDir(projectDir);
     mkdirSync(projectDir, { recursive: true });
     cli("init audit-test --defaults --skip-install");
     cli("add audit", projectDir);
@@ -42,7 +54,7 @@ describe("V9 Enterprise", { timeout: 300_000 }, () => {
 
   it("permissions plugin installs and adds Role/Permission models", () => {
     const projectDir = path.join(TEST_DIR, "perms-test");
-    rmSync(projectDir, { recursive: true, force: true });
+    safeRmDir(projectDir);
     mkdirSync(projectDir, { recursive: true });
     cli("init perms-test --defaults --skip-install");
     cli("add permissions", projectDir);
@@ -60,7 +72,7 @@ describe("V9 Enterprise", { timeout: 300_000 }, () => {
 
   it("saas-enterprise preset creates enterprise resource models", () => {
     const projectDir = path.join(TEST_DIR, "my-enterprise");
-    rmSync(projectDir, { recursive: true, force: true });
+    safeRmDir(projectDir);
     mkdirSync(projectDir, { recursive: true });
     cli("init my-enterprise --preset saas-enterprise --defaults --skip-install");
 
