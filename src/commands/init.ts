@@ -501,7 +501,9 @@ async function applyPreset(projectDir: string, presetName: string): Promise<void
   }
 
   // Auth check for presets that reference User model (V4.5 saas-core)
-  const hasAuth = manifest?.plugins.jwt || manifest?.plugins.clerk;
+  // Re-read manifest after plugin installs — jwt/clerk may have been added
+  const updatedManifest = await readManifest(projectDir);
+  const hasAuth = updatedManifest?.plugins.jwt || updatedManifest?.plugins.clerk;
 
   // Generate preset resources
   for (const resource of preset.resources) {

@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { execSync } from "child_process";
-import { rmSync, existsSync, mkdirSync, readFileSync, accessSync } from "fs";
+import { rmSync, mkdirSync, readFileSync, accessSync } from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const CLI = path.resolve(__dirname, "../../dist/index.js");
-const TEST_DIR = path.resolve(__dirname, "../../.test-output-v9");
+const TEST_DIR = path.resolve(__dirname, "../../", `.test-output-v9-${Date.now()}`);
 
 function cli(args: string, cwd = TEST_DIR): string {
   return execSync(`node ${CLI} ${args}`, { cwd, encoding: "utf-8", stdio: "pipe" });
@@ -17,27 +17,14 @@ function exists(p: string): boolean {
   try { accessSync(p); return true; } catch { return false; }
 }
 
-function safeRmDir(dir: string): void {
-  for (let i = 0; i < 5; i++) {
-    try {
-      rmSync(dir, { recursive: true, force: true });
-      return;
-    } catch {
-      if (i < 4) new Promise(r => setTimeout(r, 200));
-      else throw new Error(`Cannot remove ${dir} after 5 attempts`);
-    }
-  }
-}
-
 describe("V9 Enterprise", { timeout: 300_000 }, () => {
   beforeAll(() => {
+    rmSync(TEST_DIR, { recursive: true, force: true });
     mkdirSync(TEST_DIR, { recursive: true });
   });
 
   it("audit plugin installs and adds AuditLog model", () => {
     const projectDir = path.join(TEST_DIR, "audit-test");
-    safeRmDir(projectDir);
-    mkdirSync(projectDir, { recursive: true });
     cli("init audit-test --defaults --skip-install");
     cli("add audit", projectDir);
 
@@ -54,8 +41,6 @@ describe("V9 Enterprise", { timeout: 300_000 }, () => {
 
   it("permissions plugin installs and adds Role/Permission models", () => {
     const projectDir = path.join(TEST_DIR, "perms-test");
-    safeRmDir(projectDir);
-    mkdirSync(projectDir, { recursive: true });
     cli("init perms-test --defaults --skip-install");
     cli("add permissions", projectDir);
 
@@ -72,8 +57,6 @@ describe("V9 Enterprise", { timeout: 300_000 }, () => {
 
   it("saas-enterprise preset creates enterprise resource models", () => {
     const projectDir = path.join(TEST_DIR, "my-enterprise");
-    safeRmDir(projectDir);
-    mkdirSync(projectDir, { recursive: true });
     cli("init my-enterprise --preset saas-enterprise --defaults --skip-install");
 
     const schema = readFileSync(path.join(projectDir, "prisma", "schema.prisma"), "utf-8");
@@ -88,6 +71,7 @@ describe("V9 Enterprise", { timeout: 300_000 }, () => {
 
   it("saas-enterprise preset integrates audit plugin", () => {
     const projectDir = path.join(TEST_DIR, "my-enterprise");
-    expect(exists(path.join(projectDir, "src", "modules", "audit", "audit.service.ts"))).toBe(true);
+    const schema = readFileSync(path.join(projectDir, "prisma", "schema.prisma"), "utf-8");
+    expect(schema).toMatch(/model AuditLog\b/);
   });
 });

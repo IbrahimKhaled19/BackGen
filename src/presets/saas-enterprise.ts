@@ -17,6 +17,11 @@ export const saasEnterprisePreset: DomainPreset = {
   plugins: ["jwt", "stripe", "audit"],
   resources: [
     {
+      name: "User",
+      fields: ["email:string:unique", "name:string"],
+      softDelete: true,
+    },
+    {
       name: "Organization",
       fields: ["name:string", "slug:string", "logo:string"],
       softDelete: true,
