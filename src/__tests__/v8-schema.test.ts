@@ -86,7 +86,7 @@ describe("relationsToRelationDefs", () => {
 
 // ── Integration tests ────────────────────────────────────────────
 
-describe.skip("Schema generation (integration)", { timeout: 300_000 }, () => {
+describe("Schema generation (integration)", { timeout: 300_000 }, () => {
   it("generates project from valid schema via CLI", async () => {
     const { execSync } = await import("child_process");
     const { rmSync } = await import("fs");

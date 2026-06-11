@@ -96,6 +96,13 @@ export async function generateProjectFromSchema(schema: ParsedSchema, projectDir
           softDelete: resource.softDelete,
         });
         console.log(chalk.green(`  ✓ ${name}`));
+      } catch (err: any) {
+        // Model may already exist from a plugin (e.g. jwt creates User)
+        if (err?.message?.includes?.("already exists in schema")) {
+          console.log(chalk.yellow(`  ⚠ ${name} (model exists — CRUD files generated)`));
+        } else {
+          throw err;
+        }
       } finally {
         process.chdir(origCwd);
       }
