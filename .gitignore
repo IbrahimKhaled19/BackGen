@@ -18,3 +18,4 @@ demo/
 .claude-flow/
 specs/
 graphify-out/
+tmp-test/
