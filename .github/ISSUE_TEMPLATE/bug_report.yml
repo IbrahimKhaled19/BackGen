@@ -1,0 +1,123 @@
+name: Bug report
+description: Report a bug in BackGen
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! 🙏
+
+        The **most important** thing you can do is include a minimal reproduction.
+        Bug reports without a reproduction might not be investigated.
+
+        💡 Questions? Use GitHub Discussions instead.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug description
+      description: A clear and concise description of the problem.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: How severe is this issue?
+      options:
+        - 'Critical: CLI crash, data loss, security issue'
+        - 'Major: Breaks core scaffolding functionality'
+        - 'Minor: Unexpected behavior, does not block usage'
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: |
+        Minimal reproduction is required. Provide exact `backgen` commands run,
+        or a GitHub repo with generated output.
+      value: |
+        ```bash
+        # Commands to reproduce
+        npx @ibrahimkhaled19/backgen@latest init my-app
+        cd my-app
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-actual
+    attributes:
+      label: Expected vs. Actual Behavior
+      description: What did you expect to happen, and what actually happened?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: Frequency
+      description: How often does this issue occur?
+      options:
+        - 'Consistently reproducible'
+        - 'Intermittent / Random'
+        - 'Happened once'
+    validations:
+      required: true
+
+  - type: textarea
+    id: regression
+    attributes:
+      label: Is this a regression?
+      description: Did this work in a previous BackGen version?
+      value: |
+        <!-- e.g., "Yes, last worked in v1.10.0, broke in v1.11.0" -->
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround
+      description: Is there a known workaround?
+      value: |
+        <!-- e.g., "Downgrading to v1.10.0 fixes it" or "No workaround found" -->
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment & Setup
+      value: |
+        - **OS:** <!-- e.g., macOS, Windows, Linux -->
+        - **Node.js version:** <!-- Run `node -v` -->
+        - **npm version:** <!-- Run `npm -v` -->
+        - **BackGen version:** <!-- Run `npx backgen --version` -->
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs & Debug Info
+      description: Run with `--verbose` flag and paste output.
+      value: |
+        ```
+        <!-- Verbose logs here -->
+        ```
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: pre-submission
+    attributes:
+      label: Pre-Submission Checklist
+      options:
+        - label: I have searched existing issues to confirm this is not a duplicate
+          required: true
+        - label: I have included a minimal reproduction
+          required: true

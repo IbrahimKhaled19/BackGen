@@ -1,0 +1,85 @@
+name: Feature request
+description: Suggest an improvement to BackGen
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an idea! 🙏
+
+        Before submitting, please search existing issues and discussions to avoid duplicates.
+
+        💡 If your idea is not fully formed, try a GitHub Discussion instead.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Feature Summary
+      description: What's the feature in 1-2 sentences?
+      placeholder: 'Example: Add support for generating REST API routes with Express.'
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Use Cases & Problem Description
+      description: Why is this feature needed? Provide real-world examples.
+      placeholder: "Example: I'm building a microservices architecture and need..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How should this feature work?
+      placeholder: 'Example: A new `--with-graphql` flag on `backgen init`...'
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions
+      description: Have you found any workarounds?
+      placeholder: "Example: I currently copy-paste boilerplate manually..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: drawbacks
+    attributes:
+      label: Potential Considerations
+      description: Any downsides? Complexity, scope, breaking changes?
+      placeholder: 'Example: This may require a new plugin system...'
+    validations:
+      required: false
+
+  - type: input
+    id: backgen-version
+    attributes:
+      label: BackGen Version
+      description: Run `npx backgen --version`
+      placeholder: 'Example: 1.11.0'
+
+  - type: dropdown
+    id: affected-area
+    attributes:
+      label: What area does this affect?
+      options:
+        - CLI (init, generate, sync commands)
+        - Templates (scaffolded output)
+        - Plugins
+        - Documentation
+        - Other
+
+  - type: checkboxes
+    id: pre-submission
+    attributes:
+      label: Pre-Submission Checklist
+      options:
+        - label: I have searched existing issues to confirm this is not a duplicate
+          required: true
+        - label: I have checked the roadmap to see if this is already planned
+          required: true

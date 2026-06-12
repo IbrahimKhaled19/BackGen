@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Ask a question
+    url: https://github.com/IbrahimKhaled19/BackGen/discussions/new
+    about: Ask questions and discuss with the community
+  - name: Report a security vulnerability
+    url: https://github.com/IbrahimKhaled19/BackGen/security/policy
+    about: Report security vulnerabilities via our Security Policy
