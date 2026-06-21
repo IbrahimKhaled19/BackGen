@@ -7,7 +7,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 export function listPluginsTool(server: McpServer) {
   server.tool(
     "list_plugins",
-    "List all available BackGen plugins with descriptions and categories.",
+    "List all available BackGen plugins with their descriptions and categories. Call this first to show the user what features they can add, then call add_plugin with the chosen plugin name. Call list_presets to see domain presets.",
     {},
     async () => {
       const plugins = [
@@ -38,8 +38,11 @@ export function listPluginsTool(server: McpServer) {
               "|--------|----------|-------------|",
               table,
               "",
-              "**Usage:** `backgen add <plugin>` or ask an AI agent to run `add_plugin`.",
-              "**Conflict:** `jwt` and `clerk` cannot be installed together.",
+              "**Usage:** Call `add_plugin` with the chosen plugin name, or run `backgen add <plugin>` in the terminal.",
+              "**Conflict:** `jwt` and `clerk` cannot be installed together — pick one.",
+              "**Tip:** To install all DevOps plugins at once, run `backgen add devops`.",
+              "",
+              "**Next step:** Ask the user which plugin they'd like, then call add_plugin.",
             ].join("\n"),
           },
         ],
