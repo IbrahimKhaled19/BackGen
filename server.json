@@ -6,12 +6,12 @@
     "source": "github",
     "url": "https://github.com/IbrahimKhaled19/BackGen"
   },
-  "version": "1.11.1",
+  "version": "1.11.2",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@ibrahimkhaled19/backgen",
-      "version": "1.11.1",
+      "version": "1.11.2",
       "transport": {
         "type": "stdio"
       }

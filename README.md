@@ -9,6 +9,9 @@
 
 ## 🤖 AI-Ready
 
+[![BackGen MCP server](https://glama.ai/mcp/servers/IbrahimKhaled19/BackGen/badges/score.svg)](https://glama.ai/mcp/servers/IbrahimKhaled19/BackGen)
+[![BackGen MCP server](https://glama.ai/mcp/servers/IbrahimKhaled19/BackGen/badges/card.svg)](https://glama.ai/mcp/servers/IbrahimKhaled19/BackGen)
+
 BackGen ships a built-in **MCP (Model Context Protocol) server** that AI assistants
 (Claude, Cursor, GitHub Copilot, VS Code) can use to scaffold projects on your behalf.
 
