@@ -3,7 +3,7 @@
   "version": "1.11.1",
   "type": "module",
   "description": "Generate Express.js backend projects with Prisma, Drizzle, or Mongoose — CLI generator for boilerplate-free APIs with auth, multi-tenant, and Docker",
-  "mcpName": "BackGen",
+  "mcpName": "io.github.IbrahimKhaled19/backgen",
   "main": "dist/index.js",
   "bin": {
     "backgen": "dist/index.js",
