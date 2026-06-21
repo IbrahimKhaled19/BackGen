@@ -23,9 +23,10 @@ export function doctorTool(server: McpServer) {
         return {
           content: [{ type: "text", text: `🏥 Doctor report:\n\n${output}` }],
         };
-      } catch (error: any) {
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
         return {
-          content: [{ type: "text", text: `❌ Doctor check failed: ${error.message}` }],
+          content: [{ type: "text", text: `❌ Doctor check failed: ${message}` }],
           isError: true,
         };
       }

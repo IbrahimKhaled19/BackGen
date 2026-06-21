@@ -37,9 +37,10 @@ export function generateResourceTool(server: McpServer) {
         return {
           content: [{ type: "text", text: `✅ Resource "${name}" generated.\n\n${output}` }],
         };
-      } catch (error: any) {
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
         return {
-          content: [{ type: "text", text: `❌ Failed: ${error.message}` }],
+          content: [{ type: "text", text: `❌ Failed: ${message}` }],
           isError: true,
         };
       }

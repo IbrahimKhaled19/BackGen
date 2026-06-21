@@ -19,9 +19,10 @@ export function projectInfoTool(server: McpServer) {
         return {
           content: [{ type: "text", text: `📋 Project info:\n\n${output}` }],
         };
-      } catch (error: any) {
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
         return {
-          content: [{ type: "text", text: `❌ Not a BackGen project: ${error.message}` }],
+          content: [{ type: "text", text: `❌ Not a BackGen project: ${message}` }],
           isError: true,
         };
       }

@@ -33,10 +33,10 @@ async function readJson(p: string): Promise<Record<string, unknown>> {
 
 function safeRm(dir: string): void {
   for (let i = 0; i < 10; i++) {
-    try { rmSync(dir, { recursive: true, force: true }); return; } catch {}
+    try { rmSync(dir, { recursive: true, force: true }); return; } catch { /* retry */ }
     // On Windows, cmd.exe rd /s /q handles locked handles better than node rmSync
-    try { execSync(`rd /s /q "${dir}"`, { shell: "cmd.exe", stdio: "ignore" }); } catch {}
-    try { rmSync(dir, { recursive: true, force: true }); return; } catch {}
+    try { execSync(`rd /s /q "${dir}"`, { shell: "cmd.exe", stdio: "ignore" }); } catch { /* retry */ }
+    try { rmSync(dir, { recursive: true, force: true }); return; } catch { /* retry */ }
     execSync("node -e \"setTimeout(() => {}, 500)\"", { stdio: "ignore" });
   }
 }

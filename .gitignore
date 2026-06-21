@@ -19,3 +19,4 @@ demo/
 specs/
 graphify-out/
 tmp-test/
+.test-output/
