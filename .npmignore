@@ -16,4 +16,5 @@ specs/
 graphify-out/
 tmp/
 demo/
+tmp-test/
 knowledge-graph-chunk4.json
