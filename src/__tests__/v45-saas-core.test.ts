@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { execSync } from "child_process";
+import { rmSync } from "fs";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { fileURLToPath } from "url";
@@ -8,6 +9,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const CLI = path.resolve(__dirname, "../../dist/index.js");
 const TEST_DIR = path.resolve(__dirname, "../../.test-output-v45");
+
+function safeRm(dir: string): void {
+  for (let i = 0; i < 15; i++) {
+    try { rmSync(dir, { recursive: true, force: true }); return; } catch {
+      execSync("node -e \"setTimeout(() => {}, 1000)\"", { stdio: "ignore" });
+    }
+  }
+}
 
 function cli(args: string, cwd = TEST_DIR): string {
   return execSync(`node ${CLI} ${args}`, {
@@ -31,7 +40,13 @@ async function readFile(p: string): Promise<string> {
 }
 
 describe("V4.5 SaaS Core preset", () => {
-  beforeAll(() => fs.mkdir(TEST_DIR, { recursive: true }));
+  beforeAll(async () => {
+    await fs.mkdir(TEST_DIR, { recursive: true });
+    // Clean up leftover dirs from previous runs
+    for (const name of ["my-saas", "no-auth", "mid-test", "app-ts-test", "manifest-test", "legacy", "old-saas"]) {
+      safeRm(path.join(TEST_DIR, name));
+    }
+  });
 
   afterAll(() => Promise.resolve());
 
@@ -134,7 +149,13 @@ describe("V4.5 SaaS Core preset", () => {
 });
 
 describe("V4.5 --soft-delete flag on resource generator", () => {
-  beforeAll(() => fs.mkdir(TEST_DIR, { recursive: true }));
+  beforeAll(async () => {
+    await fs.mkdir(TEST_DIR, { recursive: true });
+    // Clean up leftover dirs
+    for (const name of ["sd-test", "no-sd"]) {
+      safeRm(path.join(TEST_DIR, name));
+    }
+  });
 
   afterAll(() => Promise.resolve());
 
@@ -170,8 +191,12 @@ describe("V4.5 --soft-delete flag on resource generator", () => {
 describe("V1.8 Drizzle ORM schema generation", () => {
   const DRIZZLE_DIR = path.resolve(__dirname, "../../.test-output-drizzle");
 
-  beforeAll(() => {
-    return fs.mkdir(DRIZZLE_DIR, { recursive: true }).catch(() => {});
+  beforeAll(async () => {
+    await fs.mkdir(DRIZZLE_DIR, { recursive: true }).catch(() => {});
+    // Clean up leftover dirs
+    for (const name of ["drizzle-base", "drizzle-saas", "drizzle-gen"]) {
+      safeRm(path.join(DRIZZLE_DIR, name));
+    }
   });
 
   afterAll(() => Promise.resolve());
@@ -273,8 +298,12 @@ describe("V1.8 Drizzle ORM schema generation", () => {
 describe("V1.8 Mongoose ORM schema generation", () => {
   const MONGOOSE_DIR = path.resolve(__dirname, "../../.test-output-mongoose");
 
-  beforeAll(() => {
-    return fs.mkdir(MONGOOSE_DIR, { recursive: true }).catch(() => {});
+  beforeAll(async () => {
+    await fs.mkdir(MONGOOSE_DIR, { recursive: true }).catch(() => {});
+    // Clean up leftover dirs
+    for (const name of ["mongoose-base", "mongoose-saas", "mongoose-gen"]) {
+      safeRm(path.join(MONGOOSE_DIR, name));
+    }
   });
 
   afterAll(() => Promise.resolve());

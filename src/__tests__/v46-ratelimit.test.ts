@@ -1,8 +1,17 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import { execSync } from "child_process";
+import { rmSync } from "fs";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { fileURLToPath } from "url";
+
+function safeRm(dir: string): void {
+  for (let i = 0; i < 15; i++) {
+    try { rmSync(dir, { recursive: true, force: true }); return; } catch {
+      execSync("node -e \"setTimeout(() => {}, 1000)\"", { stdio: "ignore" });
+    }
+  }
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,14 +43,10 @@ describe("V4.6 ratelimit plugin", () => {
   const projectDir = path.join(TEST_DIR, "demo");
 
   beforeAll(async () => {
-    await fs.rm(TEST_DIR, { recursive: true, force: true });
+    safeRm(TEST_DIR);
     await fs.mkdir(TEST_DIR, { recursive: true });
     cli("init demo --defaults --skip-install", TEST_DIR);
     cli("add ratelimit", projectDir);
-  });
-
-  afterAll(async () => {
-    await fs.rm(TEST_DIR, { recursive: true, force: true });
   });
 
   it("creates rate-limit middleware in security/", async () => {

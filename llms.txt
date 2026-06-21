@@ -1,0 +1,70 @@
+# BackGen — Backend Project Generator
+
+> Generate production-ready Express.js backend projects in minutes.
+> npm: `@ibrahimkhaled19/backgen`
+> GitHub: https://github.com/IbrahimKhaled19/BackGen
+
+## Quick Start
+
+```bash
+npx @ibrahimkhaled19/backgen init my-api --orm prisma --defaults
+cd my-api
+npm run dev
+```
+
+## MCP Server (AI Integration)
+
+BackGen ships an MCP server that AI agents can use directly:
+
+```json
+{
+  "mcpServers": {
+    "backgen": {
+      "command": "npx",
+      "args": ["-y", "@ibrahimkhaled19/backgen"]
+    }
+  }
+}
+```
+
+### Available Tools
+
+1. **init_project** — Scaffold a new project (name, orm, preset, defaults)
+2. **add_plugin** — Install a plugin into an existing project
+3. **remove_plugin** — Remove a plugin from a project
+4. **generate_resource** — Generate a CRUD resource module
+5. **generate_seed** — Generate seed data
+6. **generate_factory** — Generate a test factory
+7. **doctor** — Check project health
+8. **list_plugins** — List available plugins
+9. **list_presets** — List available domain presets
+10. **project_info** — Read project manifest
+
+## CLI Commands
+
+- `backgen init [name]` — Create project (flags: --orm, --preset, --defaults, --skip-install)
+- `backgen add [plugin]` — Install plugin
+- `backgen remove [plugin]` — Remove plugin
+- `backgen generate resource [name]` — CRUD module
+- `backgen generate seed [resource]` — Seed data
+- `backgen generate factory [resource]` — Test factory
+- `backgen doctor` — Health check
+- `backgen upgrade` — Upgrade project templates
+- `backgen rollback` — Rollback upgrade
+- `backgen sync` — Reconcile manifest with project
+
+## Supported ORMs
+- Prisma (PostgreSQL, MySQL, SQLite)
+- Drizzle (PostgreSQL, MySQL, SQLite)
+- Mongoose (MongoDB)
+
+## Available Plugins
+- auth: jwt, clerk
+- payment: stripe
+- storage: s3
+- production: ratelimit
+- devops: ci-github, dependabot, codeql, docker-registry, release
+
+## Domain Presets
+- saas-core (organizations, memberships, RBAC)
+- healthcare, ecommerce, crm, lms

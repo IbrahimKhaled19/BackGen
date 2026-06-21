@@ -2,10 +2,12 @@
   "name": "@ibrahimkhaled19/backgen",
   "version": "1.11.0",
   "type": "module",
-  "description": "Generate production-ready backend projects in minutes",
+  "description": "Generate Express.js backend projects with Prisma, Drizzle, or Mongoose — CLI generator for boilerplate-free APIs with auth, multi-tenant, and Docker",
+  "mcpName": "BackGen",
   "main": "dist/index.js",
   "bin": {
-    "backgen": "dist/index.js"
+    "backgen": "dist/index.js",
+    "backgen-mcp": "dist/mcp/index.js"
   },
   "scripts": {
     "build": "tsc",
@@ -14,7 +16,9 @@
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "mcp": "node dist/mcp/index.js",
+    "mcp:dev": "tsx src/mcp/index.ts"
   },
   "keywords": [
     "cli",
@@ -22,7 +26,26 @@
     "generator",
     "express",
     "typescript",
-    "prisma"
+    "prisma",
+    "drizzle",
+    "mongoose",
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "ai",
+    "api-generator",
+    "boilerplate",
+    "scaffolding",
+    "crud",
+    "codegen",
+    "nodejs",
+    "rest-api",
+    "saas",
+    "starter-kit",
+    "backend-framework",
+    "express-generator",
+    "code-generator",
+    "backend-generator"
   ],
   "author": "Ibrahim Khaled",
   "license": "MIT",
@@ -35,6 +58,7 @@
     "url": "https://github.com/IbrahimKhaled19/BackGen/issues"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "chalk": "^5.3.0",
     "commander": "^12.0.0",
     "glob": "^13.0.6",

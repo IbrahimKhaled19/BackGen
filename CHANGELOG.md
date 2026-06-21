@@ -1,5 +1,44 @@
 # Changelog
 
+## [v1.11.0] - 2026-06-21
+
+### Features
+- feat(mcp): MCP server with 10 tools for AI-assisted project scaffolding — init_project, add_plugin, remove_plugin, generate_resource, generate_seed, generate_factory, doctor, list_plugins, list_presets, project_info
+- feat(mcp): ai.json, llms.txt, server.json for AI discovery
+- feat(v9): audit trail plugin + saas-enterprise preset (#66cb48a)
+- feat(v9): roles & permissions plugin (#1e2e5dc)
+- feat(v9): audit, permissions plugins + saas-enterprise preset (#e795139)
+- feat(v8): schema command refactor + OpenAPI import (#d5bfc65)
+- feat(v8): schema-first generation from backgen.yaml (#46e8817)
+- feat(v7): interactive scaffold — plugin selection at init time (#76d8cb0)
+- feat(v7): integrated plugin selection + install into backgen new (#761ae13)
+
+### Bug Fixes
+- fix(security): MCP runBackgen command injection — execSync replaced with spawnSync, eliminates shell injection vector
+- fix(security): MCP tools unrestricted z.string() replaced with z.enum() + regex validation for all user inputs
+- fix(security): hardcoded MCP server version 1.0.0 now reads from package.json
+- fix(v9): stabilize e2e test cleanup with unique dirs per run (#a7e7e10)
+- fix(v9): test stability, preset User model, re-read manifest after plugins (#f2d2ab8)
+- fix(v9): add audit.middleware to templates, fix EBUSY on win32 (#a76754e)
+- fix(docker): pin openssl/libcrypto3 to 3.5.7-r0 (#0168ce2, #0b6482d)
+- fix: restore catch param in generate-schema broken by lint fix (#d1e7824)
+- fix(v8): handle existing model from plugins, enable integration tests (#1a0304c)
+- fix: JWT requires:prisma check respects ORM from manifest (#39de6a0)
+
+### Refactoring
+- refactor(v7): add.ts interactive mode uses selectPluginsInteractive + installBulk (#dd54dba)
+
+### Documentation
+- docs: add MIT License (#cb03bac)
+- docs: add SECURITY.md with vulnerability reporting policy (#c5ffc36)
+- docs: add community files — COC, issue templates, PR template (#a9b2038)
+- docs(mcp): add MCP server config with 10-tool table to README
+- docs(mcp): add JSDoc to all 12 exported MCP functions
+
+### Chores
+- chore: fix lint errors — empty catch, unused imports, let→const (#8cdfb5c)
+- chore: ignore tmp-test directory, dismiss GHSA-92pp-h63x-v22m alert (#67f0239)
+
 ## [v1.10.1] - 2026-06-10
 
 ### Bug Fixes

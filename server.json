@@ -1,0 +1,50 @@
+{
+  "$schema": "https://registry.modelcontextprotocol.io/schema.json",
+  "name": "@ibrahimkhaled19/backgen",
+  "description": "Generate production-ready Express.js + TypeScript backend projects with ORMs, auth, payments, and DevOps",
+  "repository": "https://github.com/IbrahimKhaled19/BackGen",
+  "command": "npx",
+  "args": ["-y", "@ibrahimkhaled19/backgen"],
+  "tools": [
+    {
+      "name": "init_project",
+      "description": "Scaffold a new backend project with ORM, preset, and plugins"
+    },
+    {
+      "name": "add_plugin",
+      "description": "Install a plugin into an existing project"
+    },
+    {
+      "name": "remove_plugin",
+      "description": "Remove a plugin from a project"
+    },
+    {
+      "name": "generate_resource",
+      "description": "Generate a CRUD resource module"
+    },
+    {
+      "name": "generate_seed",
+      "description": "Generate seed data for a resource"
+    },
+    {
+      "name": "generate_factory",
+      "description": "Generate a test factory for a resource"
+    },
+    {
+      "name": "doctor",
+      "description": "Run health checks on a project"
+    },
+    {
+      "name": "list_plugins",
+      "description": "List all available plugins"
+    },
+    {
+      "name": "list_presets",
+      "description": "List all available domain presets"
+    },
+    {
+      "name": "project_info",
+      "description": "Read project manifest"
+    }
+  ]
+}

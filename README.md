@@ -4,7 +4,45 @@
 [![npm version](https://img.shields.io/npm/v/@ibrahimkhaled19/backgen.svg)](https://www.npmjs.com/package/@ibrahimkhaled19/backgen)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-<img width="1600" height="900" alt="showcase" src="https://github.com/user-attachments/assets/cd3888d3-fa9d-4e4e-a595-4f10ae039871" />
+[![npm downloads](https://img.shields.io/npm/dm/@ibrahimkhaled19/backgen.svg)](https://www.npmjs.com/package/@ibrahimkhaled19/backgen)
+[![GitHub stars](https://img.shields.io/github/stars/IbrahimKhaled19/BackGen?style=social)](https://github.com/IbrahimKhaled19/BackGen)
+
+## 🤖 AI-Ready
+
+BackGen ships a built-in **MCP (Model Context Protocol) server** that AI assistants
+(Claude, Cursor, GitHub Copilot, VS Code) can use to scaffold projects on your behalf.
+
+```json
+{
+  "mcpServers": {
+    "backgen": {
+      "command": "npx",
+      "args": ["-y", "@ibrahimkhaled19/backgen", "backgen-mcp"]
+    }
+  }
+}
+```
+
+**Available MCP tools:**
+
+| Tool | Description |
+|------|-------------|
+| `init_project` | Scaffold a new production-ready backend project with chosen ORM, preset, and plugins |
+| `add_plugin` | Install a plugin (jwt, clerk, stripe, s3, ratelimit, ci-github, dependabot, codeql, docker-registry, release) |
+| `remove_plugin` | Remove a previously installed plugin |
+| `generate_resource` | Generate a CRUD resource with fields, relations, validation, and Swagger |
+| `generate_seed` | Generate a database seed file for a resource |
+| `generate_factory` | Generate a test factory for a resource |
+| `doctor` | Validate an existing BackGen project for configuration issues |
+| `list_plugins` | List all available plugins with descriptions |
+| `list_presets` | List all available domain presets |
+| `project_info` | Show project metadata from the manifest |
+
+Then just ask: *"Scaffold a SaaS backend with Prisma, JWT auth, and Stripe payments"*
+
+---
+
+<img width="1600" height="900" alt="BackGen CLI generating Express.js backend with Prisma, Drizzle, and Mongoose — Swagger docs, Docker, auth, and multi-tenant SaaS preset" src="https://github.com/user-attachments/assets/cd3888d3-fa9d-4e4e-a595-4f10ae039871" />
 > Generate production-ready backend foundations so developers can focus on business logic, not boilerplate.
 
 BackGen is a CLI tool that generates complete Express.js backend projects on **Prisma, Drizzle, or Mongoose** — with authentication, multi-tenant infrastructure, production hardening, Docker, and testing — all working out of the box.
@@ -524,6 +562,25 @@ npm run lint
 | Logging | Winston + Morgan |
 | Testing | Vitest |
 | Deployment | Docker |
+
+---
+
+## BackGen vs Alternatives
+
+| Tool | ORM Choice | Auth | Plugin System | Presets | Upgrade Engine | Docs Site |
+|------|-----------|------|---------------|---------|----------------|-----------|
+| **BackGen** | Prisma, Drizzle, Mongoose | JWT, Clerk | ◈ 7+ plugins | 5 domains | ◈ Backup + rollback | — |
+| NestJS CLI | No (fixed NestJS) | Built-in | ◈ Modules | — | — | ◈ |
+| Express Generator | No (fixed plain JS) | — | — | — | — | — |
+| T3 Stack | Prisma | NextAuth | — | — | — | ◈ |
+| AdonisJS | Lucid ORM | Built-in | ◈ Ace | — | — | ◈ |
+| LoopBack | Built-in | Built-in | ◈ | — | — | ◈ |
+
+**Key differentiators:**
+- ◈ **ORM-switchable** — change Prisma ↔ Drizzle ↔ Mongoose via manifest, not rewrite
+- ◈ **Domain presets** — healthcare, SaaS, ecommerce, CRM, LMS in one command
+- ◈ **Upgrade engine** — versioned migrations + backup + rollback for generated projects
+- ◈ **Multi-ORM from day one** — not locked into one data layer
 
 ---
 

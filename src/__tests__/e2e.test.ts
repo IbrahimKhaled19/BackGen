@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import { execSync } from "child_process";
+import { rmSync } from "fs";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { fileURLToPath } from "url";
@@ -30,21 +31,27 @@ async function readJson(p: string): Promise<Record<string, unknown>> {
   return JSON.parse(await read(p));
 }
 
-async function rm(dir: string): Promise<void> {
-  await fs.rm(dir, { recursive: true, force: true }).catch(() => {});
+function safeRm(dir: string): void {
+  for (let i = 0; i < 10; i++) {
+    try { rmSync(dir, { recursive: true, force: true }); return; } catch {}
+    // On Windows, cmd.exe rd /s /q handles locked handles better than node rmSync
+    try { execSync(`rd /s /q "${dir}"`, { shell: "cmd.exe", stdio: "ignore" }); } catch {}
+    try { rmSync(dir, { recursive: true, force: true }); return; } catch {}
+    execSync("node -e \"setTimeout(() => {}, 500)\"", { stdio: "ignore" });
+  }
 }
 
 describe("BackGen E2E", () => {
   const projectDir = path.join(TEST_DIR, "my-api");
 
   beforeAll(async () => {
-    await rm(TEST_DIR);
     await fs.mkdir(TEST_DIR, { recursive: true });
+    // Clean up leftover dirs from previous runs
+    safeRm(path.join(TEST_DIR, "my-api"));
+    safeRm(path.join(TEST_DIR, "demo-drizzle"));
+    safeRm(path.join(TEST_DIR, "demo-mongo"));
+    safeRm(path.join(TEST_DIR, "demo-mongo-gen"));
     cli("init my-api --defaults --skip-install");
-  });
-
-  afterAll(async () => {
-    await rm(TEST_DIR);
   });
 
   // ── Init ──────────────────────────────────────────────
@@ -144,12 +151,8 @@ describe("BackGen E2E", () => {
     const drizzleDir = path.join(TEST_DIR, "demo-drizzle");
 
     beforeAll(async () => {
-      await rm(drizzleDir);
+      safeRm(drizzleDir);
       cli("init demo-drizzle --defaults --orm drizzle --skip-install", TEST_DIR);
-    });
-
-    afterAll(async () => {
-      await rm(drizzleDir);
     });
 
     it("creates project directory", async () => {
@@ -199,12 +202,8 @@ describe("BackGen E2E", () => {
     const mongoDir = path.join(TEST_DIR, "demo-mongo");
 
     beforeAll(async () => {
-      await rm(mongoDir);
+      safeRm(mongoDir);
       cli("init demo-mongo --defaults --orm mongoose --skip-install", TEST_DIR);
-    });
-
-    afterAll(async () => {
-      await rm(mongoDir);
     });
 
     it("creates project directory", async () => {
@@ -252,10 +251,6 @@ describe("BackGen E2E", () => {
     beforeAll(() => {
       cli("init demo-mongo-gen --orm mongoose --defaults --skip-install", TEST_DIR);
       cli("generate resource Product name:string price:number stock:number", mongoGenDir);
-    });
-
-    afterAll(async () => {
-      await rm(mongoGenDir);
     });
 
     it("creates resource module files", async () => {
@@ -519,7 +514,7 @@ describe("BackGen E2E", () => {
 
     it("reinstalls missing plugin files", async () => {
       // Delete auth module (jwt plugin)
-      await rm(path.join(projectDir, "src/modules/auth"));
+      safeRm(path.join(projectDir, "src/modules/auth"));
       expect(await exists(path.join(projectDir, "src/modules/auth"))).toBe(false);
 
       // Sync should restore it (jwt is still in manifest)

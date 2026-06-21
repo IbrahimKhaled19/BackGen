@@ -1,0 +1,29 @@
+{
+  "name": "@ibrahimkhaled19/backgen",
+  "description": "Generate production-ready backend projects in minutes",
+  "version": "1.11.0",
+  "mcp": {
+    "server": "npx -y @ibrahimkhaled19/backgen",
+    "tools": [
+      "init_project", "add_plugin", "remove_plugin",
+      "generate_resource", "generate_seed", "generate_factory",
+      "doctor", "list_plugins", "list_presets", "project_info"
+    ]
+  },
+  "cli": {
+    "binary": "backgen",
+    "commands": {
+      "init": {
+        "flags": ["--orm", "--preset", "--defaults", "--skip-install", "--resume"],
+        "orm_options": ["prisma", "drizzle", "mongoose"],
+        "preset_options": ["saas-core", "saas", "healthcare", "ecommerce", "crm", "lms"]
+      },
+      "add": {
+        "plugin_options": ["jwt", "clerk", "stripe", "s3", "ratelimit", "ci-github", "dependabot", "codeql", "docker-registry", "release"]
+      },
+      "generate": {
+        "subcommands": ["resource", "seed", "factory"]
+      }
+    }
+  }
+}
