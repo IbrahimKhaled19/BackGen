@@ -37,11 +37,14 @@ export class {{ResourceName}}Repository {
     });
   }
 
-  async findAll(query: {{ResourceName}}Query) {
+  async findAll(query: {{ResourceName}}Query, userId?: string) {
     const { page = 1, limit = 10, search } = query;
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = {};
+    if (userId) {
+      where.userId = userId;
+    }
     {{#if softDelete}}
     where.deletedAt = null;
     {{/if}}
@@ -76,9 +79,12 @@ export class {{ResourceName}}Repository {
   }
 
   async update(id: string, data: Update{{ResourceName}}Input) {
+    const cleanData = Object.fromEntries(
+      Object.entries(data).filter(([, v]) => v !== undefined)
+    );
     return prisma.{{resourceName}}.update({
       where: { id },
-      data,
+      data: cleanData,
       {{#if hasRelations}}
       include: {
         {{#each relations}}

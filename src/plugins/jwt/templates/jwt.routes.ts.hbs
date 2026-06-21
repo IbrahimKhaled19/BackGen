@@ -1,11 +1,16 @@
 import { Router } from "express";
 import { AuthController } from "./auth.controller.js";
 import { validate } from "../../middleware/core/validate.js";
+import { rateLimitMw } from "../../middleware/security/rate-limit.js";
 import { registerSchema, loginSchema, refreshSchema, logoutSchema } from "./auth.validation.js";
 import { asyncHandler } from "../../utils/async-handler.js";
+import { authMiddleware } from "../../middleware/auth.js";
 
 const router = Router();
 const controller = new AuthController();
+
+// Rate limiting for auth endpoints to mitigate brute force attacks
+router.use(rateLimitMw);
 
 /**
  * @swagger
@@ -103,6 +108,6 @@ router.post("/refresh", validate(refreshSchema), asyncHandler(controller.refresh
  *       200:
  *         description: Logged out successfully
  */
-router.post("/logout", validate(logoutSchema), asyncHandler(controller.logout.bind(controller)));
+router.post("/logout", authMiddleware, validate(logoutSchema), asyncHandler(controller.logout.bind(controller)));
 
 export default router;

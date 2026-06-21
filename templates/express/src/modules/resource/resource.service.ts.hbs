@@ -17,8 +17,8 @@ export class {{ResourceName}}Service {
     return {{resourceName}};
   }
 
-  async list(query: {{ResourceName}}Query) {
-    return repository.findAll(query);
+  async list(query: {{ResourceName}}Query, userId?: string) {
+    return repository.findAll(query, userId);
   }
 
   async update(id: string, input: Update{{ResourceName}}Input, userId?: string) {

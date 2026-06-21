@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "backgen": {
+      "command": "node",
+      "args": ["D:/Projects/BackGen/dist/mcp/index.js"]
+    }
+  }
+}

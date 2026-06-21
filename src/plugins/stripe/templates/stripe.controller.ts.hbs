@@ -16,7 +16,7 @@ export class StripeController {
   }
 
   async getCustomer(req: Request, res: Response): Promise<void> {
-    const customer = await stripeService.getCustomer(req.params.customerId);
+    const customer = await stripeService.getCustomer(req.params.customerId as string);
     successResponse(res, customer);
   }
 

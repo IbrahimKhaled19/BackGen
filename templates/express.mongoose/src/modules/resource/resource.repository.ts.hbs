@@ -12,11 +12,14 @@ export class {{ResourceName}}Repository {
     return {{ResourceName}}Model.findOne(filter).lean();
   }
 
-  async findAll(query: {{ResourceName}}Query) {
+  async findAll(query: {{ResourceName}}Query, userId?: string) {
     const { page = 1, limit = 10, search } = query;
     const skip = (page - 1) * limit;
 
     const filter: Record<string, unknown> = {};
+    if (userId) {
+      filter.userId = userId;
+    }
     {{#if softDelete}}
     filter.deletedAt = null;
     {{/if}}

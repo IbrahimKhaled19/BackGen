@@ -105,7 +105,7 @@ export async function generateCommand(
     fields = answer.fields.split(",").map((f: string) => f.trim());
   }
 
-  const fieldDefs = createFieldDefinitions(fields);
+  const fieldDefs = createFieldDefinitions(fields, orm);
   if (fieldDefs.length === 0) {
     console.error(chalk.red("Error: No valid fields provided."));
     process.exit(1);

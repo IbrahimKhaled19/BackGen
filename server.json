@@ -1,10 +1,20 @@
 {
-  "$schema": "https://registry.modelcontextprotocol.io/schema.json",
-  "name": "@ibrahimkhaled19/backgen",
-  "description": "Generate production-ready Express.js + TypeScript backend projects with ORMs, auth, payments, and DevOps",
-  "repository": "https://github.com/IbrahimKhaled19/BackGen",
-  "command": "npx",
-  "args": ["-y", "@ibrahimkhaled19/backgen"],
+  "$schema": "https://registry.modelcontextprotocol.io/schema/server.json",
+  "name": "io.github.IbrahimKhaled19/backgen",
+  "description": "Generate Express.js backend projects with ORMs, auth, payments, and DevOps",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/IbrahimKhaled19/BackGen"
+  },
+  "version": "1.11.0",
+  "packages": [
+    {
+      "name": "@ibrahimkhaled19/backgen",
+      "type": "npm",
+      "version": "1.11.0",
+      "transport": "stdio"
+    }
+  ],
   "tools": [
     {
       "name": "init_project",

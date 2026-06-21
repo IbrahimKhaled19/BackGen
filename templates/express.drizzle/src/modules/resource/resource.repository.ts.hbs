@@ -24,11 +24,14 @@ export class {{ResourceName}}Repository {
     return item ?? null;
   }
 
-  async findAll(query: {{ResourceName}}Query) {
+  async findAll(query: {{ResourceName}}Query, userId?: string) {
     const { page = 1, limit = 10, search } = query;
     const offset = (page - 1) * limit;
 
     const filters = [];
+    if (userId) {
+      filters.push(eq({{resourceName}}.userId, userId));
+    }
     {{#if softDelete}}
     filters.push(eq({{resourceName}}.deletedAt, null));
     {{/if}}

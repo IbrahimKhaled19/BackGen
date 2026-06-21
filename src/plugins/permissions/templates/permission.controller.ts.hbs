@@ -21,7 +21,7 @@ export async function listPermissions(_req: Request, res: Response, next: NextFu
 
 export async function getPermission(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const permission = await permissionService.findById(req.params.id);
+    const permission = await permissionService.findById(req.params.id as string);
     if (!permission) {
       res.status(404).json({ success: false, error: { message: "Permission not found" } });
       return;
@@ -34,7 +34,7 @@ export async function getPermission(req: Request, res: Response, next: NextFunct
 
 export async function deletePermission(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    await permissionService.remove(req.params.id);
+    await permissionService.remove(req.params.id as string);
     res.status(204).end();
   } catch (err) {
     next(err);
