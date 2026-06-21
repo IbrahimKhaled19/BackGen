@@ -6,7 +6,7 @@
     "type": "git",
     "url": "https://github.com/IbrahimKhaled19/BackGen"
   },
-  "version": "1.11.0",
+  "version": "1.11.1",
   "packages": [
     {
       "name": "@ibrahimkhaled19/backgen",
