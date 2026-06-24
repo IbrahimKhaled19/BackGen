@@ -2,7 +2,7 @@ import { Router } from "express";
 import { AuthController } from "./auth.controller.js";
 import { validate } from "../../middleware/core/validate.js";
 import { rateLimitMw } from "../../middleware/security/rate-limit.js";
-import { registerSchema, loginSchema, refreshSchema, logoutSchema } from "./auth.validation.js";
+import { registerSchema, loginSchema, refreshSchema, logoutSchema, changePasswordSchema } from "./auth.validation.js";
 import { asyncHandler } from "../../utils/async-handler.js";
 import { authMiddleware } from "../../middleware/auth.js";
 
@@ -68,7 +68,7 @@ router.post("/login", validate(loginSchema), asyncHandler(controller.login.bind(
  * @swagger
  * /api/auth/refresh:
  *   post:
- *     summary: Refresh access token
+ *     summary: Refresh access token (rotates refresh token)
  *     tags: [Auth]
  *     requestBody:
  *       required: true
@@ -81,9 +81,9 @@ router.post("/login", validate(loginSchema), asyncHandler(controller.login.bind(
  *                 type: string
  *     responses:
  *       200:
- *         description: Token refreshed
+ *         description: New access + refresh token issued
  *       401:
- *         description: Invalid refresh token
+ *         description: Invalid or revoked refresh token
  */
 router.post("/refresh", validate(refreshSchema), asyncHandler(controller.refresh.bind(controller)));
 
@@ -91,10 +91,8 @@ router.post("/refresh", validate(refreshSchema), asyncHandler(controller.refresh
  * @swagger
  * /api/auth/logout:
  *   post:
- *     summary: Logout user
+ *     summary: Logout user (no auth header required, just refresh token)
  *     tags: [Auth]
- *     security:
- *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -108,6 +106,38 @@ router.post("/refresh", validate(refreshSchema), asyncHandler(controller.refresh
  *       200:
  *         description: Logged out successfully
  */
-router.post("/logout", authMiddleware, validate(logoutSchema), asyncHandler(controller.logout.bind(controller)));
+router.post("/logout", validate(logoutSchema), asyncHandler(controller.logout.bind(controller)));
+
+/**
+ * @swagger
+ * /api/auth/change-password:
+ *   post:
+ *     summary: Change password (invalidates all existing sessions)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password changed, all sessions invalidated
+ *       401:
+ *         description: Current password is incorrect
+ */
+router.post(
+  "/change-password",
+  authMiddleware,
+  validate(changePasswordSchema),
+  asyncHandler(controller.changePassword.bind(controller))
+);
 
 export default router;

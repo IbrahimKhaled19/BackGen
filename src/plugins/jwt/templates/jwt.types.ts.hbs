@@ -23,3 +23,15 @@ export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
 }
+
+export interface AuthPayload {
+  userId: string;
+  email: string;
+  role: string;
+  tokenVersion: number;
+}
+
+export interface RefreshResponse {
+  accessToken: string;
+  refreshToken: string;
+}

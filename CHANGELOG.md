@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.13.0] - 2026-06-25
+
+### Chores
+- chore: enrich all 10 MCP tool descriptions and success responses for Glama scoring — improves TDQS from B to A (#ef83c46)
+- chore: add glama.json for server ownership verification (#9ad8148)
+
 ## [v1.11.0] - 2026-06-21
 
 ### Features

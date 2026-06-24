@@ -31,7 +31,7 @@ export function getPluginModelPath(orm: string, modelName: string): { dir: strin
 export function getUserModelSnippet(orm: string): string {
   switch (orm) {
     case "drizzle":
-      return `import { pgTable, uuid, text, timestamp, boolean } from "drizzle-orm/pg-core";
+      return `import { pgTable, uuid, text, timestamp, integer } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -39,6 +39,9 @@ export const user = pgTable("user", {
   password: text("password").notNull(),
   name: text("name"),
   role: text("role").default("user"),
+  tokenVersion: integer("token_version").default(0).notNull(),
+  loginAttempts: integer("login_attempts").default(0).notNull(),
+  lockoutUntil: timestamp("lockout_until"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });`;
@@ -51,6 +54,9 @@ export interface IUser extends Document {
   password: string;
   name?: string;
   role: string;
+  tokenVersion: number;
+  loginAttempts: number;
+  lockoutUntil?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -60,6 +66,9 @@ const UserSchema = new Schema<IUser>({
   password: { type: String, required: true },
   name: { type: String },
   role: { type: String, default: "user" },
+  tokenVersion: { type: Number, default: 0 },
+  loginAttempts: { type: Number, default: 0 },
+  lockoutUntil: { type: Date, default: null },
 }, { timestamps: true, collection: "users" });
 
 export const User = mongoose.model<IUser>("User", UserSchema);`;
@@ -71,6 +80,9 @@ export const User = mongoose.model<IUser>("User", UserSchema);`;
   password  String
   name      String?
   role      String   @default("user")
+  tokenVersion  Int      @default(0)
+  loginAttempts Int      @default(0)
+  lockoutUntil  DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }`;
