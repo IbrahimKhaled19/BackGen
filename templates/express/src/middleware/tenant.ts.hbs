@@ -3,11 +3,11 @@ import type { Request, Response, NextFunction } from "express";
 import { prisma } from "../config/database.js";
 {{/if}}
 {{#if (eq orm "mongoose")}}
-import { Organization } from "../models/index.js";
+import { Organization, Membership } from "../models/index.js";
 {{/if}}
 {{#if (eq orm "drizzle")}}
 import { db } from "../config/database.js";
-import { Organization } from "../db/schema/index.js";
+import { Organization, Membership } from "../db/schema/index.js";
 import { eq, and, isNull } from "drizzle-orm";
 {{/if}}
 import { ApiError } from "../utils/api-error.js";
@@ -41,11 +41,57 @@ export async function tenantMiddleware(
   next: NextFunction
 ): Promise<void> {
   try {
-    const userWithOrg = req.user as { orgId?: string } | undefined;
+    const userWithOrg = req.user as { orgId?: string; userId?: string } | undefined;
     const orgId = userWithOrg?.orgId ?? req.header("x-org-id");
 
     if (!orgId) {
       throw new ApiError(400, "Organization context required (x-org-id header or auth claim)");
+    }
+
+    // When orgId comes from header (not auth claim), verify membership to prevent tenant hopping
+    if (!userWithOrg?.orgId && userWithOrg?.userId) {
+{{#if (eq orm "prisma")}}
+      const membership = await prisma.membership.findFirst({
+        where: {
+          userId: userWithOrg.userId,
+          organizationId: orgId,
+          deletedAt: null,
+          status: "ACTIVE",
+        },
+        select: { id: true },
+      });
+      if (!membership) {
+        throw new ApiError(403, "Not a member of this organization");
+      }
+{{/if}}
+{{#if (eq orm "mongoose")}}
+      const membership = await Membership.findOne({
+        userId: userWithOrg.userId,
+        organizationId: orgId,
+        deletedAt: null,
+        status: "ACTIVE",
+      }).select("_id").lean();
+      if (!membership) {
+        throw new ApiError(403, "Not a member of this organization");
+      }
+{{/if}}
+{{#if (eq orm "drizzle")}}
+      const membership = await db
+        .select({ id: Membership.id })
+        .from(Membership)
+        .where(
+          and(
+            eq(Membership.userId, userWithOrg.userId),
+            eq(Membership.organizationId, orgId),
+            isNull(Membership.deletedAt),
+            eq(Membership.status, "ACTIVE")
+          )
+        )
+        .limit(1);
+      if (!membership.length) {
+        throw new ApiError(403, "Not a member of this organization");
+      }
+{{/if}}
     }
 
 {{#if (eq orm "prisma")}}

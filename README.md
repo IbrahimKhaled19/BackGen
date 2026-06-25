@@ -279,6 +279,36 @@ const product = await createProduct({ name: "Widget" });
 
 ---
 
+### `backgen generate route [name]`
+
+Generate a custom route module with a complete controller, service, validation, types, and route file -- including Swagger annotations. Routes are automatically registered in `app.ts` with the `REGISTER_ROUTES` marker.
+
+Use this when you need a custom endpoint that doesn't fit the CRUD pattern (e.g., dashboards, reports, webhooks, custom actions). For standard CRUD, use `generate resource` instead.
+
+```bash
+backgen generate route                  # interactive prompt
+backgen generate route reports          # generate a /api/reports module
+backgen generate route webhooks         # generate a /api/webhooks module
+```
+
+**Generated files:**
+```
+src/modules/reports/
+  reports.controller.ts    # request handlers
+  reports.service.ts       # business logic
+  reports.validation.ts    # Zod schemas
+  reports.types.ts         # TypeScript interfaces
+  reports.routes.ts        # route definitions + Swagger
+```
+
+**Key differences from `generate resource`:**
+- No database model, repository, or test file
+- No field specification required
+- Pure controller/service pattern for custom endpoints
+- Mounted at `/api/<name>` with full Swagger docs
+
+---
+
 ### `backgen generate migration [name]`
 
 Generate a database migration (ORM-aware).
@@ -367,6 +397,24 @@ backgen rollback --yes        # skip confirmation
 - Lists available backups in `.backgen/backups/`
 - Restores the most recent backup (all tracked files + manifest)
 - Project returns to exact pre-upgrade state
+
+---
+
+### `backgen rotate-secrets`
+
+Rotate JWT secrets in the project's `.env` file. Generates cryptographically secure 256-bit random hex values for `JWT_SECRET` and `JWT_REFRESH_SECRET`, backs up the current `.env` to `.env.backup`, and writes new values.
+
+All existing tokens are immediately invalidated on next server restart -- users must re-login.
+
+```bash
+backgen rotate-secrets
+```
+
+**What happens:**
+- Generates two 256-bit random hex secrets via `crypto.randomBytes`
+- Old `.env` saved to `.env.backup`
+- Previous values preserved as comments in the new `.env`
+- Print summary of changes
 
 ---
 

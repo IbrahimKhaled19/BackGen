@@ -19,6 +19,24 @@ if (!env.JWT_SECRET || env.JWT_SECRET.length < 32 || env.JWT_SECRET.includes("yo
   console.warn("[auth] JWT_SECRET is weak or using default value. Generate a strong random secret (32+ chars) for production.");
 }
 
+// Security: warn if refresh token TTL exceeds compliance maximum (90d)
+const REFRESH_TTL_WARNING = (() => {
+  const match = (env.JWT_REFRESH_EXPIRES_IN || "").match(/^(\d+)([dhms])$/);
+  if (!match) return false;
+  const num = parseInt(match[1], 10);
+  const unit = match[2];
+  if (unit === "d" && num > 90) return true;
+  if (unit === "h" && num > 90 * 24) return true;
+  if (unit === "m" && num > 90 * 24 * 60) return true;
+  return false;
+})();
+if (REFRESH_TTL_WARNING) {
+  console.warn(
+    `[auth] JWT_REFRESH_EXPIRES_IN (${env.JWT_REFRESH_EXPIRES_IN}) exceeds 90 days. ` +
+    "Reduce to 7d-30d for compliance (GDPR, SOC2)."
+  );
+}
+
 export class AuthService {
   /**
    * Register a new user account.

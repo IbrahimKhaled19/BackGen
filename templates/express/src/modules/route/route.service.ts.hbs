@@ -1,0 +1,27 @@
+import type { {{ResourceName}}Query } from "./{{resourceName}}.types.js";
+
+export class {{ResourceName}}Service {
+  async find(query: Partial<{{ResourceName}}Query>): Promise<{ items: Record<string, unknown>[]; total: number }> {
+    // TODO: implement your query logic here
+    return { items: [], total: 0 };
+  }
+
+  async getById(id: string): Promise<Record<string, unknown> | null> {
+    // TODO: implement your lookup logic here
+    return null;
+  }
+
+  async create(data: Record<string, unknown>): Promise<Record<string, unknown>> {
+    // TODO: implement your creation logic here
+    return data;
+  }
+
+  async update(id: string, data: Record<string, unknown>): Promise<Record<string, unknown>> {
+    // TODO: implement your update logic here
+    return { id, ...data };
+  }
+
+  async remove(id: string): Promise<void> {
+    // TODO: implement your deletion logic here
+  }
+}

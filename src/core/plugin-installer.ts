@@ -210,6 +210,11 @@ export class PluginInstaller {
           break;
         case "replace":
           if (mutation.marker && content.includes(mutation.marker)) {
+            // Idempotent: skip if replacement content already exists in file.
+            // Prevents duplicate imports/middleware on re-sync when plugins
+            // self-reference their own marker in the replacement payload.
+            const insertion = mutation.content.replace(mutation.marker, "").trim();
+            if (insertion && content.includes(insertion)) break;
             content = content.replace(mutation.marker, mutation.content);
           }
           break;

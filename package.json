@@ -1,6 +1,6 @@
 {
   "name": "@ibrahimkhaled19/backgen",
-  "version": "1.13.0",
+  "version": "1.14.0",
   "type": "module",
   "description": "Generate Express.js backend projects with Prisma, Drizzle, or Mongoose — CLI generator for boilerplate-free APIs with auth, multi-tenant, and Docker",
   "mcpName": "io.github.IbrahimKhaled19/backgen",

@@ -1,19 +1,15 @@
 import { z } from "zod";
 
 export const createCheckoutSchema = z.object({
-  body: z.object({
-    priceId: z.string().min(1, "Price ID is required"),
-    customerId: z.string().optional(),
-    successUrl: z.string().url("Invalid success URL"),
-    cancelUrl: z.string().url("Invalid cancel URL"),
-    mode: z.enum(["payment", "subscription"]),
-  }),
+  priceId: z.string().min(1, "Price ID is required"),
+  customerId: z.string().optional(),
+  successUrl: z.string().url("Invalid success URL"),
+  cancelUrl: z.string().url("Invalid cancel URL"),
+  mode: z.enum(["payment", "subscription"]),
 });
 
 export const createCustomerSchema = z.object({
-  body: z.object({
-    email: z.string().email("Invalid email"),
-    name: z.string().optional(),
-    metadata: z.record(z.string()).optional(),
-  }),
+  email: z.string().email("Invalid email"),
+  name: z.string().optional(),
+  metadata: z.record(z.string()).optional(),
 });

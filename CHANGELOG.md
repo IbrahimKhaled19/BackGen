@@ -1,6 +1,33 @@
 # Changelog
 
-## [v1.13.0] - 2026-06-25
+## [v1.14.0] - 2026-06-26
+
+### Features
+- feat(cli): `backgen generate route [name]` — scaffold custom route modules (controller + service + validation + routes + types) with full Swagger annotations, auto-registered in app.ts. Use for endpoints that don't need a new DB table: dashboards, external API proxies, search, file uploads
+- feat(cli): `backgen rotate-secrets` — generate cryptographically secure 256-bit JWT secrets with .env backup
+- feat(deploy): Caddyfile + docker-compose.prod.yml templates — auto-HTTPS via Let's Encrypt, rate limiting, security headers, TLS 1.2-1.3 only
+- feat(deploy): pino structured logging — replaces winston, JSON output in production with pino-pretty in dev
+
+### Bug Fixes
+- fix(code-quality): remove all `any` types from shipped audit/permission/role service templates (#4 critical violations fixed)
+- fix(cli): replace `createRequire` with native ESM `readFileSync` + `fileURLToPath` in MCP entry point
+- fix(sync): correct middleware subdirectory paths — ratelimit (`security/`), hardening (`observability/`), sanitize (`security/`) — fixes false reinstall on every sync
+- fix(cli): idempotent `replace` mutation — skips if content already exists in file, prevents duplicate imports on re-sync
+- fix(lint): add `globals.node` + `.claude/` ignore to ESLint flat config — eliminates 366 false-positive `no-undef` errors
+- fix(security): algorithm pinning to `HS256` in all JWT verify calls — prevents algorithm confusion attack
+- fix(security): prototype pollution prevention — `DENY_KEYS` Set blocking `__proto__`, `constructor`, `prototype`
+- fix(security): RBAC `userId` property access — was checking `user.id` instead of `user.userId`, authorization completely broken
+- fix(security): tenant hopping prevention — membership verification on `x-org-id` header
+- fix(security): role routes now require `authMiddleware` + `requireRole("ADMIN")` — was unauthenticated
+- fix(security): S3 path traversal + IDOR — keys scoped to `userId/UUID-filename`, ownership validation on get/delete
+- fix(templates): Zod validation `body:` wrapper removed from auth/jwt/resource/stripe schemas — was wrapping fields under `body:{}` but validate middleware passes `req.body` directly, breaking every request
+- fix(templates): pino `logger.error()` argument order — was `("msg", err)`, pino requires `(err, "msg")`
+- fix(templates): rate-limit import name mismatch — plugin injected `import { rateLimit }` but template exported `rateLimitMw`
+- fix(plugins): JWT refresh TTL >90d startup warning
+
+### Chores
+- chore: README template improved with full env vars table, API endpoint list, security checklist, project tree
+- chore: `.claude/` excluded from lint + ESLint config cleanup
 
 ### Chores
 - chore: enrich all 10 MCP tool descriptions and success responses for Glama scoring — improves TDQS from B to A (#ef83c46)

@@ -1,29 +1,25 @@
 import { z } from "zod";
 
 export const create{{ResourceName}}Schema = z.object({
-  body: z.object({
-    {{#each fields}}
-    {{this.name}}: {{this.zodType}},
-    {{/each}}
-    {{#each relations}}
-    {{#if (eq this.type "belongsTo")}}
-    {{this.name}}Id: z.string().uuid(),
-    {{/if}}
-    {{/each}}
-  }),
+  {{#each fields}}
+  {{this.name}}: {{this.zodType}},
+  {{/each}}
+  {{#each relations}}
+  {{#if (eq this.type "belongsTo")}}
+  {{this.name}}Id: z.string().uuid(),
+  {{/if}}
+  {{/each}}
 });
 
 export const update{{ResourceName}}Schema = z.object({
-  body: z.object({
-    {{#each fields}}
-    {{this.name}}: {{this.zodType}}.optional(),
-    {{/each}}
-    {{#each relations}}
-    {{#if (eq this.type "belongsTo")}}
-    {{this.name}}Id: z.string().uuid().optional(),
-    {{/if}}
-    {{/each}}
-  }),
+  {{#each fields}}
+  {{this.name}}: {{this.zodType}}.optional(),
+  {{/each}}
+  {{#each relations}}
+  {{#if (eq this.type "belongsTo")}}
+  {{this.name}}Id: z.string().uuid().optional(),
+  {{/if}}
+  {{/each}}
   params: z.object({
     id: z.string().uuid(),
   }),

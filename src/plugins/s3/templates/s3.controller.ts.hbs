@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
+import { randomUUID } from "crypto";
 import { S3Service } from "./s3.service.js";
 import { successResponse, createdResponse, messageResponse } from "../../utils/response.js";
+import { ApiError } from "../../utils/api-error.js";
 
 const s3Service = new S3Service();
 
@@ -11,8 +13,14 @@ export class S3Controller {
       return;
     }
 
+    const userId = (req.user as { userId: string })?.userId;
+    if (!userId) throw new ApiError(401, "Authentication required");
+
+    // Scoped key: each user's files live under their userId prefix
+    const safeName = req.file.originalname.replace(/[/\\]/g, "_");
+    const key = `${userId}/${randomUUID()}-${safeName}`;
     const result = await s3Service.upload({
-      key: `${Date.now()}-${req.file.originalname}`,
+      key,
       body: req.file.buffer,
       contentType: req.file.mimetype,
     });
@@ -22,18 +30,45 @@ export class S3Controller {
 
   async getPresignedUrl(req: Request, res: Response): Promise<void> {
     const { key } = req.params;
+    const userId = (req.user as { userId: string })?.userId;
+    if (!userId) throw new ApiError(401, "Authentication required");
+
+    // Scoped access: users can only read files they own
+    if (!key.startsWith(`${userId}/`)) {
+      throw new ApiError(403, "Access denied: you do not own this file");
+    }
+
     const url = await s3Service.getPresignedUrl(key);
     successResponse(res, url);
   }
 
   async getUploadUrl(req: Request, res: Response): Promise<void> {
-    const { key, contentType } = req.body;
+    const userId = (req.user as { userId: string })?.userId;
+    if (!userId) throw new ApiError(401, "Authentication required");
+
+    const { contentType, filename } = req.body;
+    if (!contentType) {
+      throw new ApiError(400, "Content type is required");
+    }
+
+    // Server generates scoped key — clients cannot specify arbitrary paths
+    const safeName = (filename || "upload").replace(/[/\\]/g, "_");
+    const key = `${userId}/${randomUUID()}-${safeName}`;
+
     const url = await s3Service.getUploadPresignedUrl(key, contentType);
-    successResponse(res, url);
+    successResponse(res, { url, key });
   }
 
   async delete(req: Request, res: Response): Promise<void> {
     const { key } = req.params;
+    const userId = (req.user as { userId: string })?.userId;
+    if (!userId) throw new ApiError(401, "Authentication required");
+
+    // Scoped access: users can only delete files they own
+    if (!key.startsWith(`${userId}/`)) {
+      throw new ApiError(403, "Access denied: you do not own this file");
+    }
+
     await s3Service.delete(key);
     messageResponse(res, "File deleted successfully");
   }

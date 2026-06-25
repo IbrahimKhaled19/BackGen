@@ -36,9 +36,9 @@ export const ratelimitPlugin: BackGenPlugin = {
         operation: "replace",
         marker: "// {{REGISTER_MIDDLEWARE}}",
         content: `// {{REGISTER_MIDDLEWARE}}
-import { rateLimit } from "./middleware/security/rate-limit.js";
+import { rateLimitMw } from "./middleware/security/rate-limit.js";
 
-app.use("/api", rateLimit);`,
+app.use("/api", rateLimitMw);`,
       },
     ]);
   },

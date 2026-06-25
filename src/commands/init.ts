@@ -391,6 +391,10 @@ async function generateTemplates(
     filesRecord["Dockerfile"] = { owner: "shared", version: BACKGEN_VERSION };
     await engine.renderToFile("docker-compose.yml.hbs", context, path.join(dir, "docker-compose.yml"));
     filesRecord["docker-compose.yml"] = { owner: "shared", version: BACKGEN_VERSION };
+    await engine.renderToFile("Caddyfile.hbs", context, path.join(dir, "Caddyfile"));
+    filesRecord["Caddyfile"] = { owner: "shared", version: BACKGEN_VERSION };
+    await engine.renderToFile("docker-compose.prod.yml.hbs", context, path.join(dir, "docker-compose.prod.yml"));
+    filesRecord["docker-compose.prod.yml"] = { owner: "shared", version: BACKGEN_VERSION };
   }
 }
 

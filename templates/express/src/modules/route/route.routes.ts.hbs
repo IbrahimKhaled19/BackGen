@@ -1,0 +1,148 @@
+import type { Request, Response, NextFunction } from "express";
+import { {{ResourceName}}Schema, {{ResourceName}}QuerySchema, {{ResourceName}}ParamsSchema } from "./{{resourceName}}.validation.js";
+import { validate } from "../../middleware/core/validate.js";
+import { authMiddleware } from "../../middleware/auth.js";
+import { asyncHandler } from "../../utils/async-handler.js";
+import { {{ResourceName}}Controller } from "./{{resourceName}}.controller.js";
+
+import { Router } from "express";
+
+const router = Router();
+const ctrl = new {{ResourceName}}Controller();
+
+/**
+ * @swagger
+ * /api/{{routePath}}:
+ *   get:
+ *     summary: List {{ResourceName}}s
+ *     tags:
+ *       - {{ResourceName}}
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: order
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *     responses:
+ *       200:
+ *         description: Paginated list of {{ResourceName}}s
+ */
+router.get("/", validate({{ResourceName}}QuerySchema, "query"), asyncHandler(ctrl.find));
+
+/**
+ * @swagger
+ * /api/{{routePath}}/{id}:
+ *   get:
+ *     summary: Get {{ResourceName}} by ID
+ *     tags:
+ *       - {{ResourceName}}
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: {{ResourceName}} found
+ *       404:
+ *         description: {{ResourceName}} not found
+ */
+router.get("/:id", validate({{ResourceName}}ParamsSchema, "params"), asyncHandler(ctrl.getById));
+
+/**
+ * @swagger
+ * /api/{{routePath}}:
+ *   post:
+ *     summary: Create a {{ResourceName}}
+ *     tags:
+ *       - {{ResourceName}}
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: {{ResourceName}} created
+ */
+router.post("/", authMiddleware, validate({{ResourceName}}Schema, "body"), asyncHandler(ctrl.create));
+
+/**
+ * @swagger
+ * /api/{{routePath}}/{id}:
+ *   put:
+ *     summary: Update a {{ResourceName}}
+ *     tags:
+ *       - {{ResourceName}}
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: {{ResourceName}} updated
+ *       404:
+ *         description: {{ResourceName}} not found
+ */
+router.put("/:id", authMiddleware, validate({{ResourceName}}ParamsSchema, "params"), validate({{ResourceName}}Schema, "body"), asyncHandler(ctrl.update));
+
+/**
+ * @swagger
+ * /api/{{routePath}}/{id}:
+ *   delete:
+ *     summary: Delete a {{ResourceName}}
+ *     tags:
+ *       - {{ResourceName}}
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: {{ResourceName}} deleted
+ *       404:
+ *         description: {{ResourceName}} not found
+ */
+router.delete("/:id", authMiddleware, asyncHandler(ctrl.remove));
+
+export default router;

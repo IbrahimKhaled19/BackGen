@@ -1,8 +1,13 @@
 import { Router } from "express";
 import { createPermission, listPermissions, getPermission, deletePermission } from "./permission.controller.js";
 import { requirePermission } from "./permission.middleware.js";
+import { authMiddleware } from "../../middleware/auth.js";
+import { requireRole } from "../../middleware/role.js";
 
 const router = Router();
+
+// All permission management requires admin privileges
+router.use(authMiddleware, requireRole("ADMIN"));
 
 router.post("/", requirePermission("permission", "create"), createPermission);
 router.get("/", requirePermission("permission", "read"), listPermissions);

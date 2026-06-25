@@ -1,8 +1,9 @@
+import type { PrismaClient } from "@prisma/client";
 import type { Permission } from "./permission.types.js";
 
-let prisma: any;
-async function getDb() {
-  if (!prisma) prisma = (await import("../../config/prisma.js")).default;
+let prisma: PrismaClient | undefined;
+async function getDb(): Promise<PrismaClient> {
+  if (!prisma) prisma = (await import("../../config/prisma.js")).default as PrismaClient;
   return prisma;
 }
 

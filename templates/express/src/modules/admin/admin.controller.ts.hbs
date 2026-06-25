@@ -1,6 +1,11 @@
 import { Request, Response } from "express";
+import { z } from "zod";
 import { AdminService } from "./admin.service.js";
 import { successResponse } from "../../utils/response.js";
+
+const updateUserRoleSchema = z.object({
+  role: z.string().min(1, "Role is required"),
+});
 
 const adminService = new AdminService();
 
@@ -16,7 +21,8 @@ export class AdminController {
   }
 
   async updateUserRole(req: Request, res: Response): Promise<void> {
-    const user = await adminService.updateUserRole(req.params.id as string, req.body.role);
+    const { role } = updateUserRoleSchema.parse(req.body);
+    const user = await adminService.updateUserRole(req.params.id as string, role);
     successResponse(res, user);
   }
 

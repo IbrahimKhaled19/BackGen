@@ -1,6 +1,7 @@
 import swaggerUi from "swagger-ui-express";
 import swaggerJsdoc from "swagger-jsdoc";
 import { Express } from "express";
+import { env } from "./env.js";
 
 const options: swaggerJsdoc.Options = {
   definition: {
@@ -32,6 +33,9 @@ const options: swaggerJsdoc.Options = {
 const swaggerSpec = swaggerJsdoc(options);
 
 export function setupSwagger(app: Express): void {
+  // Disable Swagger UI in production to reduce attack surface
+  if (env.NODE_ENV === "production") return;
+
   app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
   app.get("/docs.json", (_req, res) => {
     res.setHeader("Content-Type", "application/json");

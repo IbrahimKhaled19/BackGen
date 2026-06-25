@@ -77,6 +77,14 @@ generate
     await factoryCommand(resource);
   });
 
+generate
+  .command("route [name]")
+  .description("Generate a custom route module (controller + service + validation)")
+  .action(async (name: string | undefined) => {
+    const { generateRouteCommand } = await import("./commands/generate-route.js");
+    await generateRouteCommand(name, {});
+  });
+
 // Import command — convert existing API specs to backgen.yaml
 const importCmd = program
   .command("import")
@@ -149,4 +157,12 @@ program
   .action(async (options: { yes?: boolean }) => {
     const { rollbackCommand } = await import("./commands/rollback.js");
     await rollbackCommand({ yes: options.yes ?? false });
+  });
+
+program
+  .command("rotate-secrets")
+  .description("Rotate JWT secrets and invalidate all tokens")
+  .action(async () => {
+    const { rotateCommand } = await import("./commands/rotate.js");
+    await rotateCommand();
   });

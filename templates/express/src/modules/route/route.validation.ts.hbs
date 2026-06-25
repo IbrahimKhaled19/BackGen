@@ -1,0 +1,18 @@
+import { z } from "zod";
+
+export const {{ResourceName}}Schema = z.object({
+  // Add your fields here, e.g.:
+  // title: z.string().min(1, "Title is required"),
+  // description: z.string().optional(),
+});
+
+export const {{ResourceName}}QuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  sort: z.string().optional(),
+  order: z.enum(["asc", "desc"]).optional(),
+});
+
+export const {{ResourceName}}ParamsSchema = z.object({
+  id: z.string(),
+});

@@ -1,0 +1,32 @@
+import { Request, Response } from "express";
+import { {{ResourceName}}Service } from "./{{resourceName}}.service.js";
+import { successResponse, createdResponse, messageResponse } from "../../utils/response.js";
+
+const service = new {{ResourceName}}Service();
+
+export class {{ResourceName}}Controller {
+  async find(req: Request, res: Response): Promise<void> {
+    const result = await service.find(req.query);
+    successResponse(res, result);
+  }
+
+  async getById(req: Request, res: Response): Promise<void> {
+    const result = await service.getById(req.params.id as string);
+    successResponse(res, result);
+  }
+
+  async create(req: Request, res: Response): Promise<void> {
+    const result = await service.create(req.body);
+    createdResponse(res, result);
+  }
+
+  async update(req: Request, res: Response): Promise<void> {
+    const result = await service.update(req.params.id as string, req.body);
+    successResponse(res, result);
+  }
+
+  async remove(req: Request, res: Response): Promise<void> {
+    await service.remove(req.params.id as string);
+    messageResponse(res, "Deleted successfully");
+  }
+}

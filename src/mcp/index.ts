@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { createRequire } from "module";
+import { readFileSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 
-const require = createRequire(import.meta.url);
-const { version } = require("../../package.json");
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const pkg = JSON.parse(readFileSync(join(__dirname, "../../package.json"), "utf-8"));
+const version = pkg.version;
 
 import { initProjectTool } from "./tools/init-project.js";
 import { addPluginTool } from "./tools/add-plugin.js";

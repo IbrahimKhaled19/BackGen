@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { permissionService } from "./permission.service.js";
 
 export const permissionMiddleware = (async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
-  const userId = (req as any).user?.id;
+  const userId = (req as any).user?.userId;
   if (userId) {
     (req as any).userPermissions = await permissionService.getUserPermissions(userId);
   }

@@ -221,7 +221,7 @@ export async function syncCommand(options: SyncOptions = {}): Promise<void> {
 
     // Determine install location: production plugins (no module dir) live in src/middleware
     const moduleDir = path.join(projectDir, "src", "modules", pluginName === "jwt" ? "auth" : pluginName);
-    const middlewareFile = path.join(projectDir, "src", "middleware", `${pluginName === "ratelimit" ? "rate-limit" : pluginName === "hardening" ? "request-id" : pluginName === "sanitize" ? "sanitize" : pluginName}.ts`);
+    const middlewareFile = path.join(projectDir, "src", "middleware", `${pluginName === "ratelimit" ? "security/rate-limit" : pluginName === "hardening" ? "observability/request-id" : pluginName === "sanitize" ? "security/sanitize" : pluginName}.ts`);
 
     let exists = false;
     try { await fs.access(moduleDir); exists = true; } catch { /* no module dir */ }

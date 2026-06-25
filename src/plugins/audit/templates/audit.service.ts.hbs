@@ -1,12 +1,12 @@
+import type { PrismaClient } from "@prisma/client";
 import { AuditEntry } from "./audit.types.js";
 
-// Prisma model assumed to be generated — adapt for Drizzle/Mongoose per ORM
-let prisma: any;
+let prisma: PrismaClient | undefined;
 
-async function getPrisma() {
+async function getPrisma(): Promise<PrismaClient> {
   if (!prisma) {
     const { default: p } = await import("../../config/prisma.js");
-    prisma = p;
+    prisma = p as PrismaClient;
   }
   return prisma;
 }
@@ -46,14 +46,14 @@ export const auditService = {
     const limit = Math.min(params.limit || 50, 100);
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     if (params.actorId) where.actorId = params.actorId;
     if (params.resourceType) where.resourceType = params.resourceType;
     if (params.action) where.action = params.action;
     if (params.startDate || params.endDate) {
-      where.createdAt = {};
-      if (params.startDate) where.createdAt.gte = new Date(params.startDate);
-      if (params.endDate) where.createdAt.lte = new Date(params.endDate);
+      where.createdAt = {} as Record<string, unknown>;
+      if (params.startDate) (where.createdAt as Record<string, unknown>).gte = new Date(params.startDate);
+      if (params.endDate) (where.createdAt as Record<string, unknown>).lte = new Date(params.endDate);
     }
 
     const [data, total] = await Promise.all([

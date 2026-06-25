@@ -1,0 +1,52 @@
+# Caddy reverse proxy with auto-HTTPS (Let's Encrypt)
+# Set DOMAIN env var for production auto-TLS, or leave unset for local dev (HTTP only)
+#   docker compose --file docker-compose.prod.yml up -d
+#   export DOMAIN=api.example.com  # before starting for TLS
+#
+# Caddy automatically provisions + renews TLS certificates.
+# No certbot, no nginx config — just set DOMAIN and start.
+
+{$DOMAIN:localhost} {
+    # Reverse proxy to the app container
+    reverse_proxy app:3000 {
+        # Forward the original client IP
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    # Compression
+    encode gzip
+
+    # Security headers
+    header / {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        -Server
+    }
+
+    # Hide Caddy server version
+    header / -Server
+
+    # Access logs (JSON format for log shipping)
+    log {
+        output file /data/access.log
+        format json
+    }
+
+    # Rate limiting at the proxy layer
+    rate_limit {
+        zone dynamic {
+            key {remote_host}
+            events 100
+            window 1m
+        }
+    }
+
+    # TLS with secure defaults
+    tls {
+        protocols tls1.2 tls1.3
+        curves secp384r1 secp256r1
+    }
+}
