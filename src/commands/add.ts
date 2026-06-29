@@ -83,7 +83,7 @@ export async function addCommand(pluginName: string | undefined): Promise<void> 
     for (const p of listAvailablePlugins()) {
       console.log(chalk.cyan(`  ${p.name}`) + ` (${p.category}) \u2014 ${p.description}`);
     }
-    return;
+    throw new Error(`Unknown plugin: "${pluginName}"`);
   }
 
   if (!plugin.available) {

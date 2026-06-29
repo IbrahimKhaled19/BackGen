@@ -27,7 +27,7 @@ export async function registerRoute(
     throw new Error(`Route for ${resourceName} already registered`);
   }
 
-  const marker = "// {REGISTER_ROUTES}";
+  const marker = "// {{REGISTER_ROUTES}}";
   const markerIndex = appContent.indexOf(marker);
   if (markerIndex === -1) {
     throw new Error("Missing REGISTER_ROUTES marker in app.ts");

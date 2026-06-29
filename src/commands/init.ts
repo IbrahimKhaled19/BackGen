@@ -84,7 +84,8 @@ export async function initCommand(
   try {
     const entries = await fs.readdir(targetDir);
     if (entries.length > 0) {
-      throw new Error(`Error: Directory "${projectName}" is not empty.`);
+      console.error(chalk.red(`Error: Directory "${projectName}" is not empty.`));
+      process.exit(1);
     }
   } catch {
     // Directory doesn't exist, that's fine
