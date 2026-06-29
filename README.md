@@ -26,7 +26,7 @@ Or configure your AI tool's MCP client:
   "mcpServers": {
     "backgen": {
       "command": "npx",
-      "args": ["-y", "@ibrahimkhaled19/backgen", "backgen-mcp"]
+      "args": ["-y", "@ibrahimkhaled19/backgen", "mcp"]
     }
   }
 }
