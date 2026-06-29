@@ -13,29 +13,36 @@ export async function registerRoute(
   const importName = `${placeholders.resourceName}Routes`;
   const importPath = `./modules/${placeholders.resourceName}/${placeholders.resourceName}.routes.js`;
 
-  // Check if route already registered
   if (appContent.includes(importName)) {
     throw new Error(`Route for ${resourceName} already registered`);
   }
 
-  // Add import statement after last import
-  const lastImportIndex = appContent.lastIndexOf("import ");
-  const lastImportEnd = appContent.indexOf("\n", lastImportIndex);
+  const marker = "// {REGISTER_ROUTES}";
+  const markerIndex = appContent.indexOf(marker);
+  if (markerIndex === -1) {
+    throw new Error("Missing REGISTER_ROUTES marker in app.ts");
+  }
+
+  const importsSection = appContent.slice(0, markerIndex);
+  const lastImportIndex = importsSection.lastIndexOf("import ");
+  const lastImportEnd = importsSection.indexOf("\n", lastImportIndex);
   const importStatement = `import ${importName} from "${importPath}";`;
 
-  // Add route registration before {{REGISTER_ROUTES}} marker
   const routeRegistration = `app.use("/api/${placeholders.resourcePlural}", ${importName});`;
 
   let updated = appContent;
-  updated =
-    updated.slice(0, lastImportEnd + 1) +
-    importStatement +
-    "\n" +
-    updated.slice(lastImportEnd + 1);
+
+  if (lastImportIndex !== -1 && lastImportEnd !== -1) {
+    updated =
+      updated.slice(0, lastImportEnd + 1) +
+      importStatement +
+      "\n" +
+      updated.slice(lastImportEnd + 1);
+  }
 
   updated = updated.replace(
-    "// {{REGISTER_ROUTES}}",
-    routeRegistration + "\n  // {{REGISTER_ROUTES}}"
+    marker,
+    routeRegistration + "\n  " + marker
   );
 
   await fs.writeFile(appPath, updated, "utf-8");

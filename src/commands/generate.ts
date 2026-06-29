@@ -11,6 +11,7 @@ import { createSchemaGenerator } from "../core/schema-generator.js";
 import { readManifest } from "../core/manifest.js";
 import { registerRoute } from "../core/route-registrar.js";
 import { spawn } from "child_process";
+import { toPascalCase, toCamelCase } from "../core/string-utils.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -63,8 +64,7 @@ export async function generateCommand(
       await fs.stat(schemaPath);
     }
   } catch {
-    console.error(chalk.red("Error: Not in a BackGen project directory."));
-    process.exit(1);
+    throw new Error("Not in a BackGen project directory (no package.json or schema found)");
   }
 
   const resourceName = toPascalCase(name);
@@ -74,8 +74,7 @@ export async function generateCommand(
   const moduleDir = path.join(projectDir, "src", "modules", moduleName);
   try {
     await fs.access(moduleDir);
-    console.error(chalk.red(`Error: Resource "${resourceName}" already exists.`));
-    process.exit(1);
+    throw new Error(`Resource "${resourceName}" already exists.`);
   } catch {
     // Directory doesn't exist, good
   }
@@ -107,8 +106,7 @@ export async function generateCommand(
 
   const fieldDefs = createFieldDefinitions(fields, orm);
   if (fieldDefs.length === 0) {
-    console.error(chalk.red("Error: No valid fields provided."));
-    process.exit(1);
+    throw new Error("No valid fields provided.");
   }
 
   // Collect relations
@@ -246,13 +244,3 @@ function parseRelations(input: string): RelationDefinition[] {
     });
 }
 
-function toPascalCase(str: string): string {
-  return str
-    .replace(/[-_\s]+(.)?/g, (_, c: string | undefined) => (c ? c.toUpperCase() : ""))
-    .replace(/^(.)/, (_, c: string) => c.toUpperCase());
-}
-
-function toCamelCase(str: string): string {
-  const pascal = toPascalCase(str);
-  return pascal.charAt(0).toLowerCase() + pascal.slice(1);
-}

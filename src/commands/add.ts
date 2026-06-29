@@ -83,33 +83,29 @@ export async function addCommand(pluginName: string | undefined): Promise<void> 
     for (const p of listAvailablePlugins()) {
       console.log(chalk.cyan(`  ${p.name}`) + ` (${p.category}) \u2014 ${p.description}`);
     }
-    process.exit(1);
+    return;
   }
 
   if (!plugin.available) {
-    console.error(chalk.red(`Error: Plugin "${pluginName}" is not available yet.`));
-    process.exit(1);
+    throw new Error(`Plugin "${pluginName}" is not available yet.`);
   }
 
   if (installed[pluginName]) {
-    console.error(chalk.red(`Error: Plugin "${pluginName}" is already installed.`));
-    process.exit(1);
+    throw new Error(`Plugin "${pluginName}" is already installed.`);
   }
 
   // Check conflicts
   const conflicts = checkConflicts(pluginName, Object.keys(installed));
   if (conflicts.length > 0) {
     console.error(chalk.red(`Error: Plugin "${pluginName}" conflicts with: ${conflicts.join(", ")}`));
-    console.log(chalk.yellow(`Remove them first: ${conflicts.map((c) => `backgen remove ${c}`).join(", ")}`));
-    process.exit(1);
+    throw new Error('Operation cancelled');
   }
 
   // Check requirements
   const missing = checkRequirements(pluginName, Object.keys(installed), orm);
   if (missing.length > 0) {
     console.error(chalk.red(`Error: Plugin "${pluginName}" requires: ${missing.join(", ")}`));
-    console.log(chalk.yellow(`Install them first: ${missing.map((r) => `backgen add ${r}`).join(", ")}`));
-    process.exit(1);
+    throw new Error('Operation cancelled');
   }
 
   // Install single plugin with spinner

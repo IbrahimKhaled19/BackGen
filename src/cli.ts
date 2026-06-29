@@ -166,3 +166,11 @@ program
     const { rotateCommand } = await import("./commands/rotate.js");
     await rotateCommand();
   });
+
+program
+  .command("mcp")
+  .description("Start BackGen MCP server (stdio transport for AI tools)")
+  .action(async () => {
+    const { startMcpServer } = await import("./mcp/index.js");
+    await startMcpServer();
+  });

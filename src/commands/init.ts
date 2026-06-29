@@ -84,8 +84,7 @@ export async function initCommand(
   try {
     const entries = await fs.readdir(targetDir);
     if (entries.length > 0) {
-      console.error(chalk.red(`Error: Directory "${projectName}" is not empty.`));
-      process.exit(1);
+      throw new Error(`Error: Directory "${projectName}" is not empty.`);
     }
   } catch {
     // Directory doesn't exist, that's fine
@@ -480,7 +479,7 @@ async function applyPreset(projectDir: string, presetName: string): Promise<void
     for (const p of listPresets()) {
       console.log(chalk.cyan(`  ${p.name}`) + ` — ${p.description}`);
     }
-    process.exit(1);
+    return;
   }
 
   const { PluginInstaller } = await import("../core/plugin-installer.js");
@@ -598,13 +597,11 @@ async function resumeGeneration(): Promise<void> {
   const checkpoint = await loadCheckpoint(dir);
 
   if (!checkpoint) {
-    console.error(chalk.red("No checkpoint found. Run `BackGen init` to start a new project."));
-    process.exit(1);
+    throw new Error("No checkpoint found. Run `BackGen init` to start a new project.");
   }
 
   if (!(await validateCheckpoint(checkpoint))) {
-    console.error(chalk.red("Invalid checkpoint file. Start a new project with `BackGen init`."));
-    process.exit(1);
+    throw new Error("Invalid checkpoint file. Start a new project with `BackGen init`.");
   }
 
   const nextStep = getNextPendingStep(checkpoint);
