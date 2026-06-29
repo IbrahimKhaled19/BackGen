@@ -74,7 +74,8 @@ export async function generateCommand(
   const moduleDir = path.join(projectDir, "src", "modules", moduleName);
   try {
     await fs.access(moduleDir);
-    throw new Error(`Resource "${resourceName}" already exists.`);
+    console.error(chalk.red(`Error: Resource "${resourceName}" already exists.`));
+    process.exit(1);
   } catch {
     // Directory doesn't exist, good
   }
