@@ -2,6 +2,16 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { createPlaceholders } from "./placeholders.js";
 
+/**
+ * Register a resource's routes in app.ts using the `REGISTER_ROUTES` marker.
+ *
+ * Adds the import statement after the last import before the marker,
+ * then inserts the `app.use()` call at the marker position.
+ *
+ * @param projectDir - Root directory of the generated project
+ * @param resourceName - PascalCase resource name (e.g. "Product")
+ * @throws {Error} If route already registered or marker not found
+ */
 export async function registerRoute(
   projectDir: string,
   resourceName: string

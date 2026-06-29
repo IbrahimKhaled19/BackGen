@@ -15,6 +15,12 @@
 BackGen ships a built-in **MCP (Model Context Protocol) server** that AI assistants
 (Claude, Cursor, GitHub Copilot, VS Code) can use to scaffold projects on your behalf.
 
+Run via CLI:
+```bash
+backgen mcp
+```
+
+Or configure your AI tool's MCP client:
 ```json
 {
   "mcpServers": {
@@ -326,6 +332,18 @@ Reconcile `.backgenrc.json` with the project. Regenerates missing plugin files.
 ```bash
 backgen sync
 ```
+
+---
+
+### `backgen mcp`
+
+Start BackGen as an MCP server over stdio. Used by AI assistants (Claude, Cursor, VS Code) to scaffold projects programmatically.
+
+```bash
+backgen mcp
+```
+
+This is the same server exposed via the `npx @ibrahimkhaled19/backgen backgen-mcp` binary. It registers all 10 MCP tools listed in the [AI-Ready](#-ai-ready) section.
 
 ---
 
