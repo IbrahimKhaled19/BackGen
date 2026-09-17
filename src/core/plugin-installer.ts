@@ -286,17 +286,23 @@ export class PluginInstaller {
       return;
     }
 
+    const resolvedVersions = new Map<string, string>();
+    const allDeps = [...new Set([...deps, ...devDeps])];
+    for (const dep of allDeps) {
+      resolvedVersions.set(dep, await this.resolveDependencyVersion(projectDir, dep));
+    }
+
     for (const dep of deps) {
       if (!pkg.dependencies?.[dep]) {
         pkg.dependencies = pkg.dependencies ?? {};
-        pkg.dependencies[dep] = "latest";
+        pkg.dependencies[dep] = resolvedVersions.get(dep) as string;
       }
     }
 
     for (const dep of devDeps) {
       if (!pkg.devDependencies?.[dep]) {
         pkg.devDependencies = pkg.devDependencies ?? {};
-        pkg.devDependencies[dep] = "latest";
+        pkg.devDependencies[dep] = resolvedVersions.get(dep) as string;
       }
     }
 
@@ -308,7 +314,7 @@ export class PluginInstaller {
         const child = spawn("npm", ["install"], {
           cwd: projectDir,
           stdio: "pipe",
-          shell: true,
+          shell: false,
         });
         child.on("close", (code) => {
           if (code === 0) resolve();
@@ -319,6 +325,49 @@ export class PluginInstaller {
     } catch {
       // npm install failed — plugin templates and manifest still updated
     }
+  }
+
+  private async resolveDependencyVersion(projectDir: string, dep: string): Promise<string> {
+    if (!/^(@[a-z0-9-._~]+\/)?[a-z0-9-._~]+$/i.test(dep)) {
+      throw new Error(`Invalid dependency name "${dep}" in plugin metadata.`);
+    }
+
+    return new Promise<string>((resolve, reject) => {
+      const child = spawn("npm", ["view", dep, "version", "--json"], {
+        cwd: projectDir,
+        stdio: ["ignore", "pipe", "pipe"],
+        shell: false,
+      });
+
+      let stdout = "";
+      let stderr = "";
+      child.stdout.on("data", (chunk) => {
+        stdout += chunk.toString();
+      });
+      child.stderr.on("data", (chunk) => {
+        stderr += chunk.toString();
+      });
+
+      child.on("close", (code) => {
+        if (code !== 0) {
+          reject(new Error(`Failed to resolve version for ${dep}: ${stderr.trim() || `exit code ${code}`}`));
+          return;
+        }
+
+        try {
+          const parsed = JSON.parse(stdout.trim());
+          const version = Array.isArray(parsed) ? parsed[0] : parsed;
+          if (typeof version !== "string" || version.length === 0) {
+            reject(new Error(`Unexpected npm version response for ${dep}.`));
+            return;
+          }
+          resolve(version);
+        } catch {
+          reject(new Error(`Invalid npm version response for ${dep}.`));
+        }
+      });
+      child.on("error", reject);
+    });
   }
 
   private async removeDependencies(projectDir: string, plugin: BackGenPlugin): Promise<void> {

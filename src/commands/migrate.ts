@@ -26,6 +26,10 @@ export async function migrateCommand(name: string | undefined): Promise<void> {
     return;
   }
 
+  if (name && !/^[a-zA-Z0-9_-]+$/.test(name)) {
+    throw new Error("Invalid migration name. Use only letters, numbers, underscores, and hyphens.");
+  }
+
   const args = orm === "drizzle"
     ? ["drizzle-kit", "generate", ...(name ? ["--name", name] : [])]
     : ["prisma", "migrate", "dev", ...(name ? ["--name", name] : [])];
@@ -33,7 +37,7 @@ export async function migrateCommand(name: string | undefined): Promise<void> {
   console.log(chalk.gray(`  Running: npx ${args.join(" ")}\n`));
 
   return new Promise((resolve, reject) => {
-    const child = spawn("npx", args, { stdio: "inherit", shell: true });
+    const child = spawn("npx", args, { stdio: "inherit", shell: false });
     child.on("close", (code) => {
       if (code === 0) {
         console.log(chalk.green("\n✨ Migration created successfully!\n"));

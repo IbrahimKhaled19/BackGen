@@ -1,0 +1,53 @@
+# Production docker-compose with Caddy reverse proxy (auto-HTTPS).
+# This file extends the base docker-compose.yml with a Caddy layer.
+#
+# Usage:
+#   cp .env.example .env
+#   # Edit .env — DOMAIN is optional (HTTP-only without it)
+#   docker compose --file docker-compose.yml --file docker-compose.prod.yml up -d
+#
+# For Let's Encrypt auto-TLS:
+#   export DOMAIN=api.yourdomain.com
+#   docker compose --file docker-compose.yml --file docker-compose.prod.yml up -d
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - DOMAIN=${DOMAIN:-}
+    depends_on:
+      - app
+    restart: unless-stopped
+    networks:
+      - default
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  app:
+    expose:
+      - "3000"
+    environment:
+      - NODE_ENV=production
+      - TRUST_PROXY=true
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local

@@ -1,0 +1,136 @@
+{
+  "version": "1.3.0",
+  "generatedVersion": "1.14.1",
+  "project": {
+    "name": ".tmp-test-v8-deps",
+    "framework": "express",
+    "database": "postgresql",
+    "orm": "prisma"
+  },
+  "plugins": {},
+  "files": {
+    "src/app.ts": {
+      "owner": "shared",
+      "version": "1.14.1"
+    },
+    "src/server.ts": {
+      "owner": "framework",
+      "version": "1.14.1"
+    },
+    "src/config/env.ts": {
+      "owner": "framework-editable",
+      "version": "1.14.1"
+    },
+    "src/config/database.ts": {
+      "owner": "framework-editable",
+      "version": "1.14.1"
+    },
+    "src/config/swagger.ts": {
+      "owner": "framework-editable",
+      "version": "1.14.1"
+    },
+    "src/utils/api-error.ts": {
+      "owner": "framework",
+      "version": "1.14.1"
+    },
+    "src/utils/async-handler.ts": {
+      "owner": "framework",
+      "version": "1.14.1"
+    },
+    "src/utils/response.ts": {
+      "owner": "framework",
+      "version": "1.14.1"
+    },
+    "src/middleware/core/errors.ts": {
+      "owner": "framework",
+      "version": "1.14.1"
+    },
+    "src/middleware/core/logger.ts": {
+      "owner": "framework",
+      "version": "1.14.1"
+    },
+    "src/middleware/core/validate.ts": {
+      "owner": "framework",
+      "version": "1.14.1"
+    },
+    "src/middleware/security/cors-strict.ts": {
+      "owner": "framework",
+      "version": "1.14.1"
+    },
+    "src/middleware/security/sanitize.ts": {
+      "owner": "framework",
+      "version": "1.14.1"
+    },
+    "src/middleware/observability/request-id.ts": {
+      "owner": "framework",
+      "version": "1.14.1"
+    },
+    "src/middleware/observability/request-timeout.ts": {
+      "owner": "framework",
+      "version": "1.14.1"
+    },
+    "src/middleware/observability/health.ts": {
+      "owner": "framework",
+      "version": "1.14.1"
+    },
+    "src/middleware/graceful-shutdown.ts": {
+      "owner": "framework",
+      "version": "1.14.1"
+    },
+    "src/services/logger.service.ts": {
+      "owner": "framework",
+      "version": "1.14.1"
+    },
+    "package.json": {
+      "owner": "shared",
+      "version": "1.14.1"
+    },
+    "tsconfig.json": {
+      "owner": "framework-editable",
+      "version": "1.14.1"
+    },
+    ".env.example": {
+      "owner": "shared",
+      "version": "1.14.1"
+    },
+    ".gitignore": {
+      "owner": "shared",
+      "version": "1.14.1"
+    },
+    "README.md": {
+      "owner": "shared",
+      "version": "1.14.1"
+    },
+    "vitest.config.ts": {
+      "owner": "framework-editable",
+      "version": "1.14.1"
+    },
+    "eslint.config.js": {
+      "owner": "framework-editable",
+      "version": "1.14.1"
+    },
+    "prisma/schema.prisma": {
+      "owner": "user"
+    },
+    "prisma.config.ts": {
+      "owner": "framework-editable",
+      "version": "1.14.1"
+    },
+    "Dockerfile": {
+      "owner": "shared",
+      "version": "1.14.1"
+    },
+    "docker-compose.yml": {
+      "owner": "shared",
+      "version": "1.14.1"
+    },
+    "Caddyfile": {
+      "owner": "shared",
+      "version": "1.14.1"
+    },
+    "docker-compose.prod.yml": {
+      "owner": "shared",
+      "version": "1.14.1"
+    }
+  }
+}

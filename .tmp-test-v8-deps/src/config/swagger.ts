@@ -1,0 +1,44 @@
+import swaggerUi from "swagger-ui-express";
+import swaggerJsdoc from "swagger-jsdoc";
+import { Express } from "express";
+import { env } from "./env.js";
+
+const options: swaggerJsdoc.Options = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: ".tmp-test-v8-deps API",
+      version: "1.0.0",
+      description: "API documentation for .tmp-test-v8-deps",
+    },
+    servers: [
+      {
+        url: "http://localhost:3000",
+        description: "Development server",
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
+    },
+  },
+  apis: ["./src/modules/**/*.routes.ts"],
+};
+
+const swaggerSpec = swaggerJsdoc(options);
+
+export function setupSwagger(app: Express): void {
+  // Disable Swagger UI in production to reduce attack surface
+  if (env.NODE_ENV === "production") return;
+
+  app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  app.get("/docs.json", (_req, res) => {
+    res.setHeader("Content-Type", "application/json");
+    res.send(swaggerSpec);
+  });
+}
