@@ -13,6 +13,8 @@ import { dockerRegistryPlugin } from "../plugins/docker-registry/index.js";
 import { releasePlugin } from "../plugins/release/index.js";
 import { auditPlugin } from "../plugins/audit/index.js";
 import { permissionsPlugin } from "../plugins/permissions/index.js";
+import { workerPlugin } from "../plugins/worker/index.js";
+import { oauth2Plugin } from "../plugins/oauth2/index.js";
 
 const PLUGINS: Record<string, BackGenPlugin> = {
   "ci-github": ciGithubPlugin,
@@ -29,6 +31,8 @@ const PLUGINS: Record<string, BackGenPlugin> = {
   sanitize: sanitizePlugin,
   audit: auditPlugin,
   permissions: permissionsPlugin,
+  worker: workerPlugin,
+  oauth2: oauth2Plugin,
 };
 
 export function getPlugin(name: string): BackGenPlugin | undefined {

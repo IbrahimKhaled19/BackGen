@@ -29,11 +29,15 @@ declare global {
  *
  * Resolves the active organization from either:
  *   1. `req.user.orgId` claim (set by jwt or clerk auth middleware)
- *   2. `x-org-id` request header (fallback for service-to-service)
+ *   2. `x-org-id` request header (service-to-service callers)
  *
- * Attaches `req.organization` to the request. Rejects requests
- * without an org context (400) or pointing to a non-existent /
+ * Attaches `req.organization` to the request. Rejects requests with no
+ * authenticated user (401), no org context (400), or a non-existent /
  * soft-deleted org (404). Use after auth middleware, before routes.
+ *
+ * SECURITY: an unauthenticated request is rejected before the header is read,
+ * and the header is only honoured for a user who is an ACTIVE member of that
+ * org — so `x-org-id` cannot be used to hop between tenants.
  */
 export async function tenantMiddleware(
   req: Request,
@@ -41,15 +45,23 @@ export async function tenantMiddleware(
   next: NextFunction
 ): Promise<void> {
   try {
-    const userWithOrg = req.user as { orgId?: string; userId?: string } | undefined;
-    const orgId = userWithOrg?.orgId ?? req.header("x-org-id");
+    const user = req.user;
+
+    // Fail closed. Without a verified identity there is nothing to check
+    // membership against, so an x-org-id header would grant access to any tenant.
+    if (!user?.userId) {
+      throw new ApiError(401, "Authentication required");
+    }
+
+    const userWithOrg = user as { orgId?: string; userId?: string };
+    const orgId = userWithOrg.orgId ?? req.header("x-org-id");
 
     if (!orgId) {
       throw new ApiError(400, "Organization context required (x-org-id header or auth claim)");
     }
 
-    // When orgId comes from header (not auth claim), verify membership to prevent tenant hopping
-    if (!userWithOrg?.orgId && userWithOrg?.userId) {
+    // When orgId comes from the header (not an auth claim), verify membership.
+    if (!userWithOrg.orgId) {
 {{#if (eq orm "prisma")}}
       const membership = await prisma.membership.findFirst({
         where: {

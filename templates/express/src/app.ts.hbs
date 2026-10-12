@@ -25,14 +25,14 @@ app.use(sanitizeNoSql);
 app.use(sanitizeBody);
 app.use(requestLogger);
 
-// \{{REGISTER_MIDDLEWARE}}
-
-// Swagger
-setupSwagger(app);
-
-// Health endpoints
+// Health endpoints + Swagger are mounted BEFORE tenant scoping so that
+// container health probes and /docs never require an org context.
 app.get("/health", healthCheck);
 app.get("/ready", readyCheck);
+
+setupSwagger(app);
+
+// \{{REGISTER_MIDDLEWARE}}
 
 // \{{REGISTER_ROUTES}}
 

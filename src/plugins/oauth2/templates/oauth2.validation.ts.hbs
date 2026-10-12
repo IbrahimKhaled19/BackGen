@@ -1,0 +1,12 @@
+import { z } from "zod";
+
+export const oauth2CallbackSchema = z.object({
+  code: z.string().min(1, "Authorization code is required"),
+  state: z.string().min(1, "State parameter is required"),
+});
+
+export const oauth2ProviderSchema = z.object({
+  provider: z.enum(["google", "github", "discord"], {
+    errorMap: () => ({ message: "Provider must be one of: google, github, discord" }),
+  }),
+});

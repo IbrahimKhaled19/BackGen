@@ -8,10 +8,12 @@ import { fileURLToPath } from "url";
 import { TemplateEngine } from "../core/template-engine.js";
 import { PluginInstaller } from "../core/plugin-installer.js";
 import { selectPluginsInteractive } from "../core/plugin-selector.js";
+import { classifyFile } from "../core/file-classifier.js";
 import type { FileEntry } from "../core/manifest.js";
 import {
   createCheckpoint,
   loadCheckpoint,
+  saveCheckpoint,
   markStep,
   clearCheckpoint,
   getNextPendingStep,
@@ -103,6 +105,15 @@ export async function initCommand(
   // Create checkpoint
   const checkpoint = await createCheckpoint(targetDir, projectName!, STEPS, config.orm);
 
+  // With --skip-install the user opted out of these steps; mark them done so a
+  // later `init --resume` does not run the npm install they declined.
+  if (options.skipInstall) {
+    for (const step of ["dependencies", "codegen"]) {
+      checkpoint.steps[step] = { status: "complete", timestamp: new Date().toISOString() };
+    }
+    await saveCheckpoint(targetDir, checkpoint);
+  }
+
   // File ownership register — populated by generateTemplates, consumed by generateManifest
   const filesRecord: Record<string, FileEntry> = {};
 
@@ -122,14 +133,16 @@ export async function initCommand(
 
     // Apply preset if specified
     if (config.preset) {
-      await applyPreset(targetDir, config.preset);
+      await applyPreset(targetDir, config.preset, { skipInstall: options.skipInstall });
     }
 
     // Install user-selected plugins post-scaffold
     if (selectedPlugins.length > 0) {
       console.log(chalk.cyan(`\nInstalling ${selectedPlugins.length} plugin(s)...`));
       const installer = new PluginInstaller(TEMPLATES_DIR, config.orm);
-      const { succeeded, failed } = await installer.installBulk(targetDir, selectedPlugins);
+      const { succeeded, failed } = await installer.installBulk(targetDir, selectedPlugins, {
+        skipInstall: options.skipInstall,
+      });
       if (succeeded.length > 0) {
         console.log(chalk.green(`  \u2714 ${succeeded.length} plugin(s) installed.`));
       }
@@ -265,49 +278,6 @@ async function generateScaffold(dir: string, config: ProjectConfig): Promise<voi
   }
 }
 
-const OWNERSHIP: Record<string, FileEntry["owner"]> = {
-  // App & Server
-  "src/app.ts": "shared",
-  "src/server.ts": "framework",
-  // Config
-  "src/config/env.ts": "framework-editable",
-  "src/config/database.ts": "framework-editable",
-  "src/config/swagger.ts": "framework-editable",
-  // Utils
-  "src/utils/api-error.ts": "framework",
-  "src/utils/async-handler.ts": "framework",
-  "src/utils/response.ts": "framework",
-  // Middleware (core)
-  "src/middleware/core/errors.ts": "framework",
-  "src/middleware/core/logger.ts": "framework",
-  "src/middleware/core/validate.ts": "framework",
-  // Middleware (security)
-  "src/middleware/security/cors-strict.ts": "framework",
-  "src/middleware/security/sanitize.ts": "framework",
-  // Middleware (observability)
-  "src/middleware/observability/request-id.ts": "framework",
-  "src/middleware/observability/request-timeout.ts": "framework",
-  "src/middleware/observability/health.ts": "framework",
-  // Middleware (root)
-  "src/middleware/graceful-shutdown.ts": "framework",
-  // Services
-  "src/services/logger.service.ts": "framework",
-  // Config files
-  "package.json": "shared",
-  "tsconfig.json": "framework-editable",
-  ".env.example": "shared",
-  ".gitignore": "shared",
-  "README.md": "shared",
-  "vitest.config.ts": "framework-editable",
-  "eslint.config.js": "framework-editable",
-  // ORM
-  "prisma/schema.prisma": "user",
-  "prisma.config.ts": "framework-editable",
-  "drizzle.config.ts": "framework-editable",
-  "src/db/schema/index.ts": "user",
-  "src/models/index.ts": "user",
-};
-
 async function generateTemplates(
   dir: string,
   config: ProjectConfig,
@@ -347,6 +317,8 @@ async function generateTemplates(
     { template: "src/middleware/observability/health.ts.hbs", output: "src/middleware/observability/health.ts" },
     // Middleware (root — V4.6.1)
     { template: "src/middleware/graceful-shutdown.ts.hbs", output: "src/middleware/graceful-shutdown.ts" },
+    // Middleware (auth stub — replaced in place by the jwt/clerk plugin)
+    { template: "src/middleware/auth.ts.hbs", output: "src/middleware/auth.ts" },
     // Services
     { template: "src/services/logger.service.ts.hbs", output: "src/services/logger.service.ts" },
     // Config files (shared)
@@ -354,9 +326,11 @@ async function generateTemplates(
     { template: "tsconfig.json.hbs", output: "tsconfig.json" },
     { template: ".env.example.hbs", output: ".env.example" },
     { template: ".gitignore.hbs", output: ".gitignore" },
+    { template: ".dockerignore.hbs", output: ".dockerignore" },
     { template: "README.md.hbs", output: "README.md" },
     { template: "vitest.config.ts.hbs", output: "vitest.config.ts" },
     { template: "eslint.config.js.hbs", output: "eslint.config.js" },
+    { template: ".npmrc.hbs", output: ".npmrc" },
   ];
 
   // ORM-specific templates
@@ -378,23 +352,23 @@ async function generateTemplates(
 
   for (const { template, output } of templates) {
     await engine.renderToFile(template, context, path.join(dir, output));
-    if (OWNERSHIP[output]) {
-      filesRecord[output] = {
-        owner: OWNERSHIP[output],
-        version: OWNERSHIP[output] !== "user" ? BACKGEN_VERSION : undefined,
-      };
-    }
+    const owner = classifyFile(output, config.orm);
+    filesRecord[output] = {
+      owner,
+      version: owner !== "user" ? BACKGEN_VERSION : undefined,
+    };
   }
 
   if (config.enableDocker) {
-    await engine.renderToFile("Dockerfile.hbs", context, path.join(dir, "Dockerfile"));
-    filesRecord["Dockerfile"] = { owner: "shared", version: BACKGEN_VERSION };
-    await engine.renderToFile("docker-compose.yml.hbs", context, path.join(dir, "docker-compose.yml"));
-    filesRecord["docker-compose.yml"] = { owner: "shared", version: BACKGEN_VERSION };
-    await engine.renderToFile("Caddyfile.hbs", context, path.join(dir, "Caddyfile"));
-    filesRecord["Caddyfile"] = { owner: "shared", version: BACKGEN_VERSION };
-    await engine.renderToFile("docker-compose.prod.yml.hbs", context, path.join(dir, "docker-compose.prod.yml"));
-    filesRecord["docker-compose.prod.yml"] = { owner: "shared", version: BACKGEN_VERSION };
+    for (const output of [
+      "Dockerfile",
+      "docker-compose.yml",
+      "Caddyfile",
+      "docker-compose.prod.yml",
+    ]) {
+      await engine.renderToFile(`${output}.hbs`, context, path.join(dir, output));
+      filesRecord[output] = { owner: "shared", version: BACKGEN_VERSION };
+    }
   }
 }
 
@@ -402,7 +376,7 @@ async function installDependencies(dir: string, _config: ProjectConfig): Promise
   const { spawn } = await import("child_process");
   console.log(chalk.gray("  Running npm install...\n"));
   return new Promise((resolve, reject) => {
-    const child = spawn("npm", ["install"], { cwd: dir, stdio: "inherit", shell: true });
+    const child = spawn("npm", ["install", "--ignore-scripts"], { cwd: dir, stdio: "inherit", shell: true });
     child.on("close", (code) => {
       if (code === 0) resolve();
       else reject(new Error(`npm install exited with code ${code}`));
@@ -469,7 +443,11 @@ async function generateManifest(
   await writeManifest(dir, manifest);
 }
 
-async function applyPreset(projectDir: string, presetName: string): Promise<void> {
+async function applyPreset(
+  projectDir: string,
+  presetName: string,
+  options: { skipInstall?: boolean } = {}
+): Promise<void> {
   const { getPreset } = await import("../presets/registry.js");
   const preset = getPreset(presetName);
 
@@ -496,7 +474,7 @@ async function applyPreset(projectDir: string, presetName: string): Promise<void
     const plugin = getPlugin(pluginName);
     if (plugin) {
       try {
-        await installer.install(projectDir, plugin);
+        await installer.install(projectDir, plugin, options);
         console.log(chalk.green(`  ✔ ${pluginName} plugin installed`));
       } catch {
         console.log(chalk.yellow(`  ⚠ ${pluginName} plugin already installed or failed`));
@@ -541,11 +519,15 @@ async function applyPreset(projectDir: string, presetName: string): Promise<void
     console.log(chalk.green("  ✔ Tenant + RBAC middleware registered"));
   }
 
-  // Run prisma generate after all models are added (non-fatal)
-  try {
-    await runCodegen(projectDir, { orm: manifest?.project?.orm ?? "prisma" } as ProjectConfig);
-  } catch (err) {
-    console.log(chalk.yellow(`  ⚠ prisma generate failed (non-fatal): ${(err as Error).message}`));
+  // Run prisma generate after all models are added (non-fatal).
+  // Needs the Prisma CLI from node_modules, so it only makes sense when the
+  // user did not opt out of installing dependencies.
+  if (!options.skipInstall) {
+    try {
+      await runCodegen(projectDir, { orm: manifest?.project?.orm ?? "prisma" } as ProjectConfig);
+    } catch (err) {
+      console.log(chalk.yellow(`  ⚠ prisma generate failed (non-fatal): ${(err as Error).message}`));
+    }
   }
 }
 

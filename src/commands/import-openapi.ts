@@ -1,18 +1,10 @@
 import chalk from "chalk";
 import * as fs from "fs/promises";
 import * as path from "path";
+import ora from "ora";
+import { generateOpenApiCode, type OpenAPIDoc } from "../core/openapi-codegen.js";
 
-// ── Types ──────────────────────────────────────────────────────
-
-interface OpenAPIDoc {
-  openapi?: string;
-  info?: { title?: string; version?: string };
-  paths?: Record<string, unknown>;
-  components?: {
-    schemas?: Record<string, OpenAPISchema>;
-  };
-  definitions?: Record<string, OpenAPISchema>; // Swagger 2.0
-}
+// ── Types (legacy) ──────────────────────────────────────────────
 
 interface OpenAPISchema {
   type?: string;
@@ -67,6 +59,7 @@ function isReferenceSchema(schema: OpenAPISchema): boolean {
 
 export interface ImportOpenApiOptions {
   output?: string;
+  generate?: boolean;
 }
 
 /**
@@ -232,5 +225,25 @@ export async function importOpenApiCommand(
   console.log(chalk.cyan("Next step: backgen generate schema backgen.yaml"));
   if (!options.output) {
     console.log(chalk.gray("  (use --output to specify a different filename)\n"));
+  }
+
+  // ── Generate code stubs (--generate flag) ─────────────────
+  if (options.generate) {
+    const spinner = ora("Generating code stubs...").start();
+    try {
+      const projectDir = process.cwd();
+      const outDir = path.join(projectDir, "src", "modules", "openapi");
+      const { modules } = await generateOpenApiCode(doc, { outDir });
+      spinner.succeed(
+        `Generated ${modules.length} module(s) in src/modules/openapi/\n`
+      );
+      console.log(chalk.gray("  Stubs are under src/modules/openapi/<tag>/*.routes.ts"));
+      console.log(chalk.gray("  Each route handler has // BACKGEN:START/END blocks"));
+      console.log(chalk.gray("  Run: npm run dev & hit the generated endpoints\n"));
+    } catch (error) {
+      spinner.fail(
+        `Code generation failed: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
   }
 }

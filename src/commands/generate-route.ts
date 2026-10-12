@@ -5,6 +5,7 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { TemplateEngine } from "../core/template-engine.js";
 import { readManifest } from "../core/manifest.js";
+import { toPascalCase } from "../core/string-utils.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -147,11 +148,4 @@ export async function generateRouteCommand(
   console.log(
     chalk.dim(`  Edit src/modules/${routeName}/${routeName}.service.ts to implement business logic`)
   );
-}
-
-function toPascalCase(str: string): string {
-  return str
-    .split(/[-_]/)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join("");
 }

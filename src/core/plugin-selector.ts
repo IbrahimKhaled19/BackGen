@@ -17,10 +17,6 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const CATEGORY_ORDER = ["auth", "payment", "storage", "production", "devops"];
 
-function isAuthSingleSelect(cat: string): boolean {
-  return cat === "auth";
-}
-
 /**
  * Show interactive plugin selection grouped by category.
  * Auth category is single-select (jwt / clerk / none).
@@ -49,7 +45,7 @@ export async function selectPluginsInteractive(
 
     const label = CATEGORY_LABELS[cat] ?? cat;
 
-    if (isAuthSingleSelect(cat)) {
+    if (cat === "auth") {
       // Single-select: pick one auth provider or none
       const choices: Array<{ name: string; value: string; disabled?: string }> = [
         { name: "(none)", value: "" },

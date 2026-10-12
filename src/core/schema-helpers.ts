@@ -1,26 +1,19 @@
-import * as path from "path";
-
 /**
- * Get the path where plugin models should be written, per ORM.
+ * Get the path where a plugin model should be written, per ORM.
+ * Returns a project-relative file path; use path.dirname for the directory.
  */
-export function getPluginModelPath(orm: string, modelName: string): { dir: string; file: string } {
+export function getPluginModelPath(orm: string, modelName: string): string {
+  // toLowerCase, not toLocaleLowerCase — a Turkish-locale host would turn "I"
+  // into "ı" and write a filename that does not match the model name.
+  const slug = modelName.toLowerCase();
   switch (orm) {
     case "drizzle":
-      return {
-        dir: "src/db/schema",
-        file: `src/db/schema/${modelName.toLocaleLowerCase()}.ts`,
-      };
+      return `src/db/schema/${slug}.ts`;
     case "mongoose":
-      return {
-        dir: "src/models",
-        file: `src/models/${modelName.toLocaleLowerCase()}.model.ts`,
-      };
+      return `src/models/${slug}.model.ts`;
     case "prisma":
     default:
-      return {
-        dir: "prisma",
-        file: path.join("prisma", "schema.prisma"),
-      };
+      return "prisma/schema.prisma";
   }
 }
 

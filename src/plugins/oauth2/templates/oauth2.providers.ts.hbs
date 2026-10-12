@@ -1,0 +1,104 @@
+import { z } from "zod";
+
+// ── Google OAuth2 ──────────────────────────────────────────────
+
+export const googleConfig = {
+  clientId: process.env.GOOGLE_CLIENT_ID!,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+  callbackUrl: process.env.GOOGLE_CALLBACK_URL!,
+  authorizationUrl: "https://accounts.google.com/o/oauth2/v2/auth",
+  tokenUrl: "https://oauth2.googleapis.com/token",
+  userInfoUrl: "https://www.googleapis.com/oauth2/v2/userinfo",
+  scopes: ["openid", "email", "profile"],
+};
+
+// ── GitHub OAuth2 ──────────────────────────────────────────────
+
+export const githubConfig = {
+  clientId: process.env.GITHUB_CLIENT_ID!,
+  clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+  callbackUrl: process.env.GITHUB_CALLBACK_URL!,
+  authorizationUrl: "https://github.com/login/oauth/authorize",
+  tokenUrl: "https://github.com/login/oauth/access_token",
+  userInfoUrl: "https://api.github.com/user",
+  scopes: ["read:user", "user:email"],
+};
+
+// ── Discord OAuth2 ─────────────────────────────────────────────
+
+export const discordConfig = {
+  clientId: process.env.DISCORD_CLIENT_ID!,
+  clientSecret: process.env.DISCORD_CLIENT_SECRET!,
+  callbackUrl: process.env.DISCORD_CALLBACK_URL!,
+  authorizationUrl: "https://discord.com/api/oauth2/authorize",
+  tokenUrl: "https://discord.com/api/oauth2/token",
+  userInfoUrl: "https://discord.com/api/users/@me",
+  scopes: ["identify", "email"],
+};
+
+// ── Provider Registry ──────────────────────────────────────────
+
+export interface OAuth2ProviderConfig {
+  name: string;
+  clientId: string;
+  clientSecret: string;
+  callbackUrl: string;
+  authorizationUrl: string;
+  tokenUrl: string;
+  userInfoUrl: string;
+  scopes: string[];
+}
+
+export const providers: Record<string, OAuth2ProviderConfig> = {
+  google: googleConfig,
+  github: githubConfig,
+  discord: discordConfig,
+};
+
+export function getProvider(name: string): OAuth2ProviderConfig {
+  const provider = providers[name];
+  if (!provider) throw new Error(`Unknown OAuth2 provider: ${name}`);
+  return provider;
+}
+
+// ── OAuth2 Token Response ──────────────────────────────────────
+
+export interface OAuth2TokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in?: number;
+  refresh_token?: string;
+  scope?: string;
+}
+
+// ── Provider User Profiles ─────────────────────────────────────
+
+export interface GoogleUser {
+  id: string;
+  email: string;
+  verified_email: boolean;
+  name: string;
+  given_name: string;
+  family_name: string;
+  picture: string;
+  locale: string;
+}
+
+export interface GitHubUser {
+  id: number;
+  login: string;
+  avatar_url: string;
+  name: string | null;
+  email: string | null;
+}
+
+export interface DiscordUser {
+  id: string;
+  username: string;
+  discriminator: string;
+  avatar: string | null;
+  email: string;
+  verified: boolean;
+}
+
+export type ProviderUser = GoogleUser | GitHubUser | DiscordUser;

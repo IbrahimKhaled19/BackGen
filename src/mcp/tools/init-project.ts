@@ -22,7 +22,7 @@ export function initProjectTool(server: McpServer) {
         .default("prisma")
         .describe("Database ORM. prisma (PostgreSQL/MySQL/SQLite, recommended for relational), drizzle (lightweight SQL, closer-to-SQL control), mongoose (MongoDB, document-oriented). Defaults to prisma if not specified."),
       preset: z
-        .enum(["saas-core", "saas", "healthcare", "ecommerce", "crm", "lms"])
+        .enum(["saas-core", "saas", "saas-enterprise", "healthcare", "ecommerce", "crm", "lms"])
         .optional()
         .describe("Domain preset that generates multiple pre-wired resources in one command. Auto-installs JWT auth. Call list_presets first to see what each preset includes. Examples: 'saas-core' for multi-tenant orgs, 'healthcare' for patient/doctor/appointment."),
       defaults: z

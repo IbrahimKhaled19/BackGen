@@ -85,6 +85,17 @@ generate
     await generateRouteCommand(name, {});
   });
 
+generate
+  .command("job [name]")
+  .description("Generate a background job (requires worker plugin)")
+  .option("-q, --queue <queue>", "Queue name (default: default)")
+  .option("-r, --retry <n>", "Retry count (default: 3)")
+  .option("-t, --timeout <ms>", "Job timeout in ms (default: 30000)")
+  .action(async (name: string | undefined, options: { queue?: string; retry?: string; timeout?: string }) => {
+    const { generateJobCommand } = await import("./commands/job.js");
+    await generateJobCommand(name, options);
+  });
+
 // Import command — convert existing API specs to backgen.yaml
 const importCmd = program
   .command("import")
@@ -92,9 +103,10 @@ const importCmd = program
 
 importCmd
   .command("openapi <file>")
-  .description("Convert OpenAPI/Swagger spec to backgen.yaml")
+  .description("Convert OpenAPI/Swagger spec to backgen.yaml and optionally generate code stubs")
   .option("-o, --output <file>", "Output file path (default: backgen.yaml)")
-  .action(async (file: string, options: { output?: string }) => {
+  .option("-g, --generate", "Also generate route stubs, Zod schemas, and controller files with protected blocks")
+  .action(async (file: string, options: { output?: string; generate?: boolean }) => {
     const { importOpenApiCommand } = await import("./commands/import-openapi.js");
     await importOpenApiCommand(file, options);
   });
@@ -102,9 +114,10 @@ importCmd
 program
   .command("add [plugin]")
   .description("Add a plugin to existing project")
-  .action(async (plugin: string | undefined) => {
+  .option("--skip-install", "Write files and package.json but do not run npm install")
+  .action(async (plugin: string | undefined, options: { skipInstall?: boolean }) => {
     const { addCommand } = await import("./commands/add.js");
-    await addCommand(plugin);
+    await addCommand(plugin, { skipInstall: options.skipInstall ?? false });
   });
 
 program

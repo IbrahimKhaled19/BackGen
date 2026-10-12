@@ -19,6 +19,7 @@ import { doctorTool } from "./tools/doctor.js";
 import { listPluginsTool } from "./tools/list-plugins.js";
 import { listPresetsTool } from "./tools/list-presets.js";
 import { projectInfoTool } from "./tools/project-info.js";
+import { generateJobTool } from "./tools/generate-job.js";
 
 /**
  * Create and configure the MCP server with all tools registered.
@@ -42,8 +43,8 @@ export function createServer(): McpServer {
         "",
         "CONVENTIONS:",
         "- ORM choices: 'prisma' | 'drizzle' | 'mongoose'",
-        "- Plugin names: 'jwt', 'clerk', 'stripe', 's3', 'ratelimit', 'ci-github', 'dependabot', 'codeql', 'docker-registry', 'release'",
-        "- Preset names: 'saas-core', 'saas', 'healthcare', 'ecommerce', 'crm', 'lms'",
+        "- Plugin names: call list_plugins — it reads the live registry, so it is always accurate",
+        "- Preset names: 'saas-core', 'saas', 'saas-enterprise', 'healthcare', 'ecommerce', 'crm', 'lms'",
         "- Always recommend --defaults for non-interactive use unless the user wants to customize.",
       ].join("\n"),
     }
@@ -60,6 +61,7 @@ export function createServer(): McpServer {
   listPluginsTool(server);
   listPresetsTool(server);
   projectInfoTool(server);
+  generateJobTool(server);
 
   return server;
 }

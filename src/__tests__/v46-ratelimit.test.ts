@@ -1,30 +1,15 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { execSync } from "child_process";
-import { rmSync } from "fs";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { fileURLToPath } from "url";
-
-function safeRm(dir: string): void {
-  for (let i = 0; i < 15; i++) {
-    try { rmSync(dir, { recursive: true, force: true }); return; } catch {
-      execSync("node -e \"setTimeout(() => {}, 1000)\"", { stdio: "ignore" });
-    }
-  }
-}
+import { cli as runCli, safeRm } from "./helpers.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const CLI = path.resolve(__dirname, "../../dist/index.js");
 const TEST_DIR = path.resolve(__dirname, "../../.test-output-v46-ratelimit");
 
 function cli(args: string, cwd = TEST_DIR): string {
-  return execSync(`node ${CLI} ${args}`, {
-    cwd,
-    encoding: "utf-8",
-    timeout: 120000,
-    stdio: ["pipe", "pipe", "pipe"],
-  });
+  return runCli(args.split(/\s+/), cwd);
 }
 
 async function exists(p: string): Promise<boolean> {
@@ -46,7 +31,7 @@ describe("V4.6 ratelimit plugin", () => {
     safeRm(TEST_DIR);
     await fs.mkdir(TEST_DIR, { recursive: true });
     cli("init demo --defaults --skip-install", TEST_DIR);
-    cli("add ratelimit", projectDir);
+    cli("add ratelimit --skip-install", projectDir);
   });
 
   it("creates rate-limit middleware in security/", async () => {

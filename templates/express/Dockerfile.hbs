@@ -14,10 +14,18 @@ FROM node:20-alpine AS production
 
 WORKDIR /app
 
-RUN apk add --no-cache 'openssl=3.5.7-r0' 'libcrypto3=3.5.7-r0'
+# Unpinned on purpose — pinning an exact openssl build makes every image build
+# break the day Alpine publishes a revision.
+RUN apk add --no-cache openssl libcrypto
 
 COPY package*.json ./
 RUN npm ci --omit=dev
+
+{{#if (eq orm "drizzle")}}
+# drizzle-kit is a devDependency and migrations live in src/db/migrations —
+# copy them from the builder instead of re-running the generator here.
+COPY --from=builder /app/src/db/migrations ./src/db/migrations
+{{/if}}
 
 COPY --from=builder /app/dist ./dist
 {{#if (eq orm "prisma")}}
@@ -25,11 +33,10 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 {{/if}}
-{{#if (eq orm "drizzle")}}
-COPY --from=builder /app/src/db/schema ./src/db/schema
-RUN npx drizzle-kit generate
-{{/if}}
 
+ENV NODE_ENV=production
 EXPOSE 3000
+
+USER node
 
 CMD ["node", "dist/server.js"]

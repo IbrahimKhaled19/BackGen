@@ -1,0 +1,180 @@
+import { Request, Response } from "express";
+import { prisma } from "../../config/database.js";
+import {
+  getAuthorizationUrl,
+  generateState,
+  verifyState,
+  stateCookieName,
+  stateCookieOptions,
+  exchangeCode,
+  fetchUserProfile,
+  normalizeUser,
+  issueAccessToken,
+} from "./oauth2.service.js";
+
+// ── Constants ──────────────────────────────────────────────────
+
+const SUCCESS_REDIRECT = process.env.OAUTH2_SUCCESS_REDIRECT!;
+const FAILURE_REDIRECT = process.env.OAUTH2_FAILURE_REDIRECT!;
+
+/** Read a single cookie from the request headers. */
+function readCookie(req: Request, name: string): string | undefined {
+  const header = req.headers.cookie;
+  if (!header) return undefined;
+  for (const part of header.split(";")) {
+    const eq = part.indexOf("=");
+    if (eq === -1) continue;
+    if (part.slice(0, eq).trim() === name) {
+      return decodeURIComponent(part.slice(eq + 1).trim());
+    }
+  }
+  return undefined;
+}
+
+type OAuthProvider = "google" | "github" | "discord";
+
+function providerFieldFor(provider: string): OAuthProvider {
+  if (provider === "google") return "google";
+  if (provider === "github") return "github";
+  return "discord";
+}
+
+// ── Controllers ────────────────────────────────────────────────
+
+/**
+ * GET /api/auth/:provider
+ * Redirect user to the provider's OAuth authorization page.
+ *
+ * The CSRF state is handed to the browser in an HttpOnly cookie so the
+ * callback can verify it without any shared session store.
+ */
+export async function redirectToProvider(req: Request, res: Response): Promise<void> {
+  const { provider } = req.params;
+
+  // ═══════════════════════════════════════════════════════════
+  // BACKGEN:START
+  // ═══════════════════════════════════════════════════════════
+
+  const state = generateState();
+  res.cookie(stateCookieName, state, stateCookieOptions);
+
+  const authUrl = getAuthorizationUrl(provider as string, state);
+
+  res.redirect(authUrl);
+
+  // ═══════════════════════════════════════════════════════════
+  // BACKGEN:END
+  // ═══════════════════════════════════════════════════════════
+}
+
+/**
+ * GET /api/auth/:provider/callback
+ * Handle the OAuth callback from the provider.
+ */
+export async function handleCallback(req: Request, res: Response): Promise<void> {
+  const { provider } = req.params;
+  const { code, state } = req.query;
+
+  // ═══════════════════════════════════════════════════════════
+  // BACKGEN:START
+  // ═══════════════════════════════════════════════════════════
+
+  // Single-use: clear the state cookie before anything else can fail.
+  res.clearCookie(stateCookieName, { path: "/" });
+
+  if (!code || typeof code !== "string") {
+    res.redirect(`${FAILURE_REDIRECT}&reason=missing_code`);
+    return;
+  }
+
+  if (typeof state !== "string" || !verifyState(state, readCookie(req, stateCookieName))) {
+    res.redirect(`${FAILURE_REDIRECT}&reason=invalid_state`);
+    return;
+  }
+
+  try {
+    // Exchange authorization code for tokens
+    const tokenResponse = await exchangeCode(provider as string, code);
+
+    // Fetch user profile from provider
+    const rawUser = await fetchUserProfile(provider as string, tokenResponse.access_token);
+
+    // Normalize to common format
+    const normalizedUser = normalizeUser(provider as string, rawUser);
+    const oauthProvider = providerFieldFor(provider as string);
+
+    // 1. Already linked to an account?
+    const identity = await prisma.userOAuthIdentity.findUnique({
+      where: {
+        provider_providerId: {
+          provider: oauthProvider,
+          providerId: normalizedUser.providerId,
+        },
+      },
+      include: { user: true },
+    });
+
+    let user = identity?.user;
+
+    // 2. Same email as an existing account — link the provider to it.
+    if (!user) {
+      const existing = await prisma.user.findUnique({
+        where: { email: normalizedUser.email },
+      });
+      if (existing) {
+        await prisma.userOAuthIdentity.create({
+          data: {
+            userId: existing.id,
+            provider: oauthProvider,
+            providerId: normalizedUser.providerId,
+          },
+        });
+        user = existing;
+      }
+    }
+
+    // 3. Brand new user.
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email: normalizedUser.email,
+          name: normalizedUser.name,
+          role: "USER",
+          oauthIdentities: {
+            create: {
+              provider: oauthProvider,
+              providerId: normalizedUser.providerId,
+            },
+          },
+        },
+      });
+    }
+
+    // Issue an access token the jwt middleware accepts
+    const accessToken = issueAccessToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      tokenVersion: user.tokenVersion,
+    });
+
+    // Hand the token over in an HttpOnly cookie — never in the redirect URL,
+    // which would leak it into browser history, proxy logs and Referer headers.
+    res.cookie("access_token", accessToken, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 15 * 60 * 1000,
+      path: "/",
+    });
+
+    res.redirect(SUCCESS_REDIRECT);
+  } catch (error) {
+    console.error("OAuth callback error:", error);
+    res.redirect(`${FAILURE_REDIRECT}&reason=internal_error`);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // BACKGEN:END
+  // ═══════════════════════════════════════════════════════════
+}

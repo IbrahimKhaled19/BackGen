@@ -17,6 +17,10 @@ export class {{ResourceName}}Repository {
     if (userId) {
       filters.push(eq({{resourceName}}.userId, userId));
     }
+    {{#if softDelete}}
+    // soft-delete: exclude tombstoned records, matching findAll
+    filters.push(eq({{resourceName}}.deletedAt, null));
+    {{/if}}
     const [item] = await db
       .select()
       .from({{resourceName}})

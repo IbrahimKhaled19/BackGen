@@ -1,22 +1,16 @@
-import { describe, it, expect, beforeAll } from "vitest";
-import { execSync } from "child_process";
-import { rmSync } from "fs";
+﻿import { describe, it, expect, beforeAll } from "vitest";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { fileURLToPath } from "url";
+import { cli as runCli, safeRm } from "./helpers.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const CLI = path.resolve(__dirname, "../../dist/index.js");
 const TEST_DIR = path.resolve(__dirname, "../../.test-output");
 
+/** Run the CLI with an arg array (no shell interpolation). */
 function cli(args: string, cwd = TEST_DIR): string {
-  return execSync(`node ${CLI} ${args}`, {
-    cwd,
-    encoding: "utf-8",
-    timeout: 120000,
-    stdio: ["pipe", "pipe", "pipe"],
-  });
+  return runCli(args.split(/\s+/), cwd);
 }
 
 async function exists(p: string): Promise<boolean> {
@@ -31,22 +25,12 @@ async function readJson(p: string): Promise<Record<string, unknown>> {
   return JSON.parse(await read(p));
 }
 
-function safeRm(dir: string): void {
-  for (let i = 0; i < 10; i++) {
-    try { rmSync(dir, { recursive: true, force: true }); return; } catch { /* retry */ }
-    // On Windows, cmd.exe rd /s /q handles locked handles better than node rmSync
-    try { execSync(`rd /s /q "${dir}"`, { shell: "cmd.exe", stdio: "ignore" }); } catch { /* retry */ }
-    try { rmSync(dir, { recursive: true, force: true }); return; } catch { /* retry */ }
-    execSync("node -e \"setTimeout(() => {}, 500)\"", { stdio: "ignore" });
-  }
-}
-
 describe("BackGen E2E", () => {
   const projectDir = path.join(TEST_DIR, "my-api");
 
   beforeAll(async () => {
     await fs.mkdir(TEST_DIR, { recursive: true });
-    // Clean up leftover dirs from previous runs
+    // Only this file's own directories â€” other suites have their own TEST_DIR
     safeRm(path.join(TEST_DIR, "my-api"));
     safeRm(path.join(TEST_DIR, "demo-drizzle"));
     safeRm(path.join(TEST_DIR, "demo-mongo"));
@@ -54,7 +38,7 @@ describe("BackGen E2E", () => {
     cli("init my-api --defaults --skip-install");
   });
 
-  // ── Init ──────────────────────────────────────────────
+  // â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe("init", () => {
     it("creates project directory", async () => {
@@ -117,8 +101,14 @@ describe("BackGen E2E", () => {
       expect(await exists(path.join(projectDir, "src/middleware/graceful-shutdown.ts"))).toBe(true);
     });
 
-    it("does NOT create auth middleware", async () => {
-      expect(await exists(path.join(projectDir, "src/middleware/auth.ts"))).toBe(false);
+    it("creates the pass-through auth stub (no auth plugin yet)", async () => {
+      const authPath = path.join(projectDir, "src/middleware/auth.ts");
+      expect(await exists(authPath)).toBe(true);
+
+      // The stub must never authenticate â€” it only warns and calls next()
+      const auth = await read(authPath);
+      expect(auth).toContain("backgen add jwt");
+      expect(auth).not.toContain("jwt.verify");
     });
 
     it("does NOT create auth module", async () => {
@@ -136,6 +126,12 @@ describe("BackGen E2E", () => {
       expect(await exists(path.join(projectDir, "docker-compose.yml"))).toBe(true);
     });
 
+    it("creates a .dockerignore that keeps secrets out of build layers", async () => {
+      const dockerignore = await read(path.join(projectDir, ".dockerignore"));
+      expect(dockerignore).toContain(".env");
+      expect(dockerignore).toContain("node_modules");
+    });
+
     it("creates swagger config", async () => {
       expect(await exists(path.join(projectDir, "src/config/swagger.ts"))).toBe(true);
     });
@@ -145,7 +141,7 @@ describe("BackGen E2E", () => {
     });
   });
 
-  // ── Init (Drizzle) ──────────────────────────────────────
+  // â”€â”€ Init (Drizzle) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe("init (Drizzle)", () => {
     const drizzleDir = path.join(TEST_DIR, "demo-drizzle");
@@ -196,7 +192,7 @@ describe("BackGen E2E", () => {
     });
   });
 
-  // ── Init (Mongoose) ─────────────────────────────────────
+  // â”€â”€ Init (Mongoose) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe("init (Mongoose)", () => {
     const mongoDir = path.join(TEST_DIR, "demo-mongo");
@@ -243,7 +239,7 @@ describe("BackGen E2E", () => {
     });
   });
 
-  // ── Generate Resource (Mongoose) ────────────────────
+  // â”€â”€ Generate Resource (Mongoose) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe("generate resource (Mongoose)", () => {
     const mongoGenDir = path.join(TEST_DIR, "demo-mongo-gen");
@@ -283,11 +279,11 @@ describe("BackGen E2E", () => {
     });
   });
 
-  // ── Add Plugin: JWT ──────────────────────────────────
+  // â”€â”€ Add Plugin: JWT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe("add jwt", () => {
     beforeAll(() => {
-      cli("add jwt", projectDir);
+      cli("add jwt --skip-install", projectDir);
     });
 
     it("creates auth module files", async () => {
@@ -325,11 +321,11 @@ describe("BackGen E2E", () => {
     });
   });
 
-  // ── Add Plugin: Stripe ────────────────────────────────
+  // â”€â”€ Add Plugin: Stripe â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe("add stripe", () => {
     beforeAll(() => {
-      cli("add stripe", projectDir);
+      cli("add stripe --skip-install", projectDir);
     });
 
     it("creates stripe module files", async () => {
@@ -358,11 +354,11 @@ describe("BackGen E2E", () => {
     });
   });
 
-  // ── Add Plugin: S3 ────────────────────────────────────
+  // â”€â”€ Add Plugin: S3 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe("add s3", () => {
     beforeAll(() => {
-      cli("add s3", projectDir);
+      cli("add s3 --skip-install", projectDir);
     });
 
     it("creates storage module files", async () => {
@@ -390,7 +386,7 @@ describe("BackGen E2E", () => {
     });
   });
 
-  // ── Generate Resource ─────────────────────────────────
+  // â”€â”€ Generate Resource â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe("generate resource", () => {
     beforeAll(() => {
@@ -434,7 +430,7 @@ describe("BackGen E2E", () => {
     });
   });
 
-  // ── Generate Resource with Relations ──────────────────
+  // â”€â”€ Generate Resource with Relations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe("generate resource with relations", () => {
     beforeAll(() => {
@@ -460,7 +456,7 @@ describe("BackGen E2E", () => {
     });
   });
 
-  // ── Seed Generator ────────────────────────────────────
+  // â”€â”€ Seed Generator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe("generate seed", () => {
     beforeAll(() => {
@@ -483,7 +479,7 @@ describe("BackGen E2E", () => {
     });
   });
 
-  // ── Factory Generator ─────────────────────────────────
+  // â”€â”€ Factory Generator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe("generate factory", () => {
     beforeAll(() => {
@@ -505,7 +501,7 @@ describe("BackGen E2E", () => {
     });
   });
 
-  // ── Sync ──────────────────────────────────────────────
+  // â”€â”€ Sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe("sync", () => {
     it("runs without error", () => {
@@ -523,11 +519,11 @@ describe("BackGen E2E", () => {
     });
   });
 
-  // ── Remove Plugin ─────────────────────────────────────
+  // â”€â”€ Remove Plugin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe("remove plugin", () => {
     it("removes plugin from manifest", async () => {
-      // stripe was installed in add stripe test — remove it
+      // stripe was installed in add stripe test â€” remove it
       let manifest = await readJson(path.join(projectDir, ".backgenrc.json"));
       expect(manifest.plugins).toHaveProperty("stripe");
 
@@ -537,7 +533,7 @@ describe("BackGen E2E", () => {
     });
   });
 
-  // ── Doctor ────────────────────────────────────────────
+  // â”€â”€ Doctor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe("doctor", () => {
     it("runs without error", () => {
@@ -551,11 +547,11 @@ describe("BackGen E2E", () => {
     });
   });
 
-  // ── Error Handling ────────────────────────────────────
+  // â”€â”€ Error Handling â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   describe("error handling", () => {
     it("rejects unknown plugin", () => {
-      expect(() => cli("add unknown-plugin", projectDir)).toThrow();
+      expect(() => cli("add unknown-plugin --skip-install", projectDir)).toThrow();
     });
 
     it("rejects init on non-empty directory", () => {

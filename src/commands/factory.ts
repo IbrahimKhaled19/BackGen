@@ -3,16 +3,23 @@ import ora from "ora";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { readManifest } from "../core/manifest.js";
+import {
+  parseFieldsFromTypes,
+  renderFieldDefaults,
+  resourceNameFor,
+  moduleNameFor,
+  typesFileFor,
+} from "../core/module-helpers.js";
 
 export async function factoryCommand(resource: string): Promise<void> {
   console.log(chalk.blue.bold(`\n🏭 BackGen - Generate Factory: ${resource}\n`));
 
   const projectDir = process.cwd();
-  const resourceName = toPascalCase(resource);
-  const moduleName = toCamelCase(resource);
+  const resourceName = resourceNameFor(resource);
+  const moduleName = moduleNameFor(resource);
 
   // Read the resource types to get fields
-  const typesPath = path.join(projectDir, "src", "modules", moduleName, `${moduleName}.types.ts`);
+  const typesPath = typesFileFor(projectDir, resource);
   let typesContent: string;
   try {
     typesContent = await fs.readFile(typesPath, "utf-8");
@@ -49,7 +56,9 @@ export async function factoryCommand(resource: string): Promise<void> {
     console.log(chalk.green(`\n✨ Factory created!\n`));
     console.log(`  src/factories/${moduleName}.factory.ts`);
     console.log("\nUsage:");
-    console.log(chalk.cyan(`  import { create${resourceName} } from "../factories/${moduleName}.factory.js";`));
+    console.log(
+      chalk.cyan(`  import { create${resourceName} } from "../factories/${moduleName}.factory.js";`)
+    );
     console.log(chalk.cyan(`  const ${moduleName} = await create${resourceName}();\n`));
   } catch (error) {
     spinner.fail("Factory generation failed");
@@ -57,58 +66,17 @@ export async function factoryCommand(resource: string): Promise<void> {
   }
 }
 
-function parseFieldsFromTypes(content: string): Array<{ name: string; type: string }> {
-  const fields: Array<{ name: string; type: string }> = [];
-  const seen = new Set<string>();
-  const lines = content.split("\n");
-
-  let inMainInterface = false;
-  for (const line of lines) {
-    if (line.match(/^export interface \w+ \{/)) {
-      inMainInterface = true;
-      continue;
-    }
-    if (inMainInterface && line.match(/^\}/)) {
-      break;
-    }
-    if (inMainInterface) {
-      const match = line.match(/^\s+(\w+)\s*:\s*(string|number|boolean|Date)/);
-      if (match && match[1] !== "id" && match[1] !== "createdAt" && match[1] !== "updatedAt" && !seen.has(match[1])) {
-        seen.add(match[1]);
-        fields.push({ name: match[1], type: match[2] });
-      }
-    }
-  }
-
-  return fields;
-}
-
 function generateFactoryContent(
   resourceName: string,
   moduleName: string,
-  fields: Array<{ name: string; type: string }>,
+  fields: ReturnType<typeof parseFieldsFromTypes>,
   orm: string = "prisma"
 ): string {
   const overrides = fields
     .map((f) => `  ${f.name}?: ${f.type === "Date" ? "Date" : f.type};`)
     .join("\n");
 
-  const defaults = fields
-    .map((f) => {
-      switch (f.type) {
-        case "string":
-          return `    ${f.name}: overrides.${f.name} ?? "${f.name}-test"`;
-        case "number":
-          return `    ${f.name}: overrides.${f.name} ?? 1`;
-        case "boolean":
-          return `    ${f.name}: overrides.${f.name} ?? true`;
-        case "Date":
-          return `    ${f.name}: overrides.${f.name} ?? new Date()`;
-        default:
-          return `    ${f.name}: overrides.${f.name} ?? ""`;
-      }
-    })
-    .join(",\n");
+  const defaults = renderFieldDefaults(fields, "factory");
 
   if (orm === "drizzle") {
     return `import { db } from "../config/database.js";
@@ -181,15 +149,4 @@ export async function create${resourceName}List(count: number, overrides: ${reso
   return items;
 }
 `;
-}
-
-function toPascalCase(str: string): string {
-  return str
-    .replace(/[-_\s]+(.)?/g, (_, c: string | undefined) => (c ? c.toUpperCase() : ""))
-    .replace(/^(.)/, (_, c: string) => c.toUpperCase());
-}
-
-function toCamelCase(str: string): string {
-  const pascal = toPascalCase(str);
-  return pascal.charAt(0).toLowerCase() + pascal.slice(1);
 }

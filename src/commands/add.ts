@@ -16,7 +16,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const TEMPLATES_DIR = path.resolve(__dirname, "../../templates/express");
 
-export async function addCommand(pluginName: string | undefined): Promise<void> {
+export interface AddOptions {
+  /** Write package.json and templates but do not run `npm install`. */
+  skipInstall?: boolean;
+}
+
+export async function addCommand(
+  pluginName: string | undefined,
+  options: AddOptions = {}
+): Promise<void> {
   console.log(chalk.blue.bold("\n\uD83D\uDD0C BackGen - Add Plugin\n"));
 
   const projectDir = process.cwd();
@@ -34,7 +42,7 @@ export async function addCommand(pluginName: string | undefined): Promise<void> 
 
     console.log();
     const installer = new PluginInstaller(TEMPLATES_DIR, orm);
-    const { succeeded, failed } = await installer.installBulk(projectDir, selected);
+    const { succeeded, failed } = await installer.installBulk(projectDir, selected, options);
 
     if (succeeded.length > 0) {
       console.log(chalk.green(`\u2714 ${succeeded.length} plugin(s) installed successfully.`));
@@ -64,7 +72,7 @@ export async function addCommand(pluginName: string | undefined): Promise<void> 
 
     const installer = new PluginInstaller(TEMPLATES_DIR, orm);
     const names = toInstall.map((p) => p.name);
-    const { succeeded, failed } = await installer.installBulk(projectDir, names);
+    const { succeeded, failed } = await installer.installBulk(projectDir, names, options);
 
     if (succeeded.length > 0) {
       console.log(chalk.green(`\u2714 ${succeeded.length} devops plugin(s) installed.`));
@@ -112,8 +120,12 @@ export async function addCommand(pluginName: string | undefined): Promise<void> 
   const spinner = ora(`Installing ${pluginName}...`).start();
   try {
     const installer = new PluginInstaller(TEMPLATES_DIR, orm);
-    await installer.install(projectDir, plugin);
+    await installer.install(projectDir, plugin, options);
     spinner.succeed(`${pluginName} installed!`);
+
+    if (options.skipInstall) {
+      console.log(chalk.gray("  npm install skipped — run it yourself to get the new dependencies."));
+    }
 
     if (plugin.env) {
       console.log("  Env vars added to .env.example:");

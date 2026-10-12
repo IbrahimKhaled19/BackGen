@@ -1,4 +1,5 @@
 import * as path from "path";
+import * as fs from "fs/promises";
 import { fileURLToPath } from "url";
 import type { BackGenPlugin, InstallContext } from "../../core/plugin.js";
 
@@ -31,13 +32,21 @@ export const clerkPlugin: BackGenPlugin = {
 
   async install(ctx: InstallContext) {
     const moduleDir = path.join(ctx.projectDir, "src", "modules", "clerk");
+    await fs.mkdir(moduleDir, { recursive: true });
 
-    for (const tpl of this.templates) {
-      const outputName = tpl.replace(".hbs", "");
+    // The middleware replaces the base auth stub at src/middleware/auth.ts so
+    // every generated route module keeps importing the same symbol.
+    await ctx.engine.renderAbsolute(
+      path.join(TEMPLATE_DIR, "clerk.middleware.ts.hbs"),
+      { projectName: ctx.projectName },
+      path.join(ctx.projectDir, "src", "middleware", "auth.ts")
+    );
+
+    for (const tpl of ["clerk.routes.ts.hbs", "clerk.types.ts.hbs"]) {
       await ctx.engine.renderAbsolute(
         path.join(TEMPLATE_DIR, tpl),
         { projectName: ctx.projectName },
-        path.join(moduleDir, outputName)
+        path.join(moduleDir, tpl.replace(".hbs", ""))
       );
     }
 
@@ -55,6 +64,13 @@ export const clerkPlugin: BackGenPlugin = {
         operation: "replace",
         marker: `app.use(requestLogger);`,
         content: `app.use(requestLogger);\napp.use(clerkMiddleware());`,
+      },
+      // Resolve req.user globally so tenant scoping can require an identity
+      {
+        file: "src/app.ts",
+        operation: "replace",
+        marker: "// {{REGISTER_MIDDLEWARE}}",
+        content: `import { optionalAuthMiddleware } from "./middleware/auth.js";\napp.use(optionalAuthMiddleware);\n// {{REGISTER_MIDDLEWARE}}`,
       },
       // Register Clerk routes
       {

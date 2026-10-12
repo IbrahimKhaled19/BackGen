@@ -1,8 +1,6 @@
 import { spawnSync } from "child_process";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
-import { mkdtempSync, existsSync } from "fs";
-import { tmpdir } from "os";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -11,13 +9,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
  * Works in both source (ts) and compiled (dist) layouts.
  */
 function getProjectRoot(): string {
-  // In dist: dist/mcp/utils/ -> go up 3 levels to project root
-  const candidate = resolve(__dirname, "..", "..", "..");
-  // In src: src/mcp/utils/ -> go up 3 levels, look for dist/index.js
-  if (existsSync(resolve(candidate, "dist", "index.js"))) {
-    return candidate;
-  }
-  return candidate;
+  return resolve(__dirname, "..", "..", "..");
 }
 
 /**
@@ -48,27 +40,4 @@ export function runBackgen(args: string[], cwd?: string): string {
   }
 
   return result.stdout ?? "";
-}
-
-/**
- * Run backgen in a temporary directory and return { stdout, projectPath }.
- * Used for init_project which creates a new directory.
- * The temp directory and its contents are not cleaned up automatically.
- * @param args - CLI arguments (must include "init" and project name)
- * @returns Object containing stdout string and resolved projectPath
- */
-export function runBackgenInTemp(args: string[]): {
-  stdout: string;
-  projectPath: string;
-} {
-  const tmpDir = mkdtempSync(resolve(tmpdir(), "backgen-"));
-  const stdout = runBackgen(args, tmpDir);
-
-  // Parse project name from args to determine output path
-  const initIdx = args.indexOf("init");
-  const nameIdx = initIdx >= 0 ? initIdx + 1 : -1;
-  const projectName = nameIdx > 0 && nameIdx < args.length ? args[nameIdx] : "my-project";
-  const projectPath = resolve(tmpDir, projectName);
-
-  return { stdout, projectPath };
 }

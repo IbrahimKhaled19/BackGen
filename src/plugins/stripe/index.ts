@@ -44,11 +44,21 @@ export const stripePlugin: BackGenPlugin = {
     }
 
     await ctx.mutate([
+      // Capture the raw request body. Stripe signs the exact bytes it sent, so
+      // verifying a re-serialised object can never succeed — the signature
+      // check silently fails and every webhook is rejected.
+      {
+        file: "src/app.ts",
+        operation: "replace",
+        marker: "app.use(express.json({ limit: env.BODY_SIZE_LIMIT }));",
+        content:
+          "app.use(express.json({\n  limit: env.BODY_SIZE_LIMIT,\n  // Stripe signs the exact bytes it sent — keep them for webhook verification.\n  verify: (req, _res, buf) => {\n    (req as { rawBody?: Buffer }).rawBody = Buffer.from(buf);\n  },\n}));",
+      },
       {
         file: "src/app.ts",
         operation: "replace",
         marker: "// {{REGISTER_ROUTES}}",
-        content: `import stripeRoutes from "./modules/stripe/stripe.routes.js";\napp.use("/api/payments", stripeRoutes);\n  // {{REGISTER_ROUTES}}`,
+        content: `import stripeRoutes from "./modules/stripe/stripe.routes.js";\napp.use("/api/payments", stripeRoutes);\n// {{REGISTER_ROUTES}}`,
       },
       {
         file: "src/config/env.ts",

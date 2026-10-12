@@ -47,7 +47,8 @@ export class DrizzleSchemaGenerator implements SchemaGenerator {
     }
 
     const lines: string[] = [];
-    lines.push(`import { pgTable, uuid, text, timestamp, boolean, doublePrecision, integer, primaryKey } from "drizzle-orm/pg-core";`);
+    lines.push(`import { pgTable, uuid, text, timestamp, boolean, doublePrecision } from "drizzle-orm/pg-core";`);
+    lines.push(`import { relations } from "drizzle-orm";`);
     lines.push("");
 
     const idName = `${tableName}Id`;

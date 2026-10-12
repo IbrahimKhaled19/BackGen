@@ -1,6 +1,65 @@
 import type { FileOwner } from "./manifest.js";
 
 /**
+ * Generated files whose ownership is decided by exact path rather than by the
+ * prefix rules below. This is the single source of truth — `init`, `doctor`
+ * and `sync` all read it, so a new generated file is registered once.
+ */
+export const KNOWN_FILES: Record<string, FileOwner> = {
+  // App & Server
+  "src/app.ts": "shared",
+  "src/server.ts": "framework",
+  // Config
+  "src/config/env.ts": "framework-editable",
+  "src/config/database.ts": "framework-editable",
+  "src/config/swagger.ts": "framework-editable",
+  "src/middleware/auth.ts": "framework",
+  // Utils
+  "src/utils/api-error.ts": "framework",
+  "src/utils/async-handler.ts": "framework",
+  "src/utils/response.ts": "framework",
+  // Middleware (core)
+  "src/middleware/core/errors.ts": "framework",
+  "src/middleware/core/logger.ts": "framework",
+  "src/middleware/core/validate.ts": "framework",
+  // Middleware (security)
+  "src/middleware/security/cors-strict.ts": "framework",
+  "src/middleware/security/sanitize.ts": "framework",
+  // Middleware (observability)
+  "src/middleware/observability/request-id.ts": "framework",
+  "src/middleware/observability/request-timeout.ts": "framework",
+  "src/middleware/observability/health.ts": "framework",
+  // Middleware (root)
+  "src/middleware/graceful-shutdown.ts": "framework",
+  // Services
+  "src/services/logger.service.ts": "framework",
+  // Config files
+  "package.json": "shared",
+  "tsconfig.json": "framework-editable",
+  ".env.example": "shared",
+  ".gitignore": "shared",
+  ".dockerignore": "shared",
+  ".npmrc": "shared",
+  "README.md": "shared",
+  "vitest.config.ts": "framework-editable",
+  "eslint.config.js": "framework-editable",
+  // Docker
+  "Dockerfile": "shared",
+  "docker-compose.yml": "shared",
+  "docker-compose.prod.yml": "shared",
+  "Caddyfile": "shared",
+  // ORM
+  "prisma/schema.prisma": "user",
+  "prisma.config.ts": "framework-editable",
+  "drizzle.config.ts": "framework-editable",
+  "src/db/schema/index.ts": "user",
+  "src/models/index.ts": "user",
+};
+
+/** Directories whose contents are user-owned and must never be overwritten */
+export const USER_OWNED_DIRS = ["prisma/seeds/", "src/db/schema/", "src/models/"];
+
+/**
  * Classify a generated file path by ownership.
  *
  * Determines which files BackGen can overwrite during upgrade
@@ -8,6 +67,10 @@ import type { FileOwner } from "./manifest.js";
  */
 export function classifyFile(outputPath: string, _orm: string): FileOwner {
   const normalized = outputPath.replace(/\\/g, "/");
+
+  // Exact paths are authoritative — check them before the prefix rules
+  const known = KNOWN_FILES[normalized];
+  if (known) return known;
 
   // ── User-owned (never touch) ──────────────────────────────────
   if (isUserCode(normalized)) return "user";

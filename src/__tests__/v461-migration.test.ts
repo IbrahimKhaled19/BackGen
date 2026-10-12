@@ -1,21 +1,15 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { execSync } from "child_process";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { fileURLToPath } from "url";
+import { cli as runCli } from "./helpers.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const CLI = path.resolve(__dirname, "../../dist/index.js");
 const TEST_DIR = path.resolve(__dirname, "../../.test-output-v461-migrate");
 
 function cli(args: string, cwd = TEST_DIR): string {
-  return execSync(`node ${CLI} ${args}`, {
-    cwd,
-    encoding: "utf-8",
-    timeout: 120000,
-    stdio: ["pipe", "pipe", "pipe"],
-  });
+  return runCli(args.split(/\s+/), cwd);
 }
 
 async function exists(p: string): Promise<boolean> {

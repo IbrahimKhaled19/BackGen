@@ -2,10 +2,15 @@ node_modules/
 dist/
 build/
 *.log
+
+# Secrets — keep every .env* out of git, but never the template
 .env
-.env.local
+.env.*
+!.env.example
+
 .DS_Store
 Thumbs.db
 coverage/
 .idea/
 .vscode/
+.backgen/

@@ -22,11 +22,12 @@ export class {{ResourceName}}Repository {
     if (userId) {
       where.userId = userId;
     }
+    {{#if softDelete}}
+    // soft-delete: exclude tombstoned records, matching findAll
+    where.deletedAt = null;
+    {{/if}}
     return prisma.{{resourceName}}.findFirst({
       where,
-      {{#if softDelete}}
-      // soft-delete: exclude tombstoned records
-      {{/if}}
       {{#if hasRelations}}
       include: {
         {{#each relations}}

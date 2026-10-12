@@ -1,0 +1,195 @@
+import crypto from "crypto";
+import jwt, { type SignOptions } from "jsonwebtoken";
+import { env } from "../../config/env.js";
+import {
+  providers,
+  getProvider,
+  type OAuth2TokenResponse,
+  type ProviderUser,
+  type GoogleUser,
+  type GitHubUser,
+  type DiscordUser,
+} from "./providers.js";
+
+// ── State (CSRF protection) ────────────────────────────────────
+
+const STATE_COOKIE = "oauth2_state";
+const STATE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+/**
+ * Generate a CSRF state token. 32 random bytes → 64 hex characters.
+ * The token is stored in an HttpOnly cookie by the controller, so it works
+ * across multiple app instances without shared session storage.
+ */
+export function generateState(): string {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+/**
+ * Timing-safe state comparison.
+ * Returns false (never throws) when the values differ in length.
+ */
+export function verifyState(state: string, savedState: string | undefined): boolean {
+  if (!savedState) return false;
+  const a = Buffer.from(state, "utf-8");
+  const b = Buffer.from(savedState, "utf-8");
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
+/** Cookie attributes for the state cookie — short-lived, HttpOnly, Lax. */
+export const stateCookieOptions = {
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure: env.NODE_ENV === "production",
+  maxAge: STATE_TTL_MS,
+  path: "/",
+};
+
+export const stateCookieName = STATE_COOKIE;
+
+// ── Authorization URL ──────────────────────────────────────────
+
+export function getAuthorizationUrl(provider: string, state: string): string {
+  const config = getProvider(provider);
+  const params = new URLSearchParams({
+    client_id: config.clientId,
+    redirect_uri: config.callbackUrl,
+    response_type: "code",
+    scope: config.scopes.join(" "),
+    state,
+  });
+  return `${config.authorizationUrl}?${params.toString()}`;
+}
+
+// ── Exchange code for token ────────────────────────────────────
+
+export async function exchangeCode(
+  provider: string,
+  code: string
+): Promise<OAuth2TokenResponse> {
+  const config = getProvider(provider);
+
+  const response = await fetch(config.tokenUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    },
+    body: new URLSearchParams({
+      client_id: config.clientId,
+      client_secret: config.clientSecret,
+      code,
+      redirect_uri: config.callbackUrl,
+      grant_type: "authorization_code",
+    }).toString(),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Token exchange failed: ${response.status} ${errorText}`);
+  }
+
+  return response.json() as Promise<OAuth2TokenResponse>;
+}
+
+// ── Fetch user profile ─────────────────────────────────────────
+
+export async function fetchUserProfile(
+  provider: string,
+  accessToken: string
+): Promise<ProviderUser> {
+  const config = getProvider(provider);
+
+  const response = await fetch(config.userInfoUrl, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch user profile: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data as ProviderUser;
+}
+
+// ── Normalize profile to common format ─────────────────────────
+
+export interface NormalizedUser {
+  provider: string;
+  providerId: string;
+  email: string;
+  name: string;
+  avatarUrl: string | null;
+}
+
+export function normalizeUser(provider: string, rawUser: ProviderUser): NormalizedUser {
+  switch (provider) {
+    case "google": {
+      const u = rawUser as GoogleUser;
+      return {
+        provider: "google",
+        providerId: u.id,
+        email: u.email,
+        name: u.name,
+        avatarUrl: u.picture,
+      };
+    }
+    case "github": {
+      const u = rawUser as GitHubUser;
+      return {
+        provider: "github",
+        providerId: String(u.id),
+        email: u.email ?? `${u.login}@github.user`,
+        name: u.name ?? u.login,
+        avatarUrl: u.avatar_url,
+      };
+    }
+    case "discord": {
+      const u = rawUser as DiscordUser;
+      return {
+        provider: "discord",
+        providerId: u.id,
+        email: u.email,
+        name: u.username,
+        avatarUrl: u.avatar
+          ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png`
+          : null,
+      };
+    }
+    default:
+      throw new Error(`Unknown provider: ${provider}`);
+  }
+}
+
+// ── Access token issuance ───────────────────────────────────────
+
+export interface AccessTokenPayload {
+  userId: string;
+  email: string;
+  role: string;
+  tokenVersion: number;
+}
+
+/**
+ * Issue an access token with the exact payload shape the jwt plugin's
+ * `authMiddleware` expects, so social logins and password logins produce
+ * interchangeable tokens. Refresh tokens are NOT issued here — use the jwt
+ * plugin's `POST /api/auth/refresh` endpoint, which keeps hashed refresh
+ * tokens in the database and can revoke them.
+ */
+export function issueAccessToken(payload: AccessTokenPayload): string {
+  return jwt.sign(
+    {
+      userId: payload.userId,
+      email: payload.email,
+      role: payload.role,
+      tokenVersion: payload.tokenVersion,
+    },
+    env.JWT_SECRET,
+    { expiresIn: env.JWT_EXPIRES_IN, algorithm: "HS256" } as SignOptions
+  );
+}

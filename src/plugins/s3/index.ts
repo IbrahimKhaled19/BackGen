@@ -21,6 +21,7 @@ export const s3Plugin: BackGenPlugin = {
     AWS_SECRET_ACCESS_KEY: "your-secret-key",
     AWS_REGION: "us-east-1",
     AWS_S3_BUCKET: "your-bucket-name",
+    UPLOAD_MAX_BYTES: "10485760",
   },
 
   templates: [
@@ -53,7 +54,7 @@ export const s3Plugin: BackGenPlugin = {
         file: "src/config/env.ts",
         operation: "replace",
         marker: "LOG_LEVEL: z.enum([\"error\", \"warn\", \"info\", \"debug\"]).default(\"info\"),",
-        content: `LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),\n  AWS_ACCESS_KEY_ID: z.string().min(1),\n  AWS_SECRET_ACCESS_KEY: z.string().min(1),\n  AWS_REGION: z.string().default("us-east-1"),\n  AWS_S3_BUCKET: z.string().min(1),`,
+        content: `LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),\n  AWS_ACCESS_KEY_ID: z.string().min(1),\n  AWS_SECRET_ACCESS_KEY: z.string().min(1),\n  AWS_REGION: z.string().default("us-east-1"),\n  AWS_S3_BUCKET: z.string().min(1),\n  UPLOAD_MAX_BYTES: z.coerce.number().positive().default(10485760),`,
       },
     ]);
   },

@@ -6,7 +6,17 @@ import { asyncHandler } from "../../utils/async-handler.js";
 
 const router = Router();
 const controller = new S3Controller();
-const upload = multer({ storage: multer.memoryStorage() });
+
+// memoryStorage buffers the whole file in RAM, so the limit is mandatory —
+// without it a single request can exhaust the process heap. multer reports
+// limits in bytes; 10 MiB by default, overridable with UPLOAD_MAX_BYTES.
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: Number(process.env.UPLOAD_MAX_BYTES ?? 10 * 1024 * 1024),
+    files: 1,
+  },
+});
 
 /**
  * @swagger

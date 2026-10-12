@@ -1,0 +1,62 @@
+import { Queue, Worker } from "bullmq";
+import IORedis from "ioredis";
+import { env } from "../../config/env.js";
+import { listJobs, setQueue } from "./index.js";
+
+// ── Redis Connection ────────────────────────────────────────────
+
+const connection = new IORedis({
+  host: env.REDIS_HOST,
+  port: env.REDIS_PORT,
+  password: env.REDIS_PASSWORD || undefined,
+  db: env.REDIS_DB,
+  maxRetriesPerRequest: null,
+});
+
+// ── Queue ───────────────────────────────────────────────────────
+
+export const QUEUE_NAME = "{{projectName}}-jobs";
+
+const queue = new Queue(QUEUE_NAME, { connection });
+setQueue(queue);
+
+export function getQueue(): Queue {
+  return queue;
+}
+
+// ── Worker ──────────────────────────────────────────────────────
+
+const defaultWorker = new Worker(
+  QUEUE_NAME,
+  async (job) => {
+    const def = listJobs().find((j) => j.name === job.name);
+    if (!def) {
+      throw new Error(`Unknown job: "${job.name}" — not registered in modules/worker/index.ts`);
+    }
+    return def.handler.handle(job.data, {
+      jobId: job.id ?? "",
+      attemptsMade: job.attemptsMade,
+    });
+  },
+  {
+    connection,
+    concurrency: 10,
+    lockDuration: 60_000,
+  }
+);
+
+defaultWorker.on("completed", (job) => {
+  console.log(`[worker] Job "${job.name}" (${job.id}) completed`);
+});
+
+defaultWorker.on("failed", (job, err) => {
+  console.error(`[worker] Job "${job.name}" (${job?.id}) failed:`, err.message);
+});
+
+// ── Graceful Shutdown ───────────────────────────────────────────
+
+export async function closeQueue(): Promise<void> {
+  await defaultWorker.close();
+  await queue.close();
+  await connection.quit();
+}

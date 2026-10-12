@@ -1,15 +1,26 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import { env } from "../config/env.js";
-import { ApiError } from "../utils/api-error.js";
+
+/**
+ * Placeholder auth middleware.
+ *
+ * BackGen generates this file so that protected route modules compile before
+ * an auth plugin is installed. It does NOT authenticate anything — it only
+ * sets `req.user` to `undefined` and warns loudly.
+ *
+ * Run `backgen add jwt` (or `backgen add clerk`) to replace this file with a
+ * real implementation. Until then every `authMiddleware`-protected route is
+ * publicly reachable.
+ */
 
 export interface AuthPayload {
   userId: string;
   email: string;
   role: string;
+  tokenVersion: number;
 }
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       user?: AuthPayload;
@@ -17,20 +28,19 @@ declare global {
   }
 }
 
-export function authMiddleware(req: Request, _res: Response, next: NextFunction): void {
-  const authHeader = req.headers.authorization;
+let warned = false;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    throw ApiError.unauthorized("Missing or invalid authorization header");
+export function authMiddleware(
+  _req: Request,
+  _res: Response,
+  next: NextFunction
+): void {
+  if (!warned) {
+    warned = true;
+    console.warn(
+      "[auth] No authentication provider installed — every route guarded by " +
+        "authMiddleware is PUBLIC. Run `backgen add jwt` to protect this API."
+    );
   }
-
-  const token = authHeader.split(" ")[1];
-
-  try {
-    const payload = jwt.verify(token, env.JWT_SECRET, { algorithms: ["HS256"] }) as AuthPayload;
-    req.user = payload;
-    next();
-  } catch {
-    throw ApiError.unauthorized("Invalid or expired token");
-  }
+  next();
 }

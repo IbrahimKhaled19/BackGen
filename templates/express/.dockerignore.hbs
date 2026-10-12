@@ -1,11 +1,23 @@
 node_modules
 dist
+build
 .git
 .gitignore
+.gitattributes
+
+# Secrets — never let these reach a build layer
 .env
-.env.local
+.env.*
+!.env.example
+.env.backup*
+
 *.log
 coverage
+.test-output*
+.backgen
+
 .idea
 .vscode
+.DS_Store
+Thumbs.db
 README.md

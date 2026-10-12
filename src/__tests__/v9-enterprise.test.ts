@@ -1,32 +1,31 @@
-import { describe, it, expect, beforeAll } from "vitest";
-import { execSync } from "child_process";
-import { rmSync, mkdirSync, readFileSync, accessSync } from "fs";
+﻿import { describe, it, expect, beforeAll } from "vitest";
+import { mkdirSync, readFileSync, accessSync } from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
+import { cli as runCli, safeRm } from "./helpers.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const CLI = path.resolve(__dirname, "../../dist/index.js");
-const TEST_DIR = path.resolve(__dirname, "../../", `.test-output-v9-${Date.now()}`);
+const TEST_DIR = path.resolve(__dirname, "../../.test-output-v9");
 
 function cli(args: string, cwd = TEST_DIR): string {
-  return execSync(`node ${CLI} ${args}`, { cwd, encoding: "utf-8", stdio: "pipe" });
+  return runCli(args.split(/\s+/), cwd);
 }
 
 function exists(p: string): boolean {
   try { accessSync(p); return true; } catch { return false; }
 }
 
-describe("V9 Enterprise", { timeout: 300_000 }, () => {
+describe("V9 Enterprise", () => {
   beforeAll(() => {
-    rmSync(TEST_DIR, { recursive: true, force: true });
+    safeRm(TEST_DIR);
     mkdirSync(TEST_DIR, { recursive: true });
   });
 
   it("audit plugin installs and adds AuditLog model", () => {
     const projectDir = path.join(TEST_DIR, "audit-test");
     cli("init audit-test --defaults --skip-install");
-    cli("add audit", projectDir);
+    cli("add audit --skip-install", projectDir);
 
     const schema = readFileSync(path.join(projectDir, "prisma", "schema.prisma"), "utf-8");
     expect(schema).toMatch(/model AuditLog\b/);
@@ -42,7 +41,7 @@ describe("V9 Enterprise", { timeout: 300_000 }, () => {
   it("permissions plugin installs and adds Role/Permission models", () => {
     const projectDir = path.join(TEST_DIR, "perms-test");
     cli("init perms-test --defaults --skip-install");
-    cli("add permissions", projectDir);
+    cli("add permissions --skip-install", projectDir);
 
     const schema = readFileSync(path.join(projectDir, "prisma", "schema.prisma"), "utf-8");
     expect(schema).toMatch(/model Role\b/);

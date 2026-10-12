@@ -13,9 +13,24 @@ export function removePluginTool(server: McpServer) {
     "Removes a previously installed plugin from a BackGen-generated project. This is a destructive but safe operation: it deletes plugin-owned source files (controllers, routes, middleware), removes npm dependencies, strips injected environment variables from .env, reverts route registrations in app.ts, and removes the plugin entry from .backgenrc.json. User-owned files are never touched. Only files that the plugin originally installed are affected. Use this to undo an add_plugin command, switch auth providers (e.g. jwt → clerk), or clean up unused features. Run doctor afterwards to verify the project is healthy after removal. Run list_plugins first to see what's currently installed. Use add_plugin if you want to install (not remove) a plugin.",
     {
       plugin: z
-        .enum(["jwt", "clerk", "stripe", "s3", "ratelimit", "ci-github", "dependabot", "codeql", "docker-registry", "release"])
+        .enum([
+          "jwt",
+          "clerk",
+          "oauth2",
+          "stripe",
+          "s3",
+          "ratelimit",
+          "audit",
+          "permissions",
+          "worker",
+          "ci-github",
+          "dependabot",
+          "codeql",
+          "docker-registry",
+          "release",
+        ])
         .describe(
-          "Plugin to remove. Categories: auth (jwt, clerk — mutually exclusive, safe to swap by removing one then adding the other), payment (stripe), storage (s3), production (ratelimit), devops (ci-github, dependabot, codeql, docker-registry, release — remove all with 'backgen remove devops' shorthand). Use list_plugins first to see which plugins are currently installed in the project."
+          "Plugin to remove. Categories: auth (jwt, clerk, oauth2 — jwt and clerk are mutually exclusive; remove oauth2 before jwt), payment (stripe), storage (s3), production (ratelimit, audit, permissions, worker), devops (ci-github, dependabot, codeql, docker-registry, release — remove all with 'backgen remove devops' shorthand). Use list_plugins first to see which plugins are currently installed in the project."
         ),
       dir: z
         .string()

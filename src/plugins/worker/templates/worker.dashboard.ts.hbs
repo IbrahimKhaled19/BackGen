@@ -1,0 +1,83 @@
+import { Router, type Request, type Response } from "express";
+import { authMiddleware } from "../../middleware/auth.js";
+import { getQueue } from "./queue.js";
+import { listJobs } from "./index.js";
+
+export const router = Router();
+
+// The dashboard exposes queue state and can retry failed jobs — always behind auth.
+router.use(authMiddleware);
+
+// ── List all jobs with stats ────────────────────────────────────
+
+router.get("/jobs", async (_req: Request, res: Response) => {
+  const queue = getQueue();
+  const [counts, waiting, active, completed, failed, delayed] = await Promise.all([
+    queue.getJobCounts(),
+    queue.getWaitingCount(),
+    queue.getActiveCount(),
+    queue.getCompletedCount(),
+    queue.getFailedCount(),
+    queue.getDelayedCount(),
+  ]);
+
+  const jobs = listJobs().map((j) => ({
+    name: j.name,
+    queue: j.queue,
+    concurrency: j.concurrency ?? 1,
+    retry: j.retry ?? 3,
+  }));
+
+  res.json({
+    counts: { ...counts, waiting, active, completed, failed, delayed },
+    jobs,
+  });
+});
+
+// ── Job detail ──────────────────────────────────────────────────
+
+router.get("/jobs/:name", async (req: Request, res: Response) => {
+  const queue = getQueue();
+  const jobName = req.params.name as string;
+
+  const [recentJobs, jobCounts] = await Promise.all([
+    queue.getJobs(["completed", "failed", "active", "waiting", "delayed"], 0, 20),
+    queue.getJobCounts(),
+  ]);
+
+  const sanitized = await Promise.all(
+    recentJobs
+      .filter((j) => j.name === jobName)
+      .slice(0, 20)
+      .map(async (j) => ({
+        id: j.id,
+        name: j.name,
+        status: await j.getState(),
+        progress: j.progress,
+        attemptsMade: j.attemptsMade,
+        timestamp: j.timestamp,
+        finishedOn: j.finishedOn,
+        failedReason: j.failedReason,
+        returnvalue: j.returnvalue,
+      }))
+  );
+
+  res.json({
+    job: jobName,
+    counts: jobCounts,
+    recent: sanitized,
+  });
+});
+
+// ── Retry a failed job ──────────────────────────────────────────
+
+router.post("/jobs/:id/retry", async (req: Request, res: Response) => {
+  const queue = getQueue();
+  const job = await queue.getJob(req.params.id as string);
+  if (!job) {
+    res.status(404).json({ success: false, error: { message: "Job not found" } });
+    return;
+  }
+  await job.retry();
+  res.json({ success: true, data: { message: "Job retried", jobId: job.id } });
+});

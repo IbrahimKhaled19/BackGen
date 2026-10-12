@@ -5,6 +5,10 @@ import { execSync } from "child_process";
 import { readManifest, writeManifest } from "../core/manifest.js";
 import type { FileOwner } from "../core/manifest.js";
 import type { ProjectManifest } from "../core/manifest.js";
+import {
+  KNOWN_FILES as FILE_OWNERSHIP,
+  USER_OWNED_DIRS,
+} from "../core/file-classifier.js";
 
 interface CheckResult {
   name: string;
@@ -219,52 +223,11 @@ async function checkDependencies(dir: string): Promise<CheckResult> {
 
 // ── Ownership integrity (V6.1) ─────────────────────────────────
 
-/** Known generated files with their ownership classification */
-const KNOWN_FILES: Record<string, FileOwner> = {
-  // App & Server
-  "src/app.ts": "shared",
-  "src/server.ts": "framework",
-  // Config
-  "src/config/env.ts": "framework-editable",
-  "src/config/database.ts": "framework-editable",
-  "src/config/swagger.ts": "framework-editable",
-  // Utils
-  "src/utils/api-error.ts": "framework",
-  "src/utils/async-handler.ts": "framework",
-  "src/utils/response.ts": "framework",
-  // Middleware (core)
-  "src/middleware/core/errors.ts": "framework",
-  "src/middleware/core/logger.ts": "framework",
-  "src/middleware/core/validate.ts": "framework",
-  // Middleware (security)
-  "src/middleware/security/cors-strict.ts": "framework",
-  "src/middleware/security/sanitize.ts": "framework",
-  // Middleware (observability)
-  "src/middleware/observability/request-id.ts": "framework",
-  "src/middleware/observability/request-timeout.ts": "framework",
-  "src/middleware/observability/health.ts": "framework",
-  // Middleware (root)
-  "src/middleware/graceful-shutdown.ts": "framework",
-  // Services
-  "src/services/logger.service.ts": "framework",
-  // Config files
-  "package.json": "shared",
-  "tsconfig.json": "framework-editable",
-  ".env.example": "shared",
-  ".gitignore": "shared",
-  "README.md": "shared",
-  "vitest.config.ts": "framework-editable",
-  "eslint.config.js": "framework-editable",
-  // Docker
-  "Dockerfile": "shared",
-  "docker-compose.yml": "shared",
-  // ORM
-  "prisma/schema.prisma": "user",
-  "prisma.config.ts": "framework-editable",
-  "drizzle.config.ts": "framework-editable",
-  "src/db/schema/index.ts": "user",
-  "src/models/index.ts": "user",
-};
+/**
+ * Known generated files with their ownership classification.
+ * Single source of truth lives in core/file-classifier.ts.
+ */
+const KNOWN_FILES = FILE_OWNERSHIP;
 
 /** Check that files registered in manifest actually exist on disk */
 async function checkFileIntegrity(
@@ -327,8 +290,7 @@ async function checkOwnershipIntegrity(
   }
 
   // Also check for ORM-specific paths that match a directory pattern
-  const ormPatterns = ["prisma/seeds/", "src/db/schema/", "src/models/"];
-  for (const pattern of ormPatterns) {
+  for (const pattern of USER_OWNED_DIRS) {
     const patternDir = path.join(dir, pattern);
     try {
       const entries = await fs.readdir(patternDir);
@@ -394,8 +356,7 @@ async function applyOwnershipFix(
   }
 
   // 2. Scan ORM-specific directories for untracked user files
-  const ormDirs = ["prisma/seeds", "src/db/schema", "src/models"];
-  for (const dir of ormDirs) {
+  for (const dir of USER_OWNED_DIRS) {
     try {
       const entries = await fs.readdir(path.join(projectDir, dir));
       for (const entry of entries) {

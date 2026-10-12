@@ -1,0 +1,29 @@
+// BackGen Worker — Base Job Handler
+// ═══════════════════════════════════════════════════════════
+// Generated jobs extend this base class. Override handle()
+// with your business logic — the base class provides retry,
+// logging, and context helpers.
+// ═══════════════════════════════════════════════════════════
+
+export interface JobContext {
+  jobId: string;
+  attemptsMade: number;
+}
+
+export interface JobResult {
+  success: boolean;
+  data?: unknown;
+  error?: string;
+}
+
+export abstract class BaseJobHandler<T = unknown> {
+  abstract handle(payload: T, ctx: JobContext): Promise<JobResult>;
+
+  protected async log(message: string, data?: unknown): Promise<void> {
+    console.log(`[job] ${message}`, data ?? "");
+  }
+
+  protected async delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+}

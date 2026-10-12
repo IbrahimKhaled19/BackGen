@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { StripeService } from "./stripe.service.js";
 import { successResponse, createdResponse } from "../../utils/response.js";
+import { ApiError } from "../../utils/api-error.js";
 
 const stripeService = new StripeService();
 
@@ -21,11 +22,16 @@ export class StripeController {
   }
 
   async webhook(req: Request, res: Response): Promise<void> {
-    const signature = req.headers["stripe-signature"] as string;
-    const event = await stripeService.constructWebhookEvent(
-      req.body,
-      signature
-    );
+    const signature = req.headers["stripe-signature"] as string | undefined;
+
+    // req.rawBody is captured by the express.json() `verify` hook that this
+    // plugin installs in app.ts — Stripe signs the exact bytes it sent.
+    const rawBody = (req as Request & { rawBody?: Buffer }).rawBody;
+    if (!signature || !rawBody) {
+      throw ApiError.badRequest("Missing stripe-signature header or raw body");
+    }
+
+    const event = await stripeService.constructWebhookEvent(rawBody, signature);
     await stripeService.handleWebhook(event);
     res.json({ received: true });
   }

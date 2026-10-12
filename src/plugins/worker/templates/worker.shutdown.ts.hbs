@@ -1,0 +1,9 @@
+import { closeQueue } from "./queue.js";
+
+/**
+ * Close the job queue and its Redis connection.
+ * Call from the graceful-shutdown handler so in-flight jobs are not dropped.
+ */
+export async function shutdownWorker(): Promise<void> {
+  await closeQueue();
+}

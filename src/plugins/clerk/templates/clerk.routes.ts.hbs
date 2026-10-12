@@ -2,7 +2,7 @@ import { Router } from "express";
 import { getAuth, clerkClient } from "@clerk/express";
 import { Webhook } from "svix";
 import { env } from "../../config/env.js";
-import { clerkAuthMiddleware } from "./clerk.middleware.js";
+import { authMiddleware } from "../../middleware/auth.js";
 import { successResponse } from "../../utils/response.js";
 import { asyncHandler } from "../../utils/async-handler.js";
 import { ApiError } from "../../utils/api-error.js";
@@ -25,7 +25,7 @@ const router = Router();
  */
 router.get(
   "/me",
-  clerkAuthMiddleware,
+  authMiddleware,
   asyncHandler(async (req, res) => {
     const user = await clerkClient.users.getUser(req.userId!);
     successResponse(res, {

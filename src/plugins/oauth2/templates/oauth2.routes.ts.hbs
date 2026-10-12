@@ -1,0 +1,63 @@
+import { Router } from "express";
+import { asyncHandler } from "../../utils/async-handler.js";
+import * as oauth2Controller from "./oauth2.controller.js";
+
+export const oauth2Router = Router();
+
+/**
+ * Rate limiting is applied globally by the `ratelimit` plugin
+ * (`app.use("/api", rateLimitMw)`). Do not import it here — this plugin has no
+ * dependency on `ratelimit`, and adding `backgen add ratelimit` is all it takes.
+ */
+
+/**
+ * @swagger
+ * /api/auth/{provider}:
+ *   get:
+ *     summary: Initiate OAuth2 login via provider
+ *     tags: [OAuth2]
+ *     parameters:
+ *       - in: path
+ *         name: provider
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [google, github, discord]
+ *         description: OAuth provider
+ *     responses:
+ *       302:
+ *         description: Redirects to provider's authorization page
+ */
+oauth2Router.get("/:provider", asyncHandler(oauth2Controller.redirectToProvider));
+
+/**
+ * @swagger
+ * /api/auth/{provider}/callback:
+ *   get:
+ *     summary: OAuth2 callback handler
+ *     tags: [OAuth2]
+ *     parameters:
+ *       - in: path
+ *         name: provider
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [google, github, discord]
+ *         description: OAuth provider
+ *       - in: query
+ *         name: code
+ *         schema:
+ *           type: string
+ *         description: Authorization code from provider
+ *       - in: query
+ *         name: state
+ *         schema:
+ *           type: string
+ *         description: CSRF state token (must match the oauth2_state cookie)
+ *     responses:
+ *       302:
+ *         description: Redirects to the frontend; the access token is set as an HttpOnly cookie
+ *       401:
+ *         description: Authentication failed
+ */
+oauth2Router.get("/:provider/callback", asyncHandler(oauth2Controller.handleCallback));

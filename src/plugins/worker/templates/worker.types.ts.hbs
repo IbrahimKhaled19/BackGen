@@ -1,0 +1,27 @@
+import type { JobResult } from "./base-handler.js";
+
+/** Payload for a scheduled/recurring job */
+export interface CronJobPayload {
+  scheduledAt: string;
+  trigger: string;
+}
+
+/** Options when dispatching a job */
+export interface DispatchOptions {
+  delay?: number | string;
+  priority?: "low" | "normal" | "high" | "critical";
+  attempts?: number;
+  backoff?: { type: "fixed" | "exponential"; delay: number };
+  jobId?: string;
+  removeOnComplete?: boolean;
+  removeOnFail?: boolean;
+}
+
+/** Generic queue metrics */
+export interface QueueMetrics {
+  waiting: number;
+  active: number;
+  completed: number;
+  failed: number;
+  delayed: number;
+}

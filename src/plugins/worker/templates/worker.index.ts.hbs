@@ -1,0 +1,76 @@
+// BackGen Worker — Job Registry
+// ═══════════════════════════════════════════════════════════
+// Every job handler created by `backgen generate job <name>`
+// registers itself here. The queue and the dashboard both
+// read from this registry.
+// ═══════════════════════════════════════════════════════════
+
+import type { Queue } from "bullmq";
+import type { BaseJobHandler, JobContext } from "./base-handler.js";
+
+export interface JobDefinition<T = unknown> {
+  name: string;
+  queue: string;
+  handler: BaseJobHandler<T>;
+  concurrency?: number;
+  retry?: number;
+  backoff?: "fixed" | "exponential";
+  timeout?: number;
+}
+
+/** All registered jobs, keyed by job name. */
+const registry = new Map<string, JobDefinition>();
+
+let queueRef: Queue | undefined;
+
+/** Wired up by queue.ts so dispatch() can reach the BullMQ queue. */
+export function setQueue(queue: Queue): void {
+  queueRef = queue;
+}
+
+export function listJobs(): JobDefinition[] {
+  return [...registry.values()];
+}
+
+/**
+ * Register a job handler. Called once per generated job module at import time.
+ * Re-registering the same name replaces the previous definition so that
+ * reloading in development does not throw.
+ */
+export function registerJob<T>(definition: JobDefinition<T>): void {
+  registry.set(definition.name, definition as JobDefinition);
+}
+
+/**
+ * Queue a job for processing.
+ * @throws {Error} If the job name was never registered
+ */
+export async function dispatch<T>(
+  name: string,
+  payload: T,
+  opts?: {
+    delay?: number | string;
+    priority?: "low" | "normal" | "high" | "critical";
+    attempts?: number;
+    backoff?: { type: "fixed" | "exponential"; delay: number };
+  }
+): Promise<string> {
+  const definition = registry.get(name);
+  if (!definition) {
+    throw new Error(`Unknown job: "${name}" — not registered in modules/worker/index.ts`);
+  }
+  if (!queueRef) {
+    throw new Error(`Job queue is not initialised — cannot dispatch "${name}"`);
+  }
+
+  const job = await queueRef.add(name, payload, {
+    attempts: opts?.attempts ?? definition.retry ?? 3,
+    backoff: opts?.backoff ?? { type: "exponential", delay: 1000 },
+    delay: opts?.delay,
+    priority: opts?.priority,
+  });
+
+  return job.id ?? "";
+}
+
+export type { JobContext };

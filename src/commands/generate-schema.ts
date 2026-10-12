@@ -1,5 +1,6 @@
 import chalk from "chalk";
 import * as path from "path";
+import { writeFile } from "fs/promises";
 import { parseAndValidateYaml, fieldsToFieldStrings, relationsToRelationDefs, } from "../core/yaml-schema.js";
 import type { ParsedSchema } from "../core/yaml-schema.js";
 import { listAvailablePlugins } from "../core/plugin-registry.js";
@@ -67,7 +68,9 @@ export async function generateProjectFromSchema(schema: ParsedSchema, projectDir
   if (schema.plugins.length > 0) {
     console.log(chalk.cyan(`\nInstalling ${schema.plugins.length} plugin(s)...\n`));
     const installer = new PluginInstaller(TEMPLATES_DIR, schema.project.orm);
-    const { succeeded, failed } = await installer.installBulk(actualProjectDir, schema.plugins);
+    const { succeeded, failed } = await installer.installBulk(actualProjectDir, schema.plugins, {
+      skipInstall: true,
+    });
     if (succeeded.length > 0) {
       console.log(chalk.green(`  ✓ ${succeeded.length} plugin(s) installed`));
     }
@@ -109,24 +112,24 @@ export async function generateProjectFromSchema(schema: ParsedSchema, projectDir
     }
   }
 
-  // 5. Install npm dependencies
-  console.log(chalk.cyan("\nInstalling dependencies...\n"));
-  const { execSync } = await import("child_process");
-  execSync("npm install", { cwd: actualProjectDir, stdio: "inherit" });
+  // 5. Create .npmrc (isolate from parent project config)
+  const npmrcPath = path.join(actualProjectDir, ".npmrc");
+  await writeFile(npmrcPath, "shamefully-hoist=true\n", "utf-8");
 
-  // 6. Prisma generate if applicable
-  if (schema.project.orm === "prisma") {
-    console.log(chalk.cyan("\nGenerating Prisma client...\n"));
-    try {
-      execSync("npx prisma generate", { cwd: actualProjectDir, stdio: "inherit" });
-    } catch {
-      console.log(chalk.yellow("  ⚠ prisma generate skipped"));
-    }
-  }
+  // 6. Tell the user what is left. Deliberately not running `npm install` or
+  // `prisma generate` here: both need the network, both take minutes, and
+  // `backgen sync` plus the printed steps cover them.
+  // shortcut: this command writes files only. If you need a ready-to-run
+  // project in one step, run `npm install && npx prisma generate` in the new
+  // directory — or add the calls back behind a flag.
 
   console.log(chalk.green.bold(`\n✨ Project "${schema.project.name}" generated successfully!\n`));
   console.log(chalk.cyan(`  cd ${path.relative(origCwd, actualProjectDir)}`));
   console.log(chalk.cyan("  cp .env.example .env"));
   console.log(chalk.cyan("  # Edit .env with your database URL"));
+  console.log(chalk.cyan("  npm install"));
+  if (schema.project.orm === "prisma") {
+    console.log(chalk.cyan("  npx prisma generate"));
+  }
   console.log(chalk.cyan("  npm run dev\n"));
 }

@@ -7,17 +7,18 @@ import { randomBytes } from "crypto";
  * Rotate JWT secrets in the project's .env file.
  *
  * Generates cryptographically secure 256-bit random hex values for both
- * `JWT_SECRET` and `JWT_REFRESH_SECRET`. Creates a backup of the current
- * `.env` as `.env.backup`, then writes the old values as comments alongside
- * the new secrets. All existing tokens are immediately invalidated on next
- * server restart.
+ * `JWT_SECRET` and `JWT_REFRESH_SECRET`, saves a timestamped backup of the
+ * current `.env`, then overwrites the values in place.
+ *
+ * The previous values are NOT written back into `.env` as comments — a
+ * comment is still a secret sitting in a file that people commit, paste into
+ * bug reports and ship in Docker build contexts.
  */
 export async function rotateCommand(): Promise<void> {
   console.log(chalk.blue.bold("\n🔄 BackGen - Rotate Secrets\n"));
 
   const projectDir = process.cwd();
   const envPath = path.join(projectDir, ".env");
-  const backupPath = path.join(projectDir, ".env.backup");
 
   // Validate .env exists
   try {
@@ -28,36 +29,57 @@ export async function rotateCommand(): Promise<void> {
   }
 
   // Generate cryptographically random secrets (256-bit hex)
-  const newJwtSecret = randomBytes(32).toString("hex");
-  const newRefreshSecret = randomBytes(32).toString("hex");
+  const newSecrets: Record<string, string> = {
+    JWT_SECRET: randomBytes(32).toString("hex"),
+    JWT_REFRESH_SECRET: randomBytes(32).toString("hex"),
+  };
 
-  // Backup current .env
+  // Timestamped backup so repeated rotations never overwrite each other
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const backupPath = path.join(projectDir, `.env.backup-${stamp}`);
   await fs.copyFile(envPath, backupPath);
-  console.log(chalk.gray(`  Backup → .env.backup`));
+  console.log(chalk.gray(`  Backup → ${path.basename(backupPath)}`));
 
-  // Read and rotate
+  // Read and rotate — replace the line, never keep the old value around
   const lines = (await fs.readFile(envPath, "utf-8")).split("\n");
   const rotated: string[] = [];
+  const replaced = new Set<string>();
 
   for (const line of lines) {
-    if (/^JWT_SECRET=/.test(line)) {
-      rotated.push(`# Previous: ${line.trim()}`);
-      rotated.push(`JWT_SECRET=${newJwtSecret}`);
-    } else if (/^JWT_REFRESH_SECRET=/.test(line)) {
-      rotated.push(`# Previous: ${line.trim()}`);
-      rotated.push(`JWT_REFRESH_SECRET=${newRefreshSecret}`);
+    const match = /^([A-Z0-9_]+)=/.exec(line);
+    const key = match?.[1];
+    if (key && key in newSecrets) {
+      rotated.push(`${key}=${newSecrets[key]}`);
+      replaced.add(key);
     } else {
       rotated.push(line);
     }
+  }
+
+  const missing = Object.keys(newSecrets).filter((k) => !replaced.has(k));
+  if (missing.length > 0) {
+    console.log(
+      chalk.yellow(
+        `  ⚠ ${missing.join(", ")} not found in .env — add ${missing.join(", ")}=<64-hex-chars> by hand.`
+      )
+    );
   }
 
   await fs.writeFile(envPath, rotated.join("\n"), "utf-8");
 
   console.log(chalk.green("✓ Secrets rotated!\n"));
   console.log("  What happened:");
-  console.log("    • JWT_SECRET       → new 256-bit random value");
-  console.log("    • JWT_REFRESH_SECRET → new 256-bit random value");
-  console.log("    • Old .env saved to .env.backup\n");
+  console.log(`    • ${Object.keys(newSecrets).join(", ")} → new 256-bit random values`);
+  console.log(`    • Old .env saved to ${path.basename(backupPath)}\n`);
   console.log(chalk.yellow("  ⚠ All existing tokens invalidated. Users must re-login.\n"));
-  console.log(chalk.gray("  To rollback: cp .env.backup .env && restart server\n"));
+  console.log(
+    chalk.gray(
+      `  To rollback: cp ${path.basename(backupPath)} .env && restart server\n`
+    )
+  );
+  console.log(
+    chalk.gray(
+      "  Delete the backup once you are happy — it contains the live secrets.\n"
+    )
+  );
 }

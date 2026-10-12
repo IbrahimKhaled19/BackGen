@@ -100,6 +100,18 @@ export const jwtPlugin: BackGenPlugin = {
       {
         file: "src/app.ts",
         operation: "replace",
+        marker: "// {{REGISTER_AUTH_MIDDLEWARE}}",
+        content: `import { optionalAuthMiddleware } from "./middleware/auth.js";\n// {{REGISTER_AUTH_MIDDLEWARE}}`,
+      },
+      {
+        file: "src/app.ts",
+        operation: "replace",
+        marker: "// {{REGISTER_MIDDLEWARE}}",
+        content: `// Populates req.user when a token is present — tenant scoping relies on it.\n// Route-level protection is still done by authMiddleware inside each router.\napp.use(optionalAuthMiddleware);\n// {{REGISTER_MIDDLEWARE}}`,
+      },
+      {
+        file: "src/app.ts",
+        operation: "replace",
         marker: "// {{REGISTER_ROUTES}}",
         content: `import authRoutes from "./modules/auth/auth.routes.js";\napp.use("/api/auth", authRoutes);\n// {{REGISTER_ROUTES}}`,
       },
@@ -124,11 +136,9 @@ export const jwtPlugin: BackGenPlugin = {
 
     // For Drizzle/Mongoose: write separate model files
     if (ctx.orm !== "prisma") {
-      const userPath = getPluginModelPath(ctx.orm, "User");
-      const tokenPath = getPluginModelPath(ctx.orm, "RefreshToken");
-      await fs.mkdir(path.join(ctx.projectDir, userPath.dir), { recursive: true });
-      const userModelPath = path.join(ctx.projectDir, userPath.file);
-      const tokenModelPath = path.join(ctx.projectDir, tokenPath.file);
+      const userModelPath = path.join(ctx.projectDir, getPluginModelPath(ctx.orm, "User"));
+      const tokenModelPath = path.join(ctx.projectDir, getPluginModelPath(ctx.orm, "RefreshToken"));
+      await fs.mkdir(path.dirname(userModelPath), { recursive: true });
       ctx.trackFile?.(userModelPath);
       ctx.trackFile?.(tokenModelPath);
       await fs.writeFile(userModelPath, getUserModelSnippet(ctx.orm), "utf-8");

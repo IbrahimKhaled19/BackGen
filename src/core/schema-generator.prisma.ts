@@ -14,6 +14,10 @@ function generateModelBlock(
   const lines: string[] = [];
   lines.push(`model ${name} {`);
 
+  // Primary key — the generated types, validation (z.string().uuid()) and
+  // repository all assume every model has a uuid `id`.
+  lines.push(`  id String @id @default(uuid())`);
+
   for (const field of fields) {
     const { prismaType } = getPrismaType(field.type);
     lines.push(`  ${field.name} ${prismaType}`);

@@ -3,10 +3,7 @@ import * as path from "path";
 import { FieldDefinition } from "./field-mapper.js";
 import type { RelationDefinition } from "../commands/generate.js";
 import type { SchemaGenerator } from "./schema-generator.js";
-
-function toPascalCase(str: string): string {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
+import { toPascalCase } from "./string-utils.js";
 
 function mongooseType(type: string): string {
   const mapping: Record<string, string> = {

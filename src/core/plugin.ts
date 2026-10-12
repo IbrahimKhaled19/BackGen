@@ -25,14 +25,28 @@ export interface InstallContext {
   trackFile?(file: string): void;
 }
 
+/** A file edit a plugin made, recorded so uninstall can undo exactly it */
+export interface AppliedMutation {
+  /** Path relative to the project root */
+  file: string;
+  operation: FileMutation["operation"];
+  /** The exact text this plugin inserted — removed again on uninstall */
+  inserted: string;
+}
+
 export interface PluginMetadata {
   version: string;
   installedAt: string;
   source: "core" | "community";
-  /** Absolute paths of files created during install */
+  /** Absolute paths of files touched during install */
   files?: string[];
-  /** Original content of files before mutation, keyed by absolute path */
-  fileSnapshots?: Record<string, string>;
+  /** File edits made during install, undone precisely on uninstall */
+  mutations?: AppliedMutation[];
+  /**
+   * Previous content of files the plugin overwrote (absolute path → content).
+   * Restored on uninstall instead of deleting them.
+   */
+  overwrites?: Record<string, string>;
 }
 
 export interface BackGenPlugin {

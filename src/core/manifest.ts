@@ -2,7 +2,7 @@ import { readFileSync } from "fs";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import type { PluginMetadata } from "./plugin.js";
+import type { PluginMetadata, AppliedMutation } from "./plugin.js";
 
 // ── Ownership tracking ────────────────────────────────────────
 
@@ -99,9 +99,11 @@ export function createManifest(
 }
 
 /**
- * Register a plugin in the manifest, recording version, install date, tracked files, and pre-mutation snapshots.
+ * Register a plugin in the manifest, recording version, install date, tracked files,
+ * and the exact file edits made during install (undone precisely on uninstall).
  * @param files - Absolute paths of files created during install (for cleanup on uninstall)
- * @param fileSnapshots - Original content of mutated files before changes (for revert on uninstall)
+ * @param mutations - File edits made during install (for revert on uninstall)
+ * @param overwrites - Previous content of files the plugin overwrote (restored on uninstall)
  */
 export async function addPluginToManifest(
   projectDir: string,
@@ -109,7 +111,8 @@ export async function addPluginToManifest(
   pluginVersion: string,
   source: "core" | "community" = "core",
   files?: string[],
-  fileSnapshots?: Record<string, string>
+  mutations?: AppliedMutation[],
+  overwrites?: Record<string, string>
 ): Promise<void> {
   const manifest = (await readManifest(projectDir)) ?? createManifest(path.basename(projectDir));
   manifest.plugins[pluginName] = {
@@ -117,7 +120,8 @@ export async function addPluginToManifest(
     installedAt: new Date().toISOString().split("T")[0],
     source,
     ...(files && files.length > 0 ? { files } : {}),
-    ...(fileSnapshots && Object.keys(fileSnapshots).length > 0 ? { fileSnapshots } : {}),
+    ...(mutations && mutations.length > 0 ? { mutations } : {}),
+    ...(overwrites && Object.keys(overwrites).length > 0 ? { overwrites } : {}),
   };
   await writeManifest(projectDir, manifest);
 }

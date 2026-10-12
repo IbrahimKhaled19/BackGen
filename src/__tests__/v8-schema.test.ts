@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { parseAndValidateYaml, parseSchemaObject, fieldsToFieldStrings, relationsToRelationDefs } from "../core/yaml-schema.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import { cli, safeRm } from "./helpers.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.resolve(__dirname, "../../test/fixtures");
@@ -86,18 +87,16 @@ describe("relationsToRelationDefs", () => {
 
 // ── Integration tests ────────────────────────────────────────────
 
-describe("Schema generation (integration)", { timeout: 300_000 }, () => {
+describe("Schema generation (integration)", () => {
   it("generates project from valid schema via CLI", async () => {
-    const { execSync } = await import("child_process");
-    const { rmSync } = await import("fs");
     const tmpDir = path.resolve(__dirname, "../../.tmp-test-v8");
     const schemaPath = path.join(FIXTURES, "backgen-valid.yaml");
 
-    try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* cleanup */ }
+    safeRm(tmpDir);
 
-    const result = execSync(
-      `node "${path.resolve(__dirname, "../../dist/index.js")}" generate schema "${schemaPath}" --out "${tmpDir}"`,
-      { cwd: __dirname, shell: true, encoding: "utf-8", timeout: 240_000 }
+    const result = cli(
+      ["generate", "schema", schemaPath, "--out", tmpDir],
+      __dirname
     );
 
     expect(result).toContain("generated successfully");
@@ -107,20 +106,18 @@ describe("Schema generation (integration)", { timeout: 300_000 }, () => {
     expect(existsSync(path.join(tmpDir, "src"))).toBe(true);
     expect(existsSync(path.join(tmpDir, ".backgenrc.json"))).toBe(true);
 
-    try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* cleanup */ }
+    safeRm(tmpDir);
   });
 
   it("generates project from deps schema with relations", async () => {
-    const { execSync } = await import("child_process");
-    const { rmSync } = await import("fs");
     const tmpDir = path.resolve(__dirname, "../../.tmp-test-v8-deps");
     const schemaPath = path.join(FIXTURES, "backgen-deps.yaml");
 
-    try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* cleanup */ }
+    safeRm(tmpDir);
 
-    const result = execSync(
-      `node "${path.resolve(__dirname, "../../dist/index.js")}" generate schema "${schemaPath}" --out "${tmpDir}"`,
-      { cwd: __dirname, shell: true, encoding: "utf-8", timeout: 240_000 }
+    const result = cli(
+      ["generate", "schema", schemaPath, "--out", tmpDir],
+      __dirname
     );
 
     expect(result).toContain("generated successfully");
@@ -128,6 +125,6 @@ describe("Schema generation (integration)", { timeout: 300_000 }, () => {
     const { existsSync } = await import("fs");
     expect(existsSync(path.join(tmpDir, "package.json"))).toBe(true);
 
-    try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* cleanup */ }
+    safeRm(tmpDir);
   });
 });

@@ -9,6 +9,10 @@ export class {{ResourceName}}Repository {
   async findById(id: string, userId?: string) {
     const filter: Record<string, unknown> = { _id: id };
     if (userId) filter.userId = userId;
+    {{#if softDelete}}
+    // soft-delete: exclude tombstoned records, matching findAll
+    filter.deletedAt = null;
+    {{/if}}
     return {{ResourceName}}Model.findOne(filter).lean();
   }
 

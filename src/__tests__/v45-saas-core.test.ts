@@ -1,29 +1,15 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { execSync } from "child_process";
-import { rmSync } from "fs";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { fileURLToPath } from "url";
+import { cli as runCli, safeRm } from "./helpers.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const CLI = path.resolve(__dirname, "../../dist/index.js");
 const TEST_DIR = path.resolve(__dirname, "../../.test-output-v45");
 
-function safeRm(dir: string): void {
-  for (let i = 0; i < 15; i++) {
-    try { rmSync(dir, { recursive: true, force: true }); return; } catch {
-      execSync("node -e \"setTimeout(() => {}, 1000)\"", { stdio: "ignore" });
-    }
-  }
-}
-
 function cli(args: string, cwd = TEST_DIR): string {
-  return execSync(`node ${CLI} ${args}`, {
-    cwd,
-    encoding: "utf-8",
-    stdio: "pipe",
-  });
+  return runCli(args.split(/\s+/), cwd);
 }
 
 async function exists(p: string): Promise<boolean> {

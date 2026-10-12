@@ -1,5 +1,34 @@
 # Changelog
 
+## [Unreleased]
+
+### Security
+- fix(auth): tenant middleware now fails closed — a request with no authenticated user is rejected 401 before `x-org-id` is read, so the header cannot be used to hop tenants. A global `optionalAuthMiddleware` populates `req.user`; route-level protection still comes from `authMiddleware`
+- fix(auth): async auth middleware wrapped in `asyncHandler` — Express 4 does not catch rejected promises, so a thrown `ApiError` used to hang the request instead of returning 401
+- fix(stripe): webhook signature verification works again — the raw request body is captured by an `express.json({ verify })` hook instead of re-serialising the parsed object
+- fix(oauth2): access token is set as an HttpOnly cookie, never in the redirect URL (which leaks into history, proxy logs and `Referer`); CSRF state moved from a per-process `Map` to a short-lived cookie so login works behind more than one instance
+- fix(deploy): generated projects now ship a `.dockerignore` that excludes `.env*`, `node_modules` and `.git`; `rotate-secrets` writes a timestamped backup and no longer leaves old secrets in `.env` as comments
+
+### Fixes
+- fix(plugins): `backgen add worker` and `backgen add oauth2` now work from the published package — they resolved templates relative to `dist/`, where no `.hbs` files exist
+- fix(generator): generated Prisma models now include `id String @id @default(uuid())` — the types, validation and repository all assumed it existed
+- fix(generator): generated route modules import a base `src/middleware/auth.ts` stub, so `init` + `generate resource` produces a project that compiles before an auth plugin is added
+- fix(worker): generated worker module compiles — correct import depths, a real `index.ts` job registry, `REDIS_DB` in the env schema, and `generate job` writes beside the module it extends
+- fix(plugins): removing a plugin no longer reverts edits made by plugins installed after it, no longer truncates `.env` below the plugin's block, and restores the shared auth stub instead of deleting it
+- fix(generator): `--soft-delete` now hides tombstoned rows on the by-id path as well as the list path
+- fix(generator): generated Drizzle models import `relations` from `drizzle-orm`
+- fix(rollback): `backgen rollback` asks for confirmation before overwriting the project
+
+### Changes
+- feat(cli): `backgen add --skip-install` — write files and `package.json` without running `npm install`
+- change(cli): `init --skip-install` now also skips plugin installs and `prisma generate`; `init --resume` no longer runs an install the user declined
+- change(cli): `generate schema` no longer runs `npm install` or `prisma generate`; both are printed as next steps
+- change(deps): dropped the `glob` dependency (only consumer was a deleted helper)
+- chore(lean): removed seven unreachable modules, six copies of the case helpers, and two near-duplicate parsers
+
+### Migration
+- If you generated a project **before** this release and use a preset that adds tenant scoping (`saas-core`, `saas`, `saas-enterprise`), move `app.get("/health")`, `app.get("/ready")` and `setupSwagger(app)` **above** `// {{REGISTER_MIDDLEWARE}}` in `src/app.ts`. Health probes currently sit below the tenant middleware and return 401, which makes orchestrators restart a healthy app.
+
 ## [v1.14.0] - 2026-06-26
 
 ### Features

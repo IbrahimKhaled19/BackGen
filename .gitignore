@@ -12,10 +12,13 @@ Thumbs.db
 .idea/
 coverage/
 .test-output*
+.tmp-test-*/
 test-gen/
 demo/
 .claude/
 .claude-flow/
+.openclaude/
+.opencode/
 specs/
 graphify-out/
 tmp-test/
